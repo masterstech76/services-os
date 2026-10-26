@@ -12,7 +12,7 @@ services:
       - key: NEXT_PUBLIC_API_MODE
         value: real
       - key: NEXT_PUBLIC_APP_URL
-        value: https://heavenlease.in
+        sync: false
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY

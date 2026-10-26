@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/server/auth-guard";
 import { collectJobPayment } from "@/lib/server/operations";
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const body = (await request.json()) as {
     method: "card_on_file" | "tap_card" | "cash" | "check" | "send_pay_link" | "bill_later";
     tipCents?: number;

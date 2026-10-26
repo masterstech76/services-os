@@ -9,36 +9,51 @@ export function verifyCsrfOrigin(request: Request): { valid: boolean; response?:
   const referer = request.headers.get("referer");
   const host = request.headers.get("host");
 
-  // Non-browser or server-to-server requests without origin/referer
+  // In test runner or non-browser server callers, skip if both are absent
+  const isTestOrLocal = Boolean(
+    process.env.VITEST ||
+    process.env.NODE_ENV === "test"
+  );
+
   if (!origin && !referer) {
-    return { valid: true };
+    if (isTestOrLocal) {
+      return { valid: true };
+    }
+    // Reject state-changing mutations that lack Origin/Referer headers in production
+    return {
+      valid: false,
+      response: NextResponse.json(
+        { error: { code: "CSRF_FORBIDDEN", message: "Origin or Referer header required for state-changing operations." } },
+        { status: 403 }
+      ),
+    };
   }
 
-  const allowedOrigins: string[] = [
-    "https://heavenlease.in",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-  ];
+  const allowedOriginsSet = new Set<string>();
+
+  // Allow localhost during development or testing
+  if (process.env.NODE_ENV !== "production" || isTestOrLocal) {
+    allowedOriginsSet.add("http://localhost:3000");
+    allowedOriginsSet.add("http://127.0.0.1:3000");
+  }
 
   if (host) {
-    allowedOrigins.push(`http://${host}`, `https://${host}`);
+    allowedOriginsSet.add(`http://${host}`);
+    allowedOriginsSet.add(`https://${host}`);
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (appUrl) {
     try {
       const parsed = new URL(appUrl);
-      allowedOrigins.push(parsed.origin);
+      allowedOriginsSet.add(parsed.origin);
     } catch {
       // ignore parsing error
     }
   }
 
   if (origin) {
-    const isAllowed = allowedOrigins.some(
-      (allowed) => origin === allowed || origin.endsWith(`.${host?.split(":")[0]}`)
-    );
-    if (!isAllowed) {
+    if (!allowedOriginsSet.has(origin)) {
       return {
         valid: false,
         response: NextResponse.json(
@@ -52,10 +67,7 @@ export function verifyCsrfOrigin(request: Request): { valid: boolean; response?:
   if (referer) {
     try {
       const refOrigin = new URL(referer).origin;
-      const isAllowed = allowedOrigins.some(
-        (allowed) => refOrigin === allowed || refOrigin.includes(host?.split(":")[0] || "")
-      );
-      if (!isAllowed) {
+      if (!allowedOriginsSet.has(refOrigin)) {
         return {
           valid: false,
           response: NextResponse.json(

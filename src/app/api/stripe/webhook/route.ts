@@ -10,6 +10,9 @@ import { assertRuntimeSecrets } from "@/lib/server/runtime-env";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  let claimedEventId: string | null = null;
+  let claimedSupabase: ReturnType<typeof getSupabaseAdminClient> | null = null;
+
   try {
     if (process.env.NODE_ENV === "production") {
       try {
@@ -70,7 +73,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-    } else {
+    } else if (process.env.NODE_ENV === "test" || process.env.VITEST || process.env.NODE_ENV === "development") {
       event = JSON.parse(rawBody) as StripeWebhookPayload;
       if (!event?.id || !event?.type) {
         return NextResponse.json(
@@ -78,21 +81,37 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+    } else {
+      return NextResponse.json(
+        { error: { code: "STRIPE_SIGNATURE_REQUIRED", message: "Stripe webhook signature is mandatory." } },
+        { status: 400 }
+      );
     }
 
     const supabase = getSupabaseAdminClient();
     if (supabase) {
-      const { data: existingEvent, error: dedupeErr } = await supabase
-        .from("stripe_events")
-        .select("id")
-        .eq("id", event.id)
-        .maybeSingle();
+      // 1. ATOMIC IDEMPOTENCY: Claim event execution atomically via primary key constraint.
+      // If two concurrent requests arrive simultaneously, exactly one succeeds and the other
+      // triggers a unique_violation (23505), eliminating race conditions entirely.
+      const { error: insertErr } = await supabase.from("stripe_events").insert({
+        id: event.id,
+        type: event.type,
+        processed_at: new Date().toISOString(),
+      });
 
-      if (dedupeErr) throw new Error(dedupeErr.message);
-
-      if (existingEvent) {
-        return NextResponse.json({ received: true, duplicate: true });
+      if (insertErr) {
+        if (
+          insertErr.code === "23505" ||
+          insertErr.message.includes("duplicate key") ||
+          insertErr.message.includes("unique")
+        ) {
+          return NextResponse.json({ received: true, duplicate: true });
+        }
+        throw new Error(insertErr.message);
       }
+
+      claimedEventId = event.id;
+      claimedSupabase = supabase;
 
       const obj = event.data.object;
       const meta = obj.metadata ?? {};
@@ -168,13 +187,6 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const { error: evErr } = await supabase.from("stripe_events").insert({
-          id: event.id,
-          type: event.type,
-          processed_at: new Date().toISOString(),
-        });
-        if (evErr) throw new Error(evErr.message);
-
         return NextResponse.json({
           received: true,
           duplicate: false,
@@ -184,13 +196,6 @@ export async function POST(req: NextRequest) {
           ...(photoWarnings.length > 0 ? { photo_warning: photoWarnings } : {}),
         });
       }
-
-      const { error: evErr } = await supabase.from("stripe_events").insert({
-        id: event.id,
-        type: event.type,
-        processed_at: new Date().toISOString(),
-      });
-      if (evErr) throw new Error(evErr.message);
 
       return NextResponse.json({
         received: true,
@@ -203,6 +208,13 @@ export async function POST(req: NextRequest) {
     const result = await processStripeWebhookEvent(event);
     return NextResponse.json({ received: true, ...result });
   } catch (err) {
+    if (claimedEventId && claimedSupabase) {
+      try {
+        await claimedSupabase.from("stripe_events").delete().eq("id", claimedEventId);
+      } catch {
+        // Suppress rollback cleanup error to preserve primary error context
+      }
+    }
     const message = err instanceof Error ? err.message : "Webhook processing error";
     return NextResponse.json(
       { error: { code: "WEBHOOK_ERROR", message } },

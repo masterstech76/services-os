@@ -398,10 +398,10 @@ async function withAdvisoryLock<T>(
   });
   store.advisory_locks.set(
     key,
-    prev.then(() => current)
+    prev.catch(() => {}).then(() => current)
   );
 
-  await prev;
+  await prev.catch(() => {});
   try {
     return await fn();
   } finally {
@@ -724,6 +724,7 @@ export async function rpcHoldSlot(
       created_at: now.toISOString(),
     });
 
+    saveLocalDbToDisk(store);
     return holdId;
   });
 }

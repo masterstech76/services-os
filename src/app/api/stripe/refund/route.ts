@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { requireRole } from "@/lib/server/auth-guard";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 import { saveLocalDbToDisk } from "@/lib/server/local-db-fallback";
 import { enrichJob } from "@/lib/server/operations";
@@ -12,6 +13,11 @@ const refundSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const auth = await requireRole(req, ["owner"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   try {
     const body = await req.json();
     const parsed = refundSchema.safeParse(body);

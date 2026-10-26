@@ -12,8 +12,8 @@ const buttonVariants = cva(
         // UI_SPEC 1.1: Orange filled buttons use navy text (#0F172A, ~6.4:1), semibold
         primary: "bg-orange-500 text-navy-900 hover:bg-orange-600 active:bg-orange-700 active:text-white shadow-sm",
         secondary: "bg-navy-900 text-white hover:bg-navy-800 shadow-sm",
-        outline: "border border-slate-200 bg-white text-navy-900 hover:bg-slate-50",
-        ghost: "text-navy-900 hover:bg-slate-100",
+        outline: "border border-white/15 bg-white/5 text-white hover:bg-white/10",
+        ghost: "text-slate-300 hover:bg-white/5 hover:text-white",
         destructive: "bg-danger text-white hover:bg-red-700 shadow-sm",
       },
       size: {

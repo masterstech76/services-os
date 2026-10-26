@@ -19,6 +19,13 @@ export function ensureDemoDatasetLoaded(store = getLocalDb()): LocalDbStore {
   if (store.demoCleared) {
     return store;
   }
+  // Default to a 100% clean blank slate (0 demo data) unless explicitly opted in or running unit tests
+  const shouldSeed = process.env.ENABLE_DEMO_DATA === "true" || process.env.NODE_ENV === "test";
+  if (!shouldSeed) {
+    store.demoCleared = true;
+    return store;
+  }
+
   if (!seededStores.has(store) && !store.jobs.has("job_today_1")) {
     seededStores.add(store);
     populateRichDemoDataset(store);
@@ -139,6 +146,11 @@ export function clearDemoDataset(store = getLocalDb()): {
     }
   }
 
+  // Clear transient holds, uploads, and locks from previous demo test runs
+  store.slot_holds.clear();
+  store.storage_objects.clear();
+  store.advisory_locks.clear();
+
   for (const [smsId, sms] of Array.from(store.sms_log.entries())) {
     if (sms.job_id && demoJobIds.has(sms.job_id)) {
       store.sms_log.delete(smsId);
@@ -179,6 +191,9 @@ export function restoreDemoDataset(store = getLocalDb()): DemoDataStats & {
   demoJobsRestored: number;
   demoCustomersRestored: number;
 } {
+  // First clean any prior demo artifacts so the dataset is cleanly restored to baseline
+  clearDemoDataset(store);
+
   const maxExistingJobNum = Array.from(store.jobs.values()).reduce(
     (max, j) => Math.max(max, j.job_number),
     1029
@@ -294,7 +309,7 @@ export function populateRichDemoDataset(store: LocalDbStore): void {
     });
   });
 
-  // Ensure jobSequence starts at 1030 so active jobs match UI_SPEC (#1030..#1042)
+  // Initialize jobSequence for active work orders
   store.jobSequence = 1029;
 
   const sampleSvgDataUri =

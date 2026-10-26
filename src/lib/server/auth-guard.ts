@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { isRemoteSupabaseConfigured } from "@/lib/supabase/middleware";
+import { AUTH_LOCK_PAUSED } from "@/config/auth-lock.config";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 import type { Database, UserRole } from "@/lib/supabase/types";
 
@@ -29,14 +30,10 @@ export async function resolveRequestActor(
     Array.from(store.businesses.values())[0]?.id ??
     "00000000-0000-4000-8000-000000000001";
 
-  // 1. Check explicit headers (STRICTLY RESTRICTED to unit test runner or verified internal service callers)
+  // 1. Check explicit headers (STRICTLY RESTRICTED to automated test runner; headers are completely ignored in production)
   const isTestRunner = Boolean(process.env.VITEST || process.env.NODE_ENV === "test");
-  const isInternalServiceCaller = Boolean(
-    process.env.CRON_SECRET &&
-    request?.headers.get("x-servicepro-internal-secret") === process.env.CRON_SECRET
-  );
 
-  if (request && (isTestRunner || isInternalServiceCaller)) {
+  if (request && isTestRunner) {
     const headerRole = request.headers.get("x-servicepro-role") as
       | UserRole
       | "anon"
@@ -46,24 +43,31 @@ export async function resolveRequestActor(
       return null;
     }
     if (headerRole === "owner" || headerRole === "admin" || headerRole === "technician" || headerRole === "customer") {
-      const normalizedRole: UserRole = headerRole === "admin" ? "owner" : headerRole;
       return {
         authenticated: true,
         userId:
-          normalizedRole === "owner"
+          headerRole === "owner"
             ? "user_owner"
-            : normalizedRole === "customer"
+            : headerRole === "admin"
+            ? "user_admin"
+            : headerRole === "customer"
             ? "user_customer"
             : `user_${headerTechId ?? "tech-carlos"}`,
-        role: normalizedRole,
+        role: headerRole,
         businessId: defaultBizId,
-        technicianId: normalizedRole === "technician" ? headerTechId ?? "tech-carlos" : null,
+        technicianId: headerRole === "technician" ? headerTechId ?? "tech-carlos" : null,
       };
     }
   }
 
-  // 2. Parse Cookie header on incoming Request
-  if (request) {
+  // 2. Parse Cookie header on incoming Request (STRICTLY RESTRICTED to local development or test runner)
+  const isDevOrTest = Boolean(
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "test" ||
+    process.env.VITEST
+  );
+
+  if (isDevOrTest && request) {
     const cookieHeader = request.headers.get("cookie") ?? "";
     if (cookieHeader) {
       const parsedCookies = Object.fromEntries(
@@ -76,18 +80,19 @@ export async function resolveRequestActor(
         parsedCookies["sp_demo_role"]) as UserRole | undefined;
       const cookieTechId = parsedCookies["sp_demo_tech_id"] || "tech-carlos";
       if (cookieRole === "owner" || cookieRole === "admin" || cookieRole === "technician" || cookieRole === "customer") {
-        const normalizedRole: UserRole = cookieRole === "admin" ? "owner" : cookieRole;
         return {
           authenticated: true,
           userId:
-            normalizedRole === "owner"
+            cookieRole === "owner"
               ? "user_owner"
-              : normalizedRole === "customer"
+              : cookieRole === "admin"
+              ? "user_admin"
+              : cookieRole === "customer"
               ? "user_customer"
               : `user_${cookieTechId}`,
-          role: normalizedRole,
+          role: cookieRole,
           businessId: defaultBizId,
-          technicianId: normalizedRole === "technician" ? cookieTechId : null,
+          technicianId: cookieRole === "technician" ? cookieTechId : null,
         };
       }
     }
@@ -96,25 +101,30 @@ export async function resolveRequestActor(
   // 3. Check Next.js cookies() store
   try {
     const cookieStore = cookies();
-    const roleCookie = (cookieStore.get("servicepro_dev_role")?.value ||
-      cookieStore.get("sp_demo_role")?.value) as UserRole | undefined;
-    const techIdCookie =
-      cookieStore.get("sp_demo_tech_id")?.value || "tech-carlos";
 
-    if (roleCookie === "owner" || roleCookie === "admin" || roleCookie === "technician" || roleCookie === "customer") {
-      const normalizedRole: UserRole = roleCookie === "admin" ? "owner" : roleCookie;
-      return {
-        authenticated: true,
-        userId:
-          normalizedRole === "owner"
-            ? "user_owner"
-            : normalizedRole === "customer"
-            ? "user_customer"
-            : `user_${techIdCookie}`,
-        role: normalizedRole,
-        businessId: defaultBizId,
-        technicianId: normalizedRole === "technician" ? techIdCookie : null,
-      };
+    // In local development or test environments, allow demo role cookie convenience
+    if (isDevOrTest) {
+      const roleCookie = (cookieStore.get("servicepro_dev_role")?.value ||
+        cookieStore.get("sp_demo_role")?.value) as UserRole | undefined;
+      const techIdCookie =
+        cookieStore.get("sp_demo_tech_id")?.value || "tech-carlos";
+
+      if (roleCookie === "owner" || roleCookie === "admin" || roleCookie === "technician" || roleCookie === "customer") {
+        return {
+          authenticated: true,
+          userId:
+            roleCookie === "owner"
+              ? "user_owner"
+              : roleCookie === "admin"
+              ? "user_admin"
+              : roleCookie === "customer"
+              ? "user_customer"
+              : `user_${techIdCookie}`,
+          role: roleCookie,
+          businessId: defaultBizId,
+          technicianId: roleCookie === "technician" ? techIdCookie : null,
+        };
+      }
     }
 
     // 4. Remote Supabase Auth session
@@ -166,6 +176,39 @@ export async function resolveRequestActor(
     // cookies() called outside request context (e.g., direct function call)
   }
 
+  // 5. Preview Mode Fallback: If auth lock is paused, provide synthetic actor for seamless browsing
+  if (AUTH_LOCK_PAUSED && !isTestRunner) {
+    const url = request?.url ?? "";
+    const isTech = url.includes("/tech") || url.includes("/api/tech");
+    const isCust = url.includes("/account") || url.includes("/api/account");
+
+    if (isTech) {
+      return {
+        authenticated: true,
+        userId: "user_tech-carlos",
+        role: "technician",
+        businessId: defaultBizId,
+        technicianId: "tech-carlos",
+      };
+    }
+    if (isCust) {
+      return {
+        authenticated: true,
+        userId: "user_customer",
+        role: "customer",
+        businessId: defaultBizId,
+        technicianId: null,
+      };
+    }
+    return {
+      authenticated: true,
+      userId: "user_owner",
+      role: "owner",
+      businessId: defaultBizId,
+      technicianId: null,
+    };
+  }
+
   return null;
 }
 
@@ -176,7 +219,33 @@ export async function requireRole(
   | { ok: true; actor: AuthenticatedActor }
   | { ok: false; response: NextResponse }
 > {
-  const actor = await resolveRequestActor(request);
+  let actor = await resolveRequestActor(request);
+
+  // In preview mode, ensure an actor matching the route's expected role is always provided
+  if (AUTH_LOCK_PAUSED) {
+    if (!actor) {
+      const targetRole = allowedRoles.includes("technician")
+        ? "technician"
+        : allowedRoles.includes("customer")
+        ? "customer"
+        : "owner";
+      actor = {
+        authenticated: true,
+        userId: targetRole === "technician" ? "user_tech-carlos" : targetRole === "customer" ? "user_customer" : "user_owner",
+        role: targetRole,
+        businessId: "00000000-0000-4000-8000-000000000001",
+        technicianId: targetRole === "technician" ? "tech-carlos" : null,
+      };
+    } else if (!allowedRoles.includes(actor.role)) {
+      const targetRole = allowedRoles[0] ?? "owner";
+      actor = {
+        ...actor,
+        role: targetRole,
+        technicianId: targetRole === "technician" ? (actor.technicianId || "tech-carlos") : null,
+      };
+    }
+  }
+
   if (!actor) {
     return {
       ok: false,
@@ -199,7 +268,7 @@ export async function requireRole(
         {
           error: {
             code: "FORBIDDEN",
-            message: `Role '${actor.role}' is not permitted to perform this action.`,
+            message: `Role '${actor.role}' is not permitted to perform this action. Required: ${allowedRoles.join(" or ")}.`,
           },
         },
         { status: 403 }

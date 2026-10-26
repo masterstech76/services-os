@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/server/auth-guard";
 import { createOrUpdateInvoiceForJob } from "@/lib/server/operations";
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const body = (await request.json()) as {
     billableMinutes?: number;
     tipCents?: number;

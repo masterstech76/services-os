@@ -20,16 +20,32 @@ export function formatMoneyCents(cents: number, options?: { omitZeroCents?: bool
   })}`;
 }
 
-export function formatBusinessDate(isoOrDate: string | Date, tz = businessConfig.timezone): string {
-  return formatInTimeZone(new Date(isoOrDate), tz, "EEE, MMM d");
+export function safeFormatInTimeZone(
+  dateValue: string | number | Date | null | undefined,
+  tz: string = businessConfig.timezone,
+  formatStr: string = "MMM d, yyyy h:mm a",
+  fallback = "TBD"
+): string {
+  if (!dateValue) return fallback;
+  try {
+    const d = new Date(dateValue);
+    if (isNaN(d.getTime())) return fallback;
+    return formatInTimeZone(d, tz, formatStr);
+  } catch {
+    return fallback;
+  }
 }
 
-export function formatBusinessTime(isoOrDate: string | Date, tz = businessConfig.timezone): string {
-  return formatInTimeZone(new Date(isoOrDate), tz, "h:mm a");
+export function formatBusinessDate(isoOrDate: string | Date | null | undefined, tz = businessConfig.timezone, fallback = "TBD"): string {
+  return safeFormatInTimeZone(isoOrDate, tz, "EEE, MMM d", fallback);
 }
 
-export function formatBusinessTimeWithZone(isoOrDate: string | Date, tz = businessConfig.timezone): string {
-  return formatInTimeZone(new Date(isoOrDate), tz, "h:mm a zzz");
+export function formatBusinessTime(isoOrDate: string | Date | null | undefined, tz = businessConfig.timezone, fallback = "TBD"): string {
+  return safeFormatInTimeZone(isoOrDate, tz, "h:mm a", fallback);
+}
+
+export function formatBusinessTimeWithZone(isoOrDate: string | Date | null | undefined, tz = businessConfig.timezone, fallback = "TBD"): string {
+  return safeFormatInTimeZone(isoOrDate, tz, "h:mm a zzz", fallback);
 }
 
 export function normalizeUSPhone(input: string): string | null {

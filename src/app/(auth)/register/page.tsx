@@ -10,7 +10,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { sanitizeRedirectUrl, validatePasswordStrength } from "@/lib/server/redirect-safety";
+import { sanitizeRedirectUrl, validatePasswordStrength } from "@/lib/shared/redirect-safety";
 
 function RegisterForm() {
   const router = useRouter();
@@ -25,6 +25,7 @@ function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [showPassword, setShowPassword] = React.useState(false);
   const [agreeConsent, setAgreeConsent] = React.useState(false);
+  const [selectedRole, setSelectedRole] = React.useState<"customer" | "technician" | "owner">("customer");
 
   const [loading, setLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -81,11 +82,20 @@ function RegisterForm() {
         await fetch("/api/auth/demo-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role: "customer" }),
+          body: JSON.stringify({
+            role: selectedRole,
+            technicianId: selectedRole === "technician" ? "tech-carlos" : undefined,
+          }),
         });
 
-        toast.success("Account created successfully (Demo Mode)");
-        const safeDestination = sanitizeRedirectUrl(rawRedirect, "/account");
+        toast.success(`Account created successfully as ${selectedRole}.`);
+        const targetHome =
+          selectedRole === "owner"
+            ? "/admin/dispatch"
+            : selectedRole === "technician"
+            ? "/tech"
+            : "/account";
+        const safeDestination = sanitizeRedirectUrl(rawRedirect, targetHome);
         router.push(safeDestination);
         router.refresh();
         return;
@@ -94,7 +104,7 @@ function RegisterForm() {
       const supabase = createSupabaseBrowserClient();
       const origin =
         process.env.NEXT_PUBLIC_APP_URL ||
-        (typeof window !== "undefined" ? window.location.origin : "https://heavenlease.in");
+        (typeof window !== "undefined" ? window.location.origin : "");
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -156,18 +166,21 @@ function RegisterForm() {
     ? `/login?redirectTo=${encodeURIComponent(rawRedirect)}`
     : "/login";
 
+/* eslint-disable @next/next/no-img-element */
   return (
-    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-7 sm:p-8 shadow-xl space-y-6">
+    <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#0F172A]/90 backdrop-blur-xl p-6 sm:p-8 shadow-2xl space-y-5 sm:space-y-6 text-white">
       {/* Brand Header */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-navy-900 text-orange-500 mb-3 shadow-md">
-          <Snowflake className="h-6 w-6" aria-hidden="true" />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-navy-900">
-          Create Customer Account
+        <img
+          src="/images/servicepro-icon-transparent.png?v=green"
+          alt="ServicePro OS"
+          className="h-11 w-auto object-contain mb-3"
+        />
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Create Your ServicePro <span className="text-[#F97316]">OS</span> Account
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-md">
-          Join {businessConfig.businessName} to manage service appointments, view invoices, and track your technician in real time.
+        <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-md">
+          Join ServicePro OS to manage service appointments, view invoices, and track your technician in real time.
         </p>
       </div>
 
@@ -219,10 +232,55 @@ function RegisterForm() {
 
       {/* Registration Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Account Role Selector */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-bold text-slate-300">
+            Select Account Role to Register:
+          </Label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedRole("customer")}
+              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                selectedRole === "customer"
+                  ? "bg-[#F97316] text-[#0C1523] border-[#F97316] font-bold shadow-md shadow-orange-500/20"
+                  : "bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <span className="block text-xs font-bold">Customer</span>
+              <span className="block text-[9px] opacity-80">Homeowner</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole("technician")}
+              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                selectedRole === "technician"
+                  ? "bg-[#F97316] text-[#0C1523] border-[#F97316] font-bold shadow-md shadow-orange-500/20"
+                  : "bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <span className="block text-xs font-bold">Technician</span>
+              <span className="block text-[9px] opacity-80">Trade Pro</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole("owner")}
+              className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                selectedRole === "owner"
+                  ? "bg-[#F97316] text-[#0C1523] border-[#F97316] font-bold shadow-md shadow-orange-500/20"
+                  : "bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <span className="block text-xs font-bold">Owner</span>
+              <span className="block text-[9px] opacity-80">Admin Ops</span>
+            </button>
+          </div>
+        </div>
+
         {/* Name Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="reg-first-name" className="text-xs font-bold text-slate-800">
+            <Label htmlFor="reg-first-name" className="text-xs font-bold text-slate-300">
               First Name *
             </Label>
             <Input
@@ -233,11 +291,11 @@ function RegisterForm() {
               placeholder="John"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
             />
           </div>
           <div>
-            <Label htmlFor="reg-last-name" className="text-xs font-bold text-slate-800">
+            <Label htmlFor="reg-last-name" className="text-xs font-bold text-slate-300">
               Last Name *
             </Label>
             <Input
@@ -248,7 +306,7 @@ function RegisterForm() {
               placeholder="Smith"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
             />
           </div>
         </div>
@@ -256,7 +314,7 @@ function RegisterForm() {
         {/* Contact Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="reg-email" className="text-xs font-bold text-slate-800">
+            <Label htmlFor="reg-email" className="text-xs font-bold text-slate-300">
               Email Address *
             </Label>
             <Input
@@ -267,11 +325,11 @@ function RegisterForm() {
               placeholder="john@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
             />
           </div>
           <div>
-            <Label htmlFor="reg-phone" className="text-xs font-bold text-slate-800">
+            <Label htmlFor="reg-phone" className="text-xs font-bold text-slate-300">
               Mobile Phone
             </Label>
             <Input
@@ -281,7 +339,7 @@ function RegisterForm() {
               placeholder="(305) 555-0123"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
             />
           </div>
         </div>
@@ -289,13 +347,13 @@ function RegisterForm() {
         {/* Password */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <Label htmlFor="reg-password" className="text-xs font-bold text-slate-800">
+            <Label htmlFor="reg-password" className="text-xs font-bold text-slate-300">
               Create Password *
             </Label>
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-[11px] font-semibold text-slate-500 hover:text-navy-900 flex items-center gap-1"
+              className="text-[11px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
             >
               {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               <span>{showPassword ? "Hide" : "Show"}</span>
@@ -309,20 +367,21 @@ function RegisterForm() {
             placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
           />
 
           {/* Password Strength Indicator */}
           {password.length > 0 && (
-            <div className="mt-2 space-y-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+            <div className="mt-2 space-y-1.5 bg-white/5 border border-white/10 rounded-lg p-2.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-slate-600">Password Strength:</span>
+                <span className="font-semibold text-slate-400">Password Strength:</span>
                 <span
                   className={`font-bold ${
                     passwordValidation.score <= 2
-                      ? "text-red-600"
+                      ? "text-red-400"
                       : passwordValidation.score === 3
-                      ? "text-amber-600"
-                      : "text-emerald-600"
+                      ? "text-amber-400"
+                      : "text-emerald-400"
                   }`}
                 >
                   {passwordValidation.score <= 2
@@ -374,7 +433,7 @@ function RegisterForm() {
 
         {/* Confirm Password */}
         <div>
-          <Label htmlFor="reg-confirm-password" className="text-xs font-bold text-slate-800">
+          <Label htmlFor="reg-confirm-password" className="text-xs font-bold text-slate-300">
             Confirm Password *
           </Label>
           <Input
@@ -385,12 +444,12 @@ function RegisterForm() {
             placeholder="Re-enter your password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1"
+            className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"
           />
           {confirmPassword.length > 0 && (
             <p
               className={`text-[11px] mt-1 font-semibold flex items-center gap-1 ${
-                passwordsMatch ? "text-emerald-700" : "text-red-600"
+                passwordsMatch ? "text-emerald-400" : "text-amber-400"
               }`}
             >
               {passwordsMatch ? (
@@ -410,21 +469,21 @@ function RegisterForm() {
 
         {/* Consent Checkbox */}
         <div className="pt-1">
-          <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 select-none">
+          <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-300 select-none">
             <input
               type="checkbox"
               required
               checked={agreeConsent}
               onChange={(e) => setAgreeConsent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+              className="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#0B111E] text-[#F97316] focus:ring-[#F97316]"
             />
             <span>
               I agree to the{" "}
-              <Link href="/terms" className="text-orange-600 underline font-semibold hover:text-orange-700">
+              <Link href="/terms" className="text-[#F97316] underline font-semibold hover:text-[#EA580C]">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-orange-600 underline font-semibold hover:text-orange-700">
+              <Link href="/privacy" className="text-[#F97316] underline font-semibold hover:text-[#EA580C]">
                 Privacy Policy
               </Link>
               , and consent to receive appointment updates by SMS and email.
@@ -437,40 +496,24 @@ function RegisterForm() {
           type="submit"
           loading={loading}
           disabled={!passwordsMatch || !agreeConsent || !passwordValidation.valid}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold py-3 text-sm shadow-md transition-all disabled:opacity-60"
+          className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold py-3 text-sm rounded-xl shadow-lg shadow-[#F97316]/25 hover:shadow-[#F97316]/40 transition-all disabled:opacity-60 cursor-pointer"
         >
           Create My Account
         </Button>
       </form>
 
-      {/* Security Guarantee Strip */}
-      <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500">
-        <ShieldCheck className="h-4 w-4 text-emerald-600" />
-        <span>256-Bit SSL Encrypted & HIPAA/SOC2 Secure Auth</span>
-      </div>
-
-      {/* Sign In Link */}
-      <div className="text-center pt-2 border-t border-slate-100">
-        <p className="text-xs text-slate-600">
+      {/* Sign In Link (No security leak text, No guest/homepage footer buttons) */}
+      <div className="text-center pt-2 border-t border-white/10">
+        <p className="text-xs text-slate-400">
           Already have an account?{" "}
           <Link
             href={loginHref}
-            className="font-bold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-0.5"
+            className="font-bold text-[#F97316] hover:underline inline-flex items-center gap-0.5"
           >
             <span>Sign In</span>
             <ArrowRight className="h-3 w-3" />
           </Link>
         </p>
-      </div>
-
-      {/* Footer Navigation */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-        <Link href="/" className="font-medium text-slate-600 hover:text-navy-900 underline">
-          ← Homepage
-        </Link>
-        <Link href="/book" className="font-semibold text-orange-600 hover:text-orange-700 underline">
-          Book as Guest →
-        </Link>
       </div>
     </div>
   );
@@ -481,7 +524,7 @@ export default function RegisterPage() {
     <main className="w-full flex justify-center">
       <React.Suspense
         fallback={
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-7 text-center text-sm font-semibold text-slate-600">
+          <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#0F172A]/90 p-7 text-center text-sm font-semibold text-slate-300">
             Loading registration form...
           </div>
         }

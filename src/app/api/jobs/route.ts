@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/server/auth-guard";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 import { enrichJob, type EnrichedJob } from "@/lib/server/operations";
 
 export async function GET(request: Request) {
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get("status");
   const techId = searchParams.get("technicianId");

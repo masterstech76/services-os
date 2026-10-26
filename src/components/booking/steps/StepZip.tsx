@@ -30,17 +30,17 @@ export function StepZip({
       <div>
         <h1
           id="step-2-heading"
-          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-navy-900"
+          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-white"
         >
           Where is the job?
         </h1>
-        <p className="text-sm text-navy-700 mt-1">
+        <p className="text-sm text-slate-300 mt-1">
           Enter your 5-digit ZIP code to check technician coverage in your area.
         </p>
       </div>
 
       <div>
-        <Label htmlFor="zip-input">ZIP code</Label>
+        <Label htmlFor="zip-input" className="text-slate-300 text-xs mb-1.5 block">ZIP code</Label>
         <Input
           id="zip-input"
           data-testid="zip-input"
@@ -53,21 +53,21 @@ export function StepZip({
           onChange={(e) => onChangeZip(e.target.value)}
           aria-invalid={!!zipError}
           aria-describedby="zip-feedback"
-          className="h-14 text-lg font-bold tracking-wider"
+          className="h-14 text-lg font-bold tracking-wider bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
         />
       </div>
 
       <div id="zip-feedback" aria-live="polite" className="min-h-[28px]">
         {checkingZip && (
-          <p className="text-sm text-navy-700">Checking coverage…</p>
+          <p className="text-sm text-slate-300">Checking coverage…</p>
         )}
 
         {!checkingZip && zipChecked && zipServed && (
           <div
             data-testid="zip-served-msg"
-            className="flex items-center gap-2.5 rounded-2xl border border-green-600/30 bg-green-50 px-4 py-3 text-sm font-semibold text-green-900"
+            className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400"
           >
-            <CheckCircle2 className="h-5 w-5 text-success shrink-0" aria-hidden="true" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>
               Great — we serve {zipCity}, {zipState}
             </span>
@@ -78,17 +78,17 @@ export function StepZip({
           <div
             role="alert"
             data-testid="zip-error-msg"
-            className="flex flex-col gap-2 rounded-2xl border border-danger/30 bg-red-50 px-4 py-3.5 text-sm text-navy-900"
+            className="flex flex-col gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3.5 text-sm text-white"
           >
-            <div className="flex items-center gap-2 font-semibold text-danger">
+            <div className="flex items-center gap-2 font-semibold text-red-400">
               <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{zipError}</span>
             </div>
-            <p className="text-xs text-navy-700">
+            <p className="text-xs text-slate-300">
               Need help nearby? Call us at{" "}
               <a
                 href={`tel:${businessConfig.phone.replace(/\D/g, "")}`}
-                className="font-semibold underline text-orange-700"
+                className="font-semibold underline text-[#F97316]"
               >
                 {businessConfig.phone}
               </a>

@@ -24,21 +24,21 @@ export function StepIssue({
       <div>
         <h1
           id="step-3-heading"
-          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-navy-900"
+          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-white"
         >
           Tell us what&apos;s going on
         </h1>
-        <p className="text-sm text-navy-700 mt-1">
+        <p className="text-sm text-slate-300 mt-1">
           Sharing symptoms helps your technician bring the right parts on the truck.
         </p>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <Label htmlFor="issue-textarea" className="mb-0">
+          <Label htmlFor="issue-textarea" className="text-slate-300 text-xs mb-0">
             Issue description
           </Label>
-          <span className="text-xs tabular-nums text-navy-700">
+          <span className="text-xs tabular-nums text-slate-400">
             {issueText.length}/500
           </span>
         </div>
@@ -51,17 +51,18 @@ export function StepIssue({
           onChange={(e) => onChangeIssueText(e.target.value)}
           aria-invalid={!!issueError}
           aria-describedby={issueError ? "issue-error" : undefined}
+          className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
         />
         {issueError && (
-          <p id="issue-error" role="alert" className="mt-1.5 text-xs font-medium text-danger">
+          <p id="issue-error" role="alert" className="mt-1.5 text-xs font-medium text-red-400">
             {issueError}
           </p>
         )}
       </div>
 
       <div>
-        <Label>Add photos (optional, up to {businessConfig.booking.maxPhotos})</Label>
-        <p className="text-xs text-navy-700 mb-2">
+        <Label className="text-slate-300 text-xs mb-1 block">Add photos (optional, up to {businessConfig.booking.maxPhotos})</Label>
+        <p className="text-xs text-slate-400 mb-3">
           Photos of the unit, thermostat, or error code label help us prepare.
         </p>
         <PhotoUploader

@@ -206,6 +206,7 @@ export async function processStripeWebhookEvent(
           refundId,
         };
       }
+      store.stripe_events.delete(event.id);
       throw err;
     }
   }

@@ -87,7 +87,7 @@ describe("Pricing & Deposit Engine (BUILD_PLAN Section 14)", () => {
   });
 
   it("validates active businessConfig and contrast rules", () => {
-    expect(businessConfig.businessName).toBe("TechWork");
+    expect(businessConfig.businessName).toBe("ServicePro");
     expect(businessConfig.timezone).toBe("America/New_York");
     expect(businessConfig.zipCodes).toContain("33133");
     expect(businessConfig.zipCodes).toContain("33149");

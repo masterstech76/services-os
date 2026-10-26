@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database, UserRole } from "./types";
 import { sanitizeRedirectUrl, getHomeForRole } from "@/lib/server/redirect-safety";
+import { AUTH_LOCK_PAUSED } from "@/config/auth-lock.config";
 
 export function isRemoteSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -11,8 +12,10 @@ export function isRemoteSupabaseConfigured(): boolean {
     !url.includes("placeholder") &&
     !url.includes("your-project") &&
     !url.includes("example") &&
+    !url.includes("demo-servicepro") &&
     anonKey.length > 40 &&
-    !anonKey.endsWith("...")
+    !anonKey.endsWith("...") &&
+    !anonKey.includes("change_in_production")
   );
 }
 
@@ -22,13 +25,45 @@ export async function updateSessionAndEnforceRoles(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isTechRoute = pathname.startsWith("/tech");
-  const isAccountRoute = pathname.startsWith("/account");
+  const isLandingPage = pathname === "/";
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
+  const isAccountRoute = pathname === "/account" || pathname.startsWith("/account/");
   const isAuthEntryRoute = pathname === "/login" || pathname === "/register";
+  const isAuthFlowRoute =
+    isAuthEntryRoute ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password" ||
+    pathname === "/verify-email" ||
+    pathname === "/verify-phone" ||
+    pathname === "/unauthorized" ||
+    pathname === "/session-expired" ||
+    pathname === "/locked" ||
+    pathname === "/verification-required";
+  const isSystemRoute =
+    pathname === "/status" ||
+    pathname === "/error" ||
+    pathname === "/offline" ||
+    pathname === "/maintenance" ||
+    pathname.startsWith("/api/");
 
-  // If not a protected or auth entry route, continue immediately
-  if (!isAdminRoute && !isTechRoute && !isAccountRoute && !isAuthEntryRoute) {
+  // Landing page and system routes are strictly public & skipped from auth enforcement
+  if (isLandingPage || isSystemRoute) {
+    return supabaseResponse;
+  }
+
+  // Preview Mode: If authentication lock is paused by user, allow access without redirects
+  if (AUTH_LOCK_PAUSED) {
+    const isProd = process.env.NODE_ENV === "production";
+    if (isAdminRoute) {
+      supabaseResponse.cookies.set("servicepro_dev_role", "owner", { path: "/", sameSite: "lax", httpOnly: true, secure: isProd });
+    } else if (isTechRoute) {
+      supabaseResponse.cookies.set("servicepro_dev_role", "technician", { path: "/", sameSite: "lax", httpOnly: true, secure: isProd });
+      supabaseResponse.cookies.set("sp_demo_tech_id", "tech-carlos", { path: "/", sameSite: "lax", httpOnly: true, secure: isProd });
+    } else if (isAccountRoute) {
+      supabaseResponse.cookies.set("servicepro_dev_role", "customer", { path: "/", sameSite: "lax", httpOnly: true, secure: isProd });
+      supabaseResponse.cookies.set("sp_demo_customer_email", "maria.rivera@example.com", { path: "/", sameSite: "lax", httpOnly: true, secure: isProd });
+    }
     return supabaseResponse;
   }
 
@@ -44,7 +79,7 @@ export async function updateSessionAndEnforceRoles(request: NextRequest) {
     devRoleCookie === "technician" ||
     devRoleCookie === "customer"
   ) {
-    role = devRoleCookie === "admin" ? "owner" : devRoleCookie;
+    role = devRoleCookie;
   } else if (isRemoteSupabaseConfigured()) {
     // 2. Remote Supabase session verification
     const supabase = createServerClient<Database>(
@@ -81,19 +116,25 @@ export async function updateSessionAndEnforceRoles(request: NextRequest) {
         .eq("id", user.id)
         .single();
       const resolved = (profile as { role?: UserRole } | null)?.role ?? null;
-      role = resolved === "admin" ? "owner" : resolved;
+      role = resolved;
     }
   }
 
-  // 3. Unauthenticated access to protected routes -> redirect to /login
-  if (!role && (isAdminRoute || isTechRoute || isAccountRoute)) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+  // 3. Unauthenticated access enforcement across protected portal pages
+  const isProtectedRoute = isAdminRoute || isTechRoute || isAccountRoute;
+  if (!role) {
+    // If attempting to access a protected portal (Admin, Tech, or Customer Account), redirect to /login
+    if (isProtectedRoute) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("redirectTo", pathname + (request.nextUrl.search || ""));
+      return NextResponse.redirect(loginUrl);
+    }
+    // All public marketing, service catalog, booking, payment, and policy pages are accessible to visitors
+    return supabaseResponse;
   }
 
-  // 4. Authenticated user visiting /login or /register -> route safely
+  // 4. Authenticated user visiting /login or /register -> route safely to their respective home
   if (role && isAuthEntryRoute) {
     const rawRedirect = request.nextUrl.searchParams.get("redirectTo");
     const defaultHome = getHomeForRole(role);
@@ -110,9 +151,9 @@ export async function updateSessionAndEnforceRoles(request: NextRequest) {
     return NextResponse.redirect(dest);
   }
 
-  // 5. Role-based route enforcement
-  // /admin requires owner (admin) role
-  if (isAdminRoute && role !== "owner") {
+  // 5. Role-based portal enforcement
+  // /admin portal allows both owner and admin staff
+  if (isAdminRoute && role !== "owner" && role !== "admin") {
     const unauthUrl = request.nextUrl.clone();
     unauthUrl.pathname = "/unauthorized";
     unauthUrl.searchParams.set("required", "admin");

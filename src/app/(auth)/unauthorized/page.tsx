@@ -7,7 +7,7 @@ import { ShieldAlert, ArrowLeft, LogOut, Home, UserCheck, ShieldCheck } from "lu
 import { toast } from "sonner";
 import { businessConfig } from "@config/business.config";
 import { Button } from "@/components/ui/button";
-import { getHomeForRole } from "@/lib/server/redirect-safety";
+import { getHomeForRole } from "@/lib/shared/redirect-safety";
 import type { UserRole } from "@/lib/supabase/types";
 
 function UnauthorizedContent() {
@@ -42,7 +42,7 @@ function UnauthorizedContent() {
   const roleTitleMap: Record<string, { title: string; desc: string }> = {
     admin: {
       title: "Administrator Privileges Required",
-      desc: "This area is reserved for TechWork system administrators and dispatch operations. Your account does not have owner-level clearance.",
+      desc: "This area is reserved for ServicePro OS system administrators and dispatch operations. Your account does not have owner-level clearance.",
     },
     tech: {
       title: "Technician Field Access Required",
@@ -60,34 +60,34 @@ function UnauthorizedContent() {
   };
 
   return (
-    <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-7 sm:p-9 shadow-xl space-y-6">
+    <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#0F172A]/90 backdrop-blur-xl p-6 sm:p-9 shadow-2xl space-y-6 text-white">
       {/* Icon */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600 mb-4 shadow-sm">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/20 text-red-400 mb-4 shadow-sm">
           <ShieldAlert className="h-8 w-8" />
         </div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold mb-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold mb-2">
           <span>Error 403 • Authorization Denied</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-navy-900">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-white">
           {currentInfo.title}
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 mt-2 max-w-sm">
+        <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-sm">
           {currentInfo.desc}
         </p>
       </div>
 
       {/* Role State Banner */}
-      <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs space-y-2">
-        <div className="flex justify-between items-center text-slate-600">
+      <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-xs space-y-2">
+        <div className="flex justify-between items-center text-slate-400">
           <span>Your Active Role:</span>
-          <span className="font-bold text-navy-900 uppercase tracking-wide">
+          <span className="font-bold text-white uppercase tracking-wide">
             {currentRole}
           </span>
         </div>
-        <div className="flex justify-between items-center text-slate-600">
+        <div className="flex justify-between items-center text-slate-400">
           <span>Required Privilege:</span>
-          <span className="font-bold text-orange-600 uppercase tracking-wide">
+          <span className="font-bold text-[#F97316] uppercase tracking-wide">
             {requiredRole}
           </span>
         </div>
@@ -97,7 +97,7 @@ function UnauthorizedContent() {
       <div className="space-y-3 pt-2">
         <Button
           asChild
-          className="w-full bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold py-3 text-sm shadow-md transition-all"
+          className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold py-3 text-sm rounded-xl shadow-lg transition-all"
         >
           <Link href={roleHome} className="flex items-center justify-center gap-2">
             <UserCheck className="h-4 w-4" />
@@ -110,16 +110,16 @@ function UnauthorizedContent() {
           variant="outline"
           onClick={handleSwitchAccount}
           disabled={loadingClear}
-          className="w-full text-xs font-bold border-slate-300 text-navy-900 hover:bg-slate-50 flex items-center justify-center gap-2"
+          className="w-full text-xs font-bold border-white/20 bg-white/5 text-white hover:bg-white/10 flex items-center justify-center gap-2"
         >
-          <LogOut className="h-4 w-4 text-slate-500" />
+          <LogOut className="h-4 w-4 text-slate-400" />
           <span>Switch Account / Sign In with Another Role</span>
         </Button>
 
         <Button
           asChild
           variant="ghost"
-          className="w-full text-xs font-bold text-slate-600 hover:text-navy-900 flex items-center justify-center gap-1.5"
+          className="w-full text-xs font-bold text-slate-400 hover:text-white flex items-center justify-center gap-1.5"
         >
           <Link href="/">
             <Home className="h-4 w-4" />
@@ -129,13 +129,13 @@ function UnauthorizedContent() {
       </div>
 
       {/* Support Strip */}
-      <div className="text-center pt-3 border-t border-slate-100 text-xs text-slate-500">
+      <div className="text-center pt-3 border-t border-white/10 text-xs text-slate-400">
         Need assistance with your permissions? Contact{" "}
         <a
           href={`tel:${businessConfig.phone.replace(/[^\d+]/g, "")}`}
-          className="font-bold text-navy-900 hover:underline"
+          className="font-bold text-[#F97316] hover:underline"
         >
-          {businessConfig.businessName} Support
+          Support Desk
         </a>
       </div>
     </div>
@@ -147,7 +147,7 @@ export default function UnauthorizedPage() {
     <main className="w-full flex justify-center">
       <React.Suspense
         fallback={
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-600">
+          <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#0F172A]/90 backdrop-blur-xl p-8 text-center text-sm font-semibold text-slate-400">
             Checking access permissions...
           </div>
         }

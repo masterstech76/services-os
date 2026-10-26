@@ -152,4 +152,16 @@ describe("Missing Pages & Portal Extensions — Full Functional Suite", () => {
       expect(removed.saved).toBe(false);
     });
   });
+
+  describe("Customer Payment Routing & Intermediate Processing Verification", () => {
+    it("ensures /payment and /payment-processing pages exist and export valid default components", async () => {
+      const paymentModule = await import("@/app/(public)/payment/page");
+      expect(paymentModule.default).toBeDefined();
+      expect(typeof paymentModule.default).toBe("function");
+
+      const processingModule = await import("@/app/(public)/payment-processing/page");
+      expect(processingModule.default).toBeDefined();
+      expect(typeof processingModule.default).toBe("function");
+    });
+  });
 });

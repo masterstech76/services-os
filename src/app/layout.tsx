@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import { businessConfig } from "@config/business.config";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { AuthLockBanner } from "@/components/shared/AuthLockBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,8 +35,8 @@ export default function RootLayout({
   } as React.CSSProperties;
 
   return (
-    <html lang="en" className="font-sans" style={cssVars}>
-      <body className="font-sans min-h-screen bg-white text-navy-900 antialiased flex flex-col">
+    <html lang="en" className="font-sans dark" style={cssVars}>
+      <body className="font-sans min-h-screen bg-[#0C1523] text-white antialiased flex flex-col selection:bg-[#F97316] selection:text-white">
         {/* Accessibility Skip-To-Content Link */}
         <a
           href="#main-content"
@@ -48,6 +49,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <AuthLockBanner />
         <Toaster
           position="top-center"
           toastOptions={{

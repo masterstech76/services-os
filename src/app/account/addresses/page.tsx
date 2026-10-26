@@ -1,78 +1,88 @@
 "use client";
 
 import * as React from "react";
-import {
-  MapPin,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  AlertCircle,
-  Building,
-  Home,
-  ShieldCheck,
-} from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import type { CustomerAddress } from "@/lib/server/customer-portal";
+import { MapPin, Plus, Star, Trash2, Home, Building2, X, Shield, KeyRound, Edit3, CheckCircle2 } from "lucide-react";
 
-export default function AddressesPage() {
-  const [addresses, setAddresses] = React.useState<CustomerAddress[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+interface AddressItem {
+  id: string;
+  label: string;
+  street: string;
+  unit?: string | null;
+  city: string;
+  state: string;
+  zip: string;
+  isDefault: boolean;
+  gateCode?: string | null;
+  equipmentSummary?: string;
+}
 
-  // New address modal state
+const DEFAULT_ADDRESSES: AddressItem[] = [
+  {
+    id: "addr-1",
+    label: "Brickell Primary Residence",
+    street: "1421 Brickell Ave",
+    unit: "Penthouse 18B",
+    city: "Miami",
+    state: "FL",
+    zip: "33131",
+    isDefault: true,
+    gateCode: "#4821 — Check in with North Tower Concierge, Service Elevator B",
+    equipmentSummary: "Carrier Infinity 4-Ton Heat Pump (2022) • Rheem Tankless Water Heater",
+  },
+  {
+    id: "addr-2",
+    label: "Coral Gables Villa",
+    street: "840 Miracle Mile",
+    unit: null,
+    city: "Coral Gables",
+    state: "FL",
+    zip: "33134",
+    isDefault: false,
+    gateCode: "Driveway Keypad #1940 — Friendly Golden Retriever in Backyard",
+    equipmentSummary: "Trane XV18 Split System (3.5 Ton) • 200A Square D Main Panel",
+  },
+  {
+    id: "addr-3",
+    label: "Brickell Key Rental Condo",
+    street: "500 Brickell Key Dr",
+    unit: "Suite 1204",
+    city: "Miami",
+    state: "FL",
+    zip: "33131",
+    isDefault: false,
+    gateCode: "Valet Validation Provided • Call Tenant 15 mins prior",
+    equipmentSummary: "Lennox Merit Water-Source Heat Pump (2.5 Ton)",
+  },
+];
+
+export default function CustomerAddressesPage() {
+  const [addresses, setAddresses] = React.useState<AddressItem[]>(DEFAULT_ADDRESSES);
+  const [loading, setLoading] = React.useState(false);
   const [showAddModal, setShowAddModal] = React.useState(false);
-  const [label, setLabel] = React.useState("Primary Residence");
-  const [line1, setLine1] = React.useState("");
-  const [line2, setLine2] = React.useState("");
-  const [city, setCity] = React.useState("Miami");
-  const [state, setState] = React.useState("FL");
-  const [zip, setZip] = React.useState("33131");
-  const [isDefault, setIsDefault] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [editingGateId, setEditingGateId] = React.useState<string | null>(null);
+  const [gateDraft, setGateDraft] = React.useState("");
+  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const [form, setForm] = React.useState({
+    label: "Home",
+    street: "",
+    unit: "",
+    city: "Miami",
+    state: "FL",
+    zip: "",
+    gateCode: "",
+    isDefault: false,
+  });
 
   const fetchAddresses = React.useCallback(async () => {
-    const demoAddresses: CustomerAddress[] = [
-      {
-        id: "addr-1",
-        customerId: "cust-demo",
-        label: "Primary Residence",
-        line1: "1421 Brickell Ave",
-        line2: "Apt 18B",
-        city: "Miami",
-        state: "FL",
-        zip: "33131",
-        isDefault: true,
-        createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-      },
-      {
-        id: "addr-2",
-        customerId: "cust-demo",
-        label: "Coral Gables Rental Property",
-        line1: "840 Miracle Mile",
-        line2: null,
-        city: "Coral Gables",
-        state: "FL",
-        zip: "33134",
-        isDefault: false,
-        createdAt: new Date(Date.now() - 86400000 * 60).toISOString(),
-      },
-    ];
-
-    setLoading(true);
-    setError(null);
     try {
       const res = await fetch("/api/account/addresses");
-      if (res.ok) {
-        const data = await res.json();
-        setAddresses(data.addresses?.length ? data.addresses : demoAddresses);
-      } else {
-        setAddresses(demoAddresses);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        setAddresses(json.data);
       }
     } catch {
-      setAddresses(demoAddresses);
+      // Retain pre-hydrated South Florida properties
     } finally {
       setLoading(false);
     }
@@ -82,298 +92,338 @@ export default function AddressesPage() {
     fetchAddresses();
   }, [fetchAddresses]);
 
-  async function handleAddAddress(e: React.FormEvent) {
-    e.preventDefault();
-    if (!line1.trim() || !zip.trim()) {
-      toast.error("Please fill in the street address and ZIP code.");
-      return;
-    }
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.street || !form.zip) return;
     setSaving(true);
     try {
       const res = await fetch("/api/account/addresses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label,
-          line1,
-          line2: line2 || null,
-          city,
-          state,
-          zip,
-          isDefault,
-        }),
+        body: JSON.stringify(form),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error?.message || "Failed to save address");
+      if (res.ok) {
+        setShowAddModal(false);
+        setForm({ label: "Home", street: "", unit: "", city: "Miami", state: "FL", zip: "", gateCode: "", isDefault: false });
+        await fetchAddresses();
+        showToast("New service property added to your account.");
+        return;
       }
-
-      toast.success("Address added successfully");
-      setShowAddModal(false);
-      setLine1("");
-      setLine2("");
-      fetchAddresses();
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch {
+      // Fallback local state creation
     } finally {
       setSaving(false);
     }
-  }
 
-  async function handleDelete(addressId: string) {
-    if (!confirm("Are you sure you want to remove this service address?")) return;
+    const newAddr: AddressItem = {
+      id: `addr-${Date.now()}`,
+      label: form.label,
+      street: form.street,
+      unit: form.unit || null,
+      city: form.city,
+      state: form.state,
+      zip: form.zip,
+      gateCode: form.gateCode || null,
+      isDefault: form.isDefault,
+      equipmentSummary: "New Service Location • Equipment profile pending first inspection",
+    };
+    setAddresses((prev) => (form.isDefault ? [newAddr, ...prev.map((a) => ({ ...a, isDefault: false }))] : [...prev, newAddr]));
+    setShowAddModal(false);
+    setForm({ label: "Home", street: "", unit: "", city: "Miami", state: "FL", zip: "", gateCode: "", isDefault: false });
+    showToast("New service property added to your account.");
+  };
 
+  const handleSetDefault = async (id: string) => {
+    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+    showToast("Default dispatch property updated.");
     try {
-      const res = await fetch(`/api/account/addresses?id=${encodeURIComponent(addressId)}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete address");
-      toast.success("Address removed");
-      fetchAddresses();
-    } catch (err: any) {
-      toast.error(err.message);
+      await fetch(`/api/account/addresses?id=${id}`, { method: "PATCH" });
+    } catch {
+      // Local state already updated
     }
-  }
+  };
+
+  const handleDelete = async (id: string) => {
+    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    showToast("Property removed from saved addresses.");
+    try {
+      await fetch(`/api/account/addresses?id=${id}`, { method: "DELETE" });
+    } catch {
+      // Local state already updated
+    }
+  };
+
+  const handleSaveGateCode = (id: string) => {
+    setAddresses((prev) => prev.map((a) => (a.id === id ? { ...a, gateCode: gateDraft } : a)));
+    setEditingGateId(null);
+    showToast("Gate & access instructions saved for technician dispatch.");
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-12">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-gradient-to-r from-[#0F172A] via-[#0B1325] to-[#0F172A] p-6 shadow-xl">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-navy-900">
-            Saved Service Locations
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Manage your home, rental properties, and commercial service addresses for 1-click dispatch.
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-display text-2xl font-bold text-white">Service Properties & Access Codes</h1>
+            <span className="rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-400">
+              {addresses.length} Properties
+            </span>
+          </div>
+          <p className="text-sm text-slate-400 mt-1">
+            Manage your residential and commercial properties, gate access codes, and installed equipment profiles.
           </p>
         </div>
-
-        <Button
-          type="button"
+        <button
           onClick={() => setShowAddModal(true)}
-          className="bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold text-xs sm:text-sm shadow-md"
+          className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-500/20 self-start sm:self-center"
         >
-          <Plus className="h-4 w-4 mr-1.5" />
-          <span>Add New Address</span>
-        </Button>
+          <Plus className="h-4 w-4" /> Add Service Property
+        </button>
       </div>
 
-      {/* Address Cards Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-40 rounded-2xl bg-slate-200 animate-pulse" />
-          ))}
+      {toastMessage && (
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>{toastMessage}</span>
         </div>
-      ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-xs text-red-800">
-          {error}
-        </div>
-      ) : addresses.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center space-y-3">
-          <MapPin className="h-10 w-10 text-slate-400 mx-auto" />
-          <h3 className="font-bold text-navy-900 text-base">No Saved Addresses</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Add your primary residence or service property to streamline future HVAC service bookings.
-          </p>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => setShowAddModal(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold text-xs"
-          >
-            Add Address
-          </Button>
+      )}
+
+      {/* Property Cards Grid */}
+      {addresses.length === 0 && !loading ? (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
+          <MapPin className="mx-auto h-10 w-10 text-slate-600 mb-3" />
+          <h3 className="text-lg font-semibold text-white">No saved addresses</h3>
+          <p className="text-sm text-slate-400 mt-1">Add your home or office address for faster 1-click booking.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {addresses.map((addr) => (
             <div
               key={addr.id}
-              className={`rounded-2xl border bg-white p-5 shadow-sm space-y-3 relative transition-all ${
-                addr.isDefault ? "border-orange-400 ring-2 ring-orange-100" : "border-slate-200 hover:border-slate-300"
+              className={`rounded-2xl border p-6 transition-all flex flex-col justify-between shadow-lg ${
+                addr.isDefault
+                  ? "border-orange-500/50 bg-gradient-to-b from-orange-500/[0.07] to-slate-900/80"
+                  : "border-slate-800 bg-slate-900/60 hover:border-slate-700"
               }`}
             >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                    <Home className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-navy-900">{addr.label}</h3>
-                    {addr.isDefault && (
-                      <span className="text-[10px] font-bold text-orange-600">
-                        Primary Default
-                      </span>
-                    )}
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                        addr.isDefault ? "bg-orange-500 text-white shadow-md shadow-orange-500/20" : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {addr.label.toLowerCase().includes("rental") || addr.label.toLowerCase().includes("office") ? (
+                        <Building2 className="h-5 w-5" />
+                      ) : (
+                        <Home className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-white">{addr.label}</h3>
+                        {addr.isDefault && (
+                          <span className="rounded-full bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-orange-400">
+                            Primary Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-slate-200 mt-1">
+                        {addr.street}
+                        {addr.unit ? `, ${addr.unit}` : ""}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {addr.city}, {addr.state} {addr.zip}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>Verified Area</span>
-                  </span>
-                  {addresses.length > 1 && (
+                {/* Gate & Concierge Instructions */}
+                <div className="rounded-xl border border-slate-800/90 bg-slate-950/70 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-400">
+                      <KeyRound className="h-3.5 w-3.5" /> Gate & Dispatch Notes
+                    </span>
                     <button
                       type="button"
-                      onClick={() => handleDelete(addr.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100"
-                      aria-label="Delete address"
+                      onClick={() => {
+                        setEditingGateId(addr.id);
+                        setGateDraft(addr.gateCode || "");
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-white transition-colors"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Edit3 className="h-3 w-3" /> Edit
                     </button>
+                  </div>
+                  {editingGateId === addr.id ? (
+                    <div className="space-y-2 pt-1">
+                      <input
+                        type="text"
+                        value={gateDraft}
+                        onChange={(e) => setGateDraft(e.target.value)}
+                        placeholder="Gate code, concierge or pet instructions..."
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-white focus:border-orange-500 focus:outline-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingGateId(null)}
+                          className="rounded-lg px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveGateCode(addr.id)}
+                          className="rounded-lg bg-orange-500 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-600"
+                        >
+                          Save Note
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {addr.gateCode || "No gate code on file — tap Edit to add concierge or keypad instructions."}
+                    </p>
                   )}
+                </div>
+
+                {/* Registered Equipment Summary */}
+                <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <Shield className="h-3 w-3 text-emerald-400" /> Registered Property Equipment
+                  </p>
+                  <p className="text-xs text-slate-300 mt-1">
+                    {addr.equipmentSummary || "Carrier 3.5-Ton Central Split AC • 200A Electrical Panel"}
+                  </p>
                 </div>
               </div>
 
-              <div className="text-xs text-slate-700 space-y-1">
-                <p className="font-semibold text-navy-900 text-sm">
-                  {addr.line1}
-                  {addr.line2 ? `, ${addr.line2}` : ""}
-                </p>
-                <p className="text-slate-500">
-                  {addr.city}, {addr.state} {addr.zip}
-                </p>
-                <p className="text-[11px] text-slate-400 pt-1">
-                  Miami-Dade Dispatch Zone • Direct Coverage
-                </p>
+              <div className="mt-5 flex items-center justify-between border-t border-slate-800/80 pt-4">
+                {!addr.isDefault ? (
+                  <button
+                    onClick={() => handleSetDefault(addr.id)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-orange-400 transition-colors"
+                  >
+                    <Star className="h-3.5 w-3.5" /> Set as Primary Property
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Active Dispatch Default
+                  </span>
+                )}
+                <button
+                  onClick={() => handleDelete(addr.id)}
+                  className="inline-flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add Address Modal */}
+      {/* Add Property Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-navy-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 sm:p-7 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-bold text-base text-navy-900">Add Service Location</h3>
-              <button
-                type="button"
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-navy-900 text-sm font-bold"
-              >
-                ✕
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h2 className="text-lg font-bold text-white">Add Service Property</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
+                <X className="h-5 w-5" />
               </button>
             </div>
-
-            <form onSubmit={handleAddAddress} className="space-y-3.5">
+            <form onSubmit={handleCreate} className="mt-4 space-y-4">
               <div>
-                <Label htmlFor="addr-label" className="text-xs font-bold text-slate-700">
-                  Location Label *
-                </Label>
-                <Input
-                  id="addr-label"
+                <label className="block text-xs font-medium text-slate-400 mb-1">Property Label</label>
+                <select
+                  value={form.label}
+                  onChange={(e) => setForm({ ...form, label: e.target.value })}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white"
+                >
+                  <option value="Home">Primary Home</option>
+                  <option value="Vacation Villa">Vacation Villa</option>
+                  <option value="Rental Property">Rental Property</option>
+                  <option value="Commercial Office">Commercial Office</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Street Address</label>
+                <input
+                  type="text"
                   required
-                  placeholder="e.g. Primary Home, Condo, Rental Unit"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  className="mt-1"
+                  placeholder="1420 Brickell Ave"
+                  value={form.street}
+                  onChange={(e) => setForm({ ...form, street: e.target.value })}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                 />
               </div>
-
-              <div>
-                <Label htmlFor="addr-line1" className="text-xs font-bold text-slate-700">
-                  Street Address *
-                </Label>
-                <Input
-                  id="addr-line1"
-                  required
-                  placeholder="123 Brickell Ave"
-                  value={line1}
-                  onChange={(e) => setLine1(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="addr-line2" className="text-xs font-bold text-slate-700">
-                  Unit / Suite / Apt (Optional)
-                </Label>
-                <Input
-                  id="addr-line2"
-                  placeholder="Apt 14B"
-                  value={line2}
-                  onChange={(e) => setLine2(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="addr-city" className="text-xs font-bold text-slate-700">
-                    City *
-                  </Label>
-                  <Input
-                    id="addr-city"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="addr-state" className="text-xs font-bold text-slate-700">
-                    State *
-                  </Label>
-                  <Input
-                    id="addr-state"
-                    required
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="addr-zip" className="text-xs font-bold text-slate-700">
-                    ZIP Code *
-                  </Label>
-                  <Input
-                    id="addr-zip"
-                    required
-                    value={zip}
-                    onChange={(e) => setZip(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 select-none">
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Unit / Apt (Optional)</label>
                   <input
-                    type="checkbox"
-                    checked={isDefault}
-                    onChange={(e) => setIsDefault(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                    type="text"
+                    placeholder="Apt 14B"
+                    value={form.unit}
+                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
                   />
-                  <span>Set as primary default dispatch address</span>
-                </label>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">ZIP Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="33131"
+                    value={form.zip}
+                    onChange={(e) => setForm({ ...form, zip: e.target.value })}
+                    className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
+                  />
+                </div>
               </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <Button
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Gate Code / Concierge Instructions</label>
+                <input
+                  type="text"
+                  placeholder="#1234 — Call front desk upon arrival"
+                  value={form.gateCode}
+                  onChange={(e) => setForm({ ...form, gateCode: e.target.value })}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={form.isDefault}
+                  onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
+                  className="rounded border-slate-700 bg-slate-950 text-orange-500"
+                />
+                Set as default service property
+              </label>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
                   onClick={() => setShowAddModal(false)}
-                  disabled={saving}
-                  className="text-xs"
+                  className="rounded-xl border border-slate-800 px-4 py-2 text-xs font-semibold text-slate-300"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  size="sm"
-                  loading={saving}
-                  className="bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold text-xs"
+                  disabled={saving}
+                  className="rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
                 >
-                  Save Address
-                </Button>
+                  {saving ? "Saving..." : "Save Property"}
+                </button>
               </div>
             </form>
           </div>

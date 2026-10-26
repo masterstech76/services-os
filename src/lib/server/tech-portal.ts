@@ -413,31 +413,95 @@ export async function resolveTechnicianSession(request?: Request): Promise<{
   vehicle: { model: string; plate: string; status: string };
 } | null> {
   const store = getLocalDbWithDemo();
+  const isDevOrTest = Boolean(
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "test" ||
+    process.env.VITEST
+  );
 
-  let techId = "tech-carlos";
-  let role = "technician";
+  let techId: string | null = null;
+  let role: string | null = null;
 
-  try {
-    const cookieStore = cookies();
-    const cookieRole = cookieStore.get("servicepro_dev_role")?.value;
-    const cookieTechId = cookieStore.get("sp_demo_tech_id")?.value;
-    if (cookieRole) role = cookieRole;
-    if (cookieTechId) techId = cookieTechId;
-  } catch {
-    // outside request context
+  // 1. Check explicit headers (STRICTLY for unit test runner or internal verified caller)
+  if (request && isDevOrTest) {
+    const headerRole = request.headers.get("x-servicepro-role");
+    const headerTechId = request.headers.get("x-servicepro-tech-id");
+    if (headerRole === "technician" || headerRole === "owner" || headerRole === "admin") {
+      techId = headerTechId || "tech-carlos";
+      role = "technician";
+    }
   }
 
-  if (request) {
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    if (cookieHeader) {
-      const parsed = Object.fromEntries(
-        cookieHeader.split(";").map((p) => {
-          const [k, ...v] = p.trim().split("=");
-          return [k, decodeURIComponent(v.join("="))];
-        })
-      );
-      if (parsed["sp_demo_tech_id"]) techId = parsed["sp_demo_tech_id"];
+  // 2. Check cookies (demo convenience in dev/test)
+  if (!techId && isDevOrTest) {
+    try {
+      const cookieStore = cookies();
+      const cookieRole = cookieStore.get("servicepro_dev_role")?.value;
+      const cookieTechId = cookieStore.get("sp_demo_tech_id")?.value;
+      if (cookieRole === "technician" || cookieRole === "owner" || cookieRole === "admin") {
+        role = "technician";
+        techId = cookieTechId || "tech-carlos";
+      }
+    } catch {
+      // outside request context
     }
+
+    if (!techId && request) {
+      const cookieHeader = request.headers.get("cookie") ?? "";
+      if (cookieHeader) {
+        const parsed = Object.fromEntries(
+          cookieHeader.split(";").map((p) => {
+            const [k, ...v] = p.trim().split("=");
+            return [k, decodeURIComponent(v.join("="))];
+          })
+        );
+        const cRole = parsed["servicepro_dev_role"] || parsed["sp_demo_role"];
+        if (cRole === "technician" || cRole === "owner" || cRole === "admin") {
+          role = "technician";
+          techId = parsed["sp_demo_tech_id"] || "tech-carlos";
+        }
+      }
+    }
+  }
+
+  // 3. Remote Supabase Auth Session
+  if (!techId && isRemoteSupabaseConfigured()) {
+    try {
+      const cookieStore = cookies();
+      const supabase = createServerClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll() {},
+          },
+        }
+      );
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role, technician_id")
+          .eq("id", user.id)
+          .single();
+
+        const p = profile as { role?: string; technician_id?: string | null } | null;
+        if (p && (p.role === "technician" || p.role === "owner" || p.role === "admin")) {
+          techId = p.technician_id || null;
+          role = "technician";
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!techId) {
+    return null;
   }
 
   const tech = store.technicians.get(techId) || store.technicians.get("tech-carlos");

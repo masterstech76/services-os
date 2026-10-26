@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { isRemoteSupabaseConfigured } from "@/lib/supabase/middleware";
+import { AUTH_LOCK_PAUSED } from "@/config/auth-lock.config";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 import { saveLocalDbToDisk } from "@/lib/server/local-db-fallback";
 import { enrichJob, type EnrichedJob } from "@/lib/server/operations";
@@ -88,34 +89,42 @@ export async function resolveCustomerSession(request?: Request): Promise<{
   const defaultBiz = Array.from(store.businesses.values())[0];
   const defaultBizId = defaultBiz?.id ?? "00000000-0000-4000-8000-000000000001";
 
-  // 1. Check request cookies or Next.js cookies store for demo session
+  const isDevOrTest = Boolean(
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "test" ||
+    process.env.VITEST
+  );
+
+  // 1. Check request cookies or Next.js cookies store for demo session (dev/test only)
   let roleCookie: string | undefined;
   let customEmail: string | undefined;
 
-  try {
-    const cookieStore = cookies();
-    roleCookie =
-      cookieStore.get("servicepro_dev_role")?.value ||
-      cookieStore.get("sp_demo_role")?.value;
-    customEmail = cookieStore.get("sp_demo_customer_email")?.value;
-  } catch {
-    // outside request context fallback
-  }
+  if (isDevOrTest) {
+    try {
+      const cookieStore = cookies();
+      roleCookie =
+        cookieStore.get("servicepro_dev_role")?.value ||
+        cookieStore.get("sp_demo_role")?.value;
+      customEmail = cookieStore.get("sp_demo_customer_email")?.value;
+    } catch {
+      // outside request context fallback
+    }
 
-  if (request) {
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    if (cookieHeader) {
-      const parsed = Object.fromEntries(
-        cookieHeader.split(";").map((p) => {
-          const [k, ...v] = p.trim().split("=");
-          return [k, decodeURIComponent(v.join("="))];
-        })
-      );
-      if (parsed["servicepro_dev_role"] || parsed["sp_demo_role"]) {
-        roleCookie = parsed["servicepro_dev_role"] || parsed["sp_demo_role"];
-      }
-      if (parsed["sp_demo_customer_email"]) {
-        customEmail = parsed["sp_demo_customer_email"];
+    if (request) {
+      const cookieHeader = request.headers.get("cookie") ?? "";
+      if (cookieHeader) {
+        const parsed = Object.fromEntries(
+          cookieHeader.split(";").map((p) => {
+            const [k, ...v] = p.trim().split("=");
+            return [k, decodeURIComponent(v.join("="))];
+          })
+        );
+        if (parsed["servicepro_dev_role"] || parsed["sp_demo_role"]) {
+          roleCookie = parsed["servicepro_dev_role"] || parsed["sp_demo_role"];
+        }
+        if (parsed["sp_demo_customer_email"]) {
+          customEmail = parsed["sp_demo_customer_email"];
+        }
       }
     }
   }
@@ -182,8 +191,8 @@ export async function resolveCustomerSession(request?: Request): Promise<{
     }
   }
 
-  // 3. Demo / development customer resolution
-  if (roleCookie === "customer" || roleCookie === "owner" || roleCookie === "admin") {
+  // 3. Demo / development customer resolution (dev/test only)
+  if (isDevOrTest && (roleCookie === "customer" || roleCookie === "owner" || roleCookie === "admin")) {
     // If a specific customer email is set in demo session:
     if (customEmail) {
       const found = Array.from(store.customers.values()).find(
@@ -205,6 +214,22 @@ export async function resolveCustomerSession(request?: Request): Promise<{
       store.customers.get("cust_demo_1") ||
       Array.from(store.customers.values())[0];
 
+    if (demoCust) {
+      return {
+        customerId: demoCust.id,
+        name: demoCust.name,
+        email: demoCust.email || "maria.rivera@example.com",
+        phone: demoCust.phone,
+        isDemo: true,
+      };
+    }
+  }
+
+  // 4. Preview Mode Fallback: When auth lock is paused, always resolve to Maria Rivera demo customer
+  if (AUTH_LOCK_PAUSED) {
+    const demoCust =
+      store.customers.get("cust_demo_1") ||
+      Array.from(store.customers.values())[0];
     if (demoCust) {
       return {
         customerId: demoCust.id,

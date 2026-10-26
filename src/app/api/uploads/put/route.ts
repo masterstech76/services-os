@@ -17,8 +17,8 @@ export async function PUT(request: Request) {
     return csrf.response;
   }
 
-  // 2. Rate limiting (20 upload puts / min per IP)
-  const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000, keyPrefix: "upload_put" });
+  // 2. Rate limiting (maximum 5 upload puts with 15-minute lockout to stop brute-force hacking)
+  const rl = checkRateLimit(request, { limit: 5, windowMs: 60_000, keyPrefix: "upload_put", lockoutMs: 15 * 60_000, maxFailures: 5 });
   if (!rl.allowed && rl.response) {
     return rl.response;
   }

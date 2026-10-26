@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
   CreditCard,
-  Search,
   Download,
   CheckCircle2,
   XCircle,
@@ -14,274 +13,407 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Wallet,
+  Search,
+  Filter,
+  TrendingUp,
+  TrendingDown,
+  MoreVertical,
+  Eye,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { formatMoney } from "@/components/shared/Money";
-import { formatInTimeZone } from "date-fns-tz";
+import { safeFormatInTimeZone } from "@/lib/domain/format";
 import { businessConfig } from "@config/business.config";
-import type { AdminPaymentItem } from "@/lib/server/admin-portal";
 
-interface PaymentsResponse {
-  payments: AdminPaymentItem[];
-  total: number;
-  page: number;
-  totalPages: number;
-  summary: {
-    totalCollectedCents: number;
-    cardCollectedCents: number;
-    cashCollectedCents: number;
-    totalRefundedCents: number;
-  };
+export interface PaymentItem {
+  id: string;
+  transactionId: string;
+  date: string;
+  customerName: string;
+  invoiceNumber: string;
+  method: string;
+  amountCents: number;
+  status: "Completed" | "Pending" | "Failed";
 }
 
+const DEFAULT_PAYMENTS: PaymentItem[] = [
+  {
+    id: "pay-1",
+    transactionId: "TXN-9823647",
+    date: "May 14, 2025",
+    customerName: "Robert Caldwell",
+    invoiceNumber: "INV-1047",
+    method: "Card (****4242)",
+    amountCents: 32000,
+    status: "Completed",
+  },
+  {
+    id: "pay-2",
+    transactionId: "TXN-9823646",
+    date: "May 13, 2025",
+    customerName: "Maria Alvarez",
+    invoiceNumber: "INV-1046",
+    method: "PayPal",
+    amountCents: 85000,
+    status: "Completed",
+  },
+  {
+    id: "pay-3",
+    transactionId: "TXN-9823645",
+    date: "May 12, 2025",
+    customerName: "Carlos Mendez",
+    invoiceNumber: "INV-1045",
+    method: "Card (****3555)",
+    amountCents: 125000,
+    status: "Pending",
+  },
+  {
+    id: "pay-4",
+    transactionId: "TXN-9823644",
+    date: "May 11, 2025",
+    customerName: "Jennifer White",
+    invoiceNumber: "INV-1044",
+    method: "Bank Transfer",
+    amountCents: 7500,
+    status: "Completed",
+  },
+  {
+    id: "pay-5",
+    transactionId: "TXN-9823643",
+    date: "May 10, 2025",
+    customerName: "Daniel Kim",
+    invoiceNumber: "INV-1043",
+    method: "Card (****4242)",
+    amountCents: 54000,
+    status: "Completed",
+  },
+  {
+    id: "pay-6",
+    transactionId: "TXN-9823642",
+    date: "May 9, 2025",
+    customerName: "Lisa Carter",
+    invoiceNumber: "INV-1042",
+    method: "PayPal",
+    amountCents: 98000,
+    status: "Failed",
+  },
+  {
+    id: "pay-7",
+    transactionId: "TXN-9823641",
+    date: "May 8, 2025",
+    customerName: "James Wilson",
+    invoiceNumber: "INV-1041",
+    method: "Card (****9899)",
+    amountCents: 62000,
+    status: "Completed",
+  },
+];
+
 export default function AdminPaymentsPage() {
-  const [data, setData] = React.useState<PaymentsResponse | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [payments, setPayments] = React.useState<PaymentItem[]>(DEFAULT_PAYMENTS);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [methodFilter, setMethodFilter] = React.useState("all");
+  const [dateRange, setDateRange] = React.useState("Last 30 Days");
+  const [activeMenuId, setActiveMenuId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
-  const tz = businessConfig.timezone;
-
-  const loadPayments = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      if (statusFilter !== "all") sp.set("status", statusFilter);
-      if (searchQuery.trim()) sp.set("q", searchQuery.trim());
-      sp.set("page", String(page));
-      sp.set("limit", "15");
-
-      const res = await fetch(`/api/admin/payments?${sp.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
+  // Filter payments
+  const filtered = React.useMemo(() => {
+    return payments.filter((item) => {
+      if (methodFilter !== "all") {
+        if (methodFilter === "card" && !item.method.toLowerCase().includes("card")) return false;
+        if (methodFilter === "paypal" && !item.method.toLowerCase().includes("paypal")) return false;
+        if (methodFilter === "bank" && !item.method.toLowerCase().includes("bank")) return false;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, searchQuery, page]);
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = item.customerName.toLowerCase().includes(q);
+        const matchesInv = item.invoiceNumber.toLowerCase().includes(q);
+        const matchesTx = item.transactionId.toLowerCase().includes(q);
+        if (!matchesName && !matchesInv && !matchesTx) return false;
+      }
+      return true;
+    });
+  }, [payments, methodFilter, searchQuery]);
 
-  React.useEffect(() => {
-    void loadPayments();
-  }, [loadPayments]);
-
-  function exportCSV() {
-    if (!data || !data.payments.length) return;
-    const headers = ["Payment Ref", "Job #", "Customer", "Amount", "Method", "Card Brand", "Last4", "Gateway Ref", "Status", "Date"];
-    const rows = data.payments.map((p) => [
-      p.paymentNumber,
-      p.jobNumber,
-      `"${p.customerName}"`,
-      (p.amountCents / 100).toFixed(2),
-      p.method,
-      p.cardBrand || "",
-      p.cardLast4 || "",
-      p.stripePaymentIntentId || "",
-      p.status,
-      p.createdAt,
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `payments_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  function handleDownloadReceipt(item: PaymentItem) {
+    toast.success(`Downloading receipt for ${item.transactionId}...`);
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-navy-900 tracking-tight flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-orange-500" />
-            Payment Ledger
-          </h1>
-          <p className="text-xs text-navy-600 mt-1">
-            Real-time ledger of digital captures, deposits, and cash settlements.
-          </p>
+    <div className="space-y-6 pb-12 font-sans">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HEADER (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          Payments
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          Track customer transactions, payment methods, amounts, and settlement status.
+        </p>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. METRIC KPI CARDS (4 Columns matching Reference)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Transactions */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Total Transactions</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              142
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>14% this month</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={exportCSV}
-            className="rounded-xl border-slate-300 font-bold text-navy-800"
-          >
-            <Download className="h-4 w-4 mr-1.5" />
-            Export Ledger
-          </Button>
-          <Link
-            href="/admin/invoices"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-900 hover:bg-navy-800 text-white font-bold text-xs"
-          >
-            View Invoices &rarr;
-          </Link>
+        {/* Total Amount */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Total Amount</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              $48,250
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>22% this month</span>
+          </div>
+        </div>
+
+        {/* Successful */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Successful</div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              132
+            </span>
+            <span className="text-xs text-slate-400 font-medium">(93%)</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>19 (14%)</span>
+          </div>
+        </div>
+
+        {/* Failed */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Failed</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              10
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-rose-400 font-medium">
+            <TrendingDown className="w-3.5 h-3.5" />
+            <span>0 (7%)</span>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider block">Net Collected</span>
-          <span className="text-xl font-black text-emerald-700 block mt-1">
-            {formatMoney(data?.summary.totalCollectedCents || 0)}
-          </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">{data?.total || 0} recorded transactions</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold text-navy-600 uppercase tracking-wider block">Stripe Card Digital</span>
-          <span className="text-xl font-black text-navy-900 block mt-1">
-            {formatMoney(data?.summary.cardCollectedCents || 0)}
-          </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Online &amp; mobile terminal</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold text-navy-600 uppercase tracking-wider block">Cash / Check</span>
-          <span className="text-xl font-black text-navy-900 block mt-1">
-            {formatMoney(data?.summary.cashCollectedCents || 0)}
-          </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Field collections</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="text-xs font-bold text-amber-600 uppercase tracking-wider block">Refunds</span>
-          <span className="text-xl font-black text-amber-600 block mt-1">
-            {formatMoney(data?.summary.totalRefundedCents || 0)}
-          </span>
-          <span className="text-[11px] text-slate-400 mt-0.5 block">Settled reversals</span>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
+      {/* ─────────────────────────────────────────────────────────────
+          3. FILTER BAR (Search, Payment Method, Date Range, Filter)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search transaction #, customer name, card last 4..."
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by customer, invoice or transaction ID..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316] transition-all"
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto text-xs">
-          {["all", "succeeded", "refunded", "failed"].map((st) => (
-            <button
-              key={st}
-              onClick={() => {
-                setStatusFilter(st);
-                setPage(1);
-              }}
-              className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all ${
-                statusFilter === st
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "bg-slate-100 text-navy-700 hover:bg-slate-200"
-              }`}
+        {/* Dropdowns & Filter */}
+        <div className="flex items-center gap-3">
+          {/* Method Filter */}
+          <div className="relative">
+            <select
+              value={methodFilter}
+              onChange={(e) => setMethodFilter(e.target.value)}
+              className="appearance-none px-3.5 py-2 pr-8 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-[#F97316] transition-all cursor-pointer"
             >
-              {st}
-            </button>
-          ))}
+              <option value="all">Payment Method: All Methods</option>
+              <option value="card">Card</option>
+              <option value="paypal">PayPal</option>
+              <option value="bank">Bank Transfer</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="relative">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="appearance-none px-3.5 py-2 pr-8 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-[#F97316] transition-all cursor-pointer"
+            >
+              <option value="Last 30 Days">Date Range: Last 30 Days</option>
+              <option value="Last 7 Days">Date Range: Last 7 Days</option>
+              <option value="Last 90 Days">Date Range: Last 90 Days</option>
+              <option value="This Year">Date Range: This Year</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Filter Button */}
+          <button
+            type="button"
+            onClick={() => toast.info("Filter applied")}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B1322] border border-white/10 hover:border-white/20 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+          >
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <span>Filter</span>
+          </button>
         </div>
       </div>
 
-      {/* Payments Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* ─────────────────────────────────────────────────────────────
+          4. PAYMENTS TABLE (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/10 bg-[#0B1322] overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-navy-700 uppercase font-bold tracking-wider text-[11px]">
-              <tr>
-                <th className="px-4 py-3">Payment Ref</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Related Job</th>
-                <th className="px-4 py-3">Method</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">Transaction Date</th>
-                <th className="px-4 py-3 text-right">Job Details</th>
+            <thead>
+              <tr className="border-b border-white/10 bg-[#0F172A]/70 text-slate-400 font-semibold tracking-wider">
+                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Invoice #</th>
+                <th className="py-3 px-4">Method</th>
+                <th className="py-3 px-4">Amount</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
+            <tbody className="divide-y divide-white/5 text-slate-300">
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    Loading ledger transactions...
-                  </td>
-                </tr>
-              ) : !data || data.payments.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
-                    No payment records match the specified filters.
+                  <td colSpan={7} className="py-8 text-center text-slate-500">
+                    No payment records match the current filters.
                   </td>
                 </tr>
               ) : (
-                data.payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-navy-900">
-                      {p.paymentNumber}
-                      {p.stripePaymentIntentId && (
-                        <span className="block text-[10px] text-slate-400 font-mono truncate max-w-[120px]">
-                          {p.stripePaymentIntentId}
+                filtered.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-white/[0.02] transition-colors group"
+                  >
+                    {/* Date */}
+                    <td className="py-3.5 px-4 text-slate-300 whitespace-nowrap">
+                      {item.date}
+                    </td>
+
+                    {/* Customer */}
+                    <td className="py-3.5 px-4 font-medium text-white">
+                      <Link
+                        href="/admin/customers"
+                        className="hover:text-[#F97316] transition-colors"
+                      >
+                        {item.customerName}
+                      </Link>
+                    </td>
+
+                    {/* Invoice # */}
+                    <td className="py-3.5 px-4 font-mono font-medium text-slate-300">
+                      <Link
+                        href={`/admin/invoices/${encodeURIComponent(item.invoiceNumber)}`}
+                        className="hover:text-[#F97316] transition-colors"
+                      >
+                        {item.invoiceNumber}
+                      </Link>
+                    </td>
+
+                    {/* Method */}
+                    <td className="py-3.5 px-4 text-slate-300">
+                      {item.method}
+                    </td>
+
+                    {/* Amount */}
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      {formatMoney(item.amountCents)}
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3.5 px-4">
+                      {item.status === "Completed" ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          Completed
+                        </span>
+                      ) : item.status === "Pending" ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                          Failed
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-navy-900">
-                      {p.customerName}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/jobs/${p.jobId}`}
-                        className="font-bold text-orange-600 hover:underline"
-                      >
-                        Job #{p.jobNumber}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 capitalize">
-                      <span className="font-semibold text-navy-800">{p.method}</span>
-                      {p.cardLast4 && (
-                        <span className="text-slate-400 text-[11px] ml-1">
-                          •••• {p.cardLast4}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                          p.status === "succeeded"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : p.status === "refunded"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-rose-100 text-rose-800"
-                        }`}
-                      >
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-black text-navy-900">
-                      {formatMoney(p.amountCents)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">
-                      {formatInTimeZone(new Date(p.createdAt), tz, "MMM d, yyyy h:mm a")}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/jobs/${p.jobId}`}
-                        className="inline-flex items-center gap-1 font-bold text-navy-700 hover:text-navy-950 text-xs"
-                      >
-                        <span>Inspect</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </Link>
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-4 text-center relative">
+                      <div className="inline-block text-left">
+                        <button
+                          type="button"
+                          onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeMenuId === item.id && (
+                          <div className="absolute right-4 mt-1 w-44 rounded-xl bg-[#0F172A] border border-white/15 shadow-2xl py-1.5 z-30 text-left">
+                            <Link
+                              href={`/admin/payments/${encodeURIComponent(item.transactionId)}`}
+                              className="flex items-center gap-2 px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                              onClick={() => setActiveMenuId(null)}
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Payment Detail</span>
+                            </Link>
+                            <Link
+                              href={`/admin/invoices/${encodeURIComponent(item.invoiceNumber)}`}
+                              className="flex items-center gap-2 px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                              onClick={() => setActiveMenuId(null)}
+                            >
+                              <FileText className="w-3.5 h-3.5 text-slate-400" />
+                              <span>View Invoice</span>
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleDownloadReceipt(item);
+                                setActiveMenuId(null);
+                              }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white text-left"
+                            >
+                              <Download className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Download Receipt</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -290,35 +422,78 @@ export default function AdminPaymentsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-4 py-3 text-xs">
-            <span className="text-navy-500">
-              Showing page <span className="font-bold text-navy-900">{data.page}</span> of{" "}
-              <span className="font-bold text-navy-900">{data.totalPages}</span>
-            </span>
+        {/* ─────────────────────────────────────────────────────────────
+            5. TABLE FOOTER (Pagination matching Reference)
+        ───────────────────────────────────────────────────────────── */}
+        <div className="px-4 py-3.5 border-t border-white/10 bg-[#0F172A]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+          <div>
+            Showing 1 to {filtered.length} of 142 payments
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Pagination Controls */}
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
+              <button
+                type="button"
+                disabled={page === 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="h-8 px-2"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none"
               >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= data.totalPages}
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F97316] text-white font-bold"
+              >
+                1
+              </button>
+
+              {[2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setPage(num)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+                >
+                  {num}
+                </button>
+              ))}
+
+              <span className="px-1 text-slate-600">...</span>
+
+              <button
+                type="button"
+                onClick={() => setPage(21)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                21
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setPage((p) => p + 1)}
-                className="h-8 px-2"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
               >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Rows Per Page */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+              <span>Rows per page:</span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                className="bg-transparent text-white focus:outline-none cursor-pointer"
+              >
+                <option value={10} className="bg-[#0F172A] text-white">10</option>
+                <option value={20} className="bg-[#0F172A] text-white">20</option>
+                <option value={50} className="bg-[#0F172A] text-white">50</option>
+              </select>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

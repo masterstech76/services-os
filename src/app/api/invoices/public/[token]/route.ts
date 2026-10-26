@@ -17,10 +17,13 @@ async function findOrEnsureInvoiceByToken(token: string) {
       i.id === token
   );
 
-  if (!inv && token.includes("1035")) {
+  // In non-production environments, allow explicit demo token 'tok_demo' for interactive UI preview
+  const isNonProd = process.env.NODE_ENV !== "production";
+  if (!inv && isNonProd && (token === "tok_demo" || token === "demo")) {
     const fallbackJob =
       store.jobs.get("job_today_6") ??
-      Array.from(store.jobs.values()).find((j) => j.status !== "completed");
+      Array.from(store.jobs.values()).find((j) => j.status !== "completed") ??
+      Array.from(store.jobs.values())[0];
     if (fallbackJob) {
       await createOrUpdateInvoiceForJob({
         jobId: fallbackJob.id,
@@ -50,6 +53,13 @@ async function findOrEnsureInvoiceByToken(token: string) {
         store.invoices.set(inv.id, inv);
       }
     }
+  }
+
+  if (inv && isNonProd && (token === "tok_demo" || token === "demo") && inv.status === "paid") {
+    inv.status = "sent";
+    inv.amount_due_cents = Math.max(0, inv.total_cents - inv.deposit_paid_cents);
+    inv.paid_at = null;
+    store.invoices.set(inv.id, inv);
   }
 
   return inv;

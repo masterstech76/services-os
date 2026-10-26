@@ -271,6 +271,22 @@ describe("Phases 3, 4 & 5 — Full-Stack Server Operations & White-Label Config"
     );
     expect(slotLostRes.action).toBe("slot_lost_refunded");
     expect(slotLostRes.refundId).toContain("re_slot_lost_");
+
+    // Downstream failure rolls back stripe_events idempotency lock for retry
+    const errorEvt = {
+      id: "evt_stripe_fail_retry_001",
+      type: "payment_intent.succeeded",
+      data: {
+        object: {
+          id: "pi_fail_retry",
+          amount: 1980,
+          metadata: { hold_id: "non_existent_hold_uuid" },
+        },
+      },
+    };
+    await expect(processStripeWebhookEvent(errorEvt, store)).rejects.toThrow();
+    // Verify idempotency lock was cleaned up so Stripe automated retry is NOT blocked
+    expect(store.stripe_events.has("evt_stripe_fail_retry_001")).toBe(false);
   });
 
   it("validates Ace Plumbing Austin white-label config schema & rejects low-contrast color pairs", () => {

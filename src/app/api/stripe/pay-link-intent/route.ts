@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
+import { checkRateLimit } from "@/lib/server/rate-limit";
 
 const payLinkIntentSchema = z.object({
   token: z.string().min(1),
@@ -8,6 +9,12 @@ const payLinkIntentSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Rate limiting (maximum 5 attempts with 15-minute lockout to stop token guessing / brute-force hacking)
+  const rl = checkRateLimit(req, { limit: 5, windowMs: 60_000, keyPrefix: "pay_link_intent", lockoutMs: 15 * 60_000, maxFailures: 5 });
+  if (!rl.allowed && rl.response) {
+    return rl.response;
+  }
+
   try {
     const body = await req.json();
     const parsed = payLinkIntentSchema.safeParse(body);

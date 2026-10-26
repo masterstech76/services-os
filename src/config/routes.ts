@@ -1,5 +1,5 @@
 /**
- * Centralized Route Registry for TechWork / ServicePro OS
+ * Centralized Route Registry for ServicePro OS
  * Every internal link and navigation action references these typed routes.
  * Aligned 100% with all 84 active Next.js App Router pages.
  */

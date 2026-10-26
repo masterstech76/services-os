@@ -16,8 +16,8 @@ export async function POST(request: Request) {
     return csrf.response;
   }
 
-  // 2. Sensitive rate limiting (20 slot holds / min per IP)
-  const rl = checkRateLimit(request, { limit: 20, windowMs: 60_000, keyPrefix: "slot_hold" });
+  // 2. Sensitive rate limiting (maximum 5 attempts with 15-minute lockout to stop brute-force hacking)
+  const rl = checkRateLimit(request, { limit: 5, windowMs: 60_000, keyPrefix: "slot_hold", lockoutMs: 15 * 60_000, maxFailures: 5 });
   if (!rl.allowed && rl.response) {
     return rl.response;
   }

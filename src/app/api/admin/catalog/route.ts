@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/server/auth-guard";
 import {
   getLocalDbWithDemo,
   getDemoDataStats,
@@ -9,7 +10,12 @@ import {
 } from "@/lib/server/demo-dataset";
 import { saveLocalDbToDisk } from "@/lib/server/local-db-fallback";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireRole(request, ["owner", "admin"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const store = getLocalDbWithDemo();
   const business = Array.from(store.businesses.values())[0];
   const services = Array.from(store.services.values()).sort(
@@ -57,12 +63,27 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireRole(request, ["owner", "admin"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const store = getLocalDbWithDemo();
   const biz = Array.from(store.businesses.values())[0];
   const body = (await request.json()) as {
     action: string;
     payload: Record<string, unknown>;
   };
+
+  if (
+    (body.action === "clear_demo_data" || body.action === "restore_demo_data") &&
+    auth.actor.role !== "owner"
+  ) {
+    return NextResponse.json(
+      { error: { code: "FORBIDDEN", message: "Only business owners can bulk reset or restore demo datasets." } },
+      { status: 403 }
+    );
+  }
 
   switch (body.action) {
     case "clear_demo_data": {

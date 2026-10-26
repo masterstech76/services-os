@@ -17,6 +17,7 @@ import {
   Headphones,
   User,
   Check,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -301,12 +302,12 @@ export default function SupportMessengerPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-navy-950 flex items-center gap-2">
-            <MessageSquare className="h-7 w-7 text-orange-500" />
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <MessageSquare className="h-7 w-7 text-orange-400" />
             Support Messenger &amp; Live Help
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time two-way messaging with TechWork central dispatch and field technicians.
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Real-time two-way messaging with {businessConfig.businessName} central dispatch and field technicians.
           </p>
         </div>
 
@@ -314,7 +315,7 @@ export default function SupportMessengerPage() {
           <Button
             type="button"
             onClick={() => setShowNewModal(true)}
-            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-950 font-bold text-xs h-9 px-4 shadow-sm"
+            className="rounded-xl bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold text-xs h-9 px-4 shadow-lg shadow-orange-500/20"
           >
             <Plus className="h-4 w-4 mr-1.5" />
             New Inquiry
@@ -322,32 +323,32 @@ export default function SupportMessengerPage() {
 
           <a
             href={`tel:${businessConfig.phone.replace(/\D/g, "")}`}
-            className="rounded-xl border border-slate-300 hover:border-slate-400 bg-white text-slate-700 text-xs font-bold h-9 px-3.5 flex items-center gap-1.5 transition-colors"
+            className="rounded-xl border border-white/10 hover:border-white/20 bg-white/5 text-slate-200 text-xs font-bold h-9 px-3.5 flex items-center gap-1.5 transition-colors"
           >
-            <Phone className="h-3.5 w-3.5 text-orange-500" />
+            <Phone className="h-3.5 w-3.5 text-orange-400" />
             <span>24/7 Hotline</span>
           </a>
         </div>
       </div>
 
       {/* Intercom / Messenger 2-Column Console */}
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-md overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+      <div className="rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
         {/* Left Column: Conversations List (Intercom Sidebar) */}
-        <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/60 flex flex-col justify-between">
+        <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-white/10 bg-[#080D16]/70 flex flex-col justify-between">
           <div>
             {/* Sidebar Search & Header */}
-            <div className="p-4 border-b border-slate-200 bg-white">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
+            <div className="p-4 border-b border-white/10 bg-[#0F172A]/90">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
                 Active Discussions
               </span>
-              <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-3 py-1.5 text-xs text-slate-500">
-                <Headphones className="h-4 w-4 text-orange-500 shrink-0" />
+              <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/5 px-3 py-1.5 text-xs text-slate-300">
+                <Headphones className="h-4 w-4 text-orange-400 shrink-0" />
                 <span>Miami Dispatch Office</span>
               </div>
             </div>
 
             {/* Conversation Threads */}
-            <div className="divide-y divide-slate-100 overflow-y-auto max-h-[500px]">
+            <div className="divide-y divide-white/5 overflow-y-auto max-h-[500px]">
               {allConversations.map((conv) => {
                 const isSelected = selectedThreadId === conv.id;
 
@@ -355,36 +356,36 @@ export default function SupportMessengerPage() {
                   <div
                     key={conv.id}
                     onClick={() => setSelectedThreadId(conv.id)}
-                    className={`p-4 cursor-pointer transition-colors space-y-1.5 ${
+                    className={`p-4 cursor-pointer transition-all space-y-1.5 ${
                       isSelected
-                        ? "bg-white border-l-4 border-l-orange-500 shadow-xs"
-                        : "hover:bg-slate-100/70"
+                        ? "bg-white/10 border-l-4 border-l-orange-500 shadow-inner"
+                        : "hover:bg-white/5"
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono font-bold text-orange-600">
+                      <span className="font-mono font-bold text-orange-400">
                         {conv.ticketNumber}
                       </span>
-                      <span className="text-[11px] text-slate-400">{conv.time}</span>
+                      <span className="text-[11px] text-slate-500">{conv.time}</span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-navy-950 line-clamp-1">
+                    <h4 className="text-xs font-bold text-white line-clamp-1">
                       {conv.subject}
                     </h4>
 
-                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                    <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
                       {conv.preview}
                     </p>
 
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded border border-white/5">
                         {conv.category}
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                           conv.status === "resolved"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-blue-100 text-blue-800"
+                            ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                            : "bg-blue-500/15 border border-blue-500/30 text-blue-400"
                         }`}
                       >
                         {conv.status === "resolved" ? "Resolved" : "In Progress"}
@@ -397,8 +398,8 @@ export default function SupportMessengerPage() {
           </div>
 
           {/* Bottom Live Office Status */}
-          <div className="p-4 border-t border-slate-200 bg-white text-xs space-y-1 text-slate-500">
-            <div className="flex items-center gap-1.5 font-bold text-navy-950">
+          <div className="p-4 border-t border-white/10 bg-[#0F172A]/90 text-xs space-y-1 text-slate-400">
+            <div className="flex items-center gap-1.5 font-bold text-white">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Dispatch Center Online</span>
             </div>
@@ -409,41 +410,41 @@ export default function SupportMessengerPage() {
         </div>
 
         {/* Right Column: Messenger Live Chat Workspace */}
-        <div className="lg:col-span-8 flex flex-col justify-between bg-white">
+        <div className="lg:col-span-8 flex flex-col justify-between bg-[#0C1523]/95">
           {/* Messenger Chat Header */}
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+          <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-navy-950 text-white font-black flex items-center justify-center text-xs ring-2 ring-orange-500/30">
+              <div className="w-10 h-10 rounded-full bg-[#080D16] border border-orange-500/30 text-orange-400 font-black flex items-center justify-center text-xs ring-2 ring-orange-500/20 shadow-md">
                 TW
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-heading text-sm font-bold text-navy-950">
-                    TechWork Central Dispatch
+                  <h3 className="font-heading text-sm font-bold text-white">
+                    {businessConfig.businessName} Central Dispatch
                   </h3>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Active Now
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">
+                <p className="text-[11px] text-slate-400 font-medium">
                   {activeConversation.subject}
                 </p>
               </div>
             </div>
 
-            <span className="text-xs font-mono font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">
+            <span className="text-xs font-mono font-bold text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
               {activeConversation.ticketNumber}
             </span>
           </div>
 
           {/* Messages Stream */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-4 max-h-[440px] bg-slate-50/30">
+          <div className="flex-1 p-5 overflow-y-auto space-y-4 max-h-[440px]">
             {activeMessages.map((msg) => {
               if (msg.sender === "system") {
                 return (
                   <div key={msg.id} className="text-center my-3">
-                    <span className="inline-block px-3 py-1 rounded-full bg-slate-200/80 text-slate-600 text-[11px] font-medium">
+                    <span className="inline-block px-3 py-1 rounded-full bg-white/5 border border-white/5 text-slate-400 text-[11px] font-medium">
                       {msg.text} • {msg.timestamp}
                     </span>
                   </div>
@@ -464,10 +465,10 @@ export default function SupportMessengerPage() {
                   </div>
 
                   <div
-                    className={`max-w-md rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-xs ${
+                    className={`max-w-md rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed shadow-lg ${
                       isCustomer
-                        ? "bg-navy-950 text-white rounded-br-none"
-                        : "bg-white text-navy-950 border border-slate-200 rounded-bl-none"
+                        ? "bg-[#F97316] text-[#0C1523] font-medium rounded-br-none shadow-orange-500/20"
+                        : "bg-[#1E293B] text-white border border-white/10 rounded-bl-none"
                     }`}
                   >
                     <p>{msg.text}</p>
@@ -475,7 +476,7 @@ export default function SupportMessengerPage() {
 
                   {isCustomer && msg.status && (
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
-                      <Check className="h-3 w-3 text-emerald-600" />
+                      <Check className="h-3 w-3 text-emerald-400" />
                       <span>Delivered</span>
                     </div>
                   )}
@@ -485,26 +486,26 @@ export default function SupportMessengerPage() {
           </div>
 
           {/* Quick-Prompt Recommendation Chips */}
-          <div className="px-4 py-2 border-t border-slate-100 bg-white flex items-center gap-2 overflow-x-auto text-[11px]">
+          <div className="px-4 py-2 border-t border-white/10 bg-white/5 flex items-center gap-2 overflow-x-auto text-[11px]">
             <span className="text-slate-400 font-bold shrink-0">Quick prompts:</span>
             <button
               type="button"
               onClick={() => setInputMessage("Can I request an ETA update on my assigned technician?")}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors shrink-0"
+              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors shrink-0"
             >
               Request ETA Update
             </button>
             <button
               type="button"
               onClick={() => setInputMessage("Please send a copy of my itemized warranty receipt.")}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors shrink-0"
+              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors shrink-0"
             >
               Email Warranty Receipt
             </button>
             <button
               type="button"
               onClick={() => setInputMessage("Need to reschedule our arrival window.")}
-              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors shrink-0"
+              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors shrink-0"
             >
               Reschedule Window
             </button>
@@ -513,12 +514,12 @@ export default function SupportMessengerPage() {
           {/* Messenger Input Box */}
           <form
             onSubmit={handleSendMessage}
-            className="p-4 border-t border-slate-200 bg-white flex items-center gap-3"
+            className="p-4 border-t border-white/10 bg-[#080D16]/80 flex items-center gap-3"
           >
             <button
               type="button"
               onClick={() => toast.info("Photo attachment: Drop files directly or attach work order receipt.")}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
               title="Attach photo or document"
             >
               <Paperclip className="h-5 w-5" />
@@ -528,13 +529,13 @@ export default function SupportMessengerPage() {
               placeholder="Type your message to dispatch (Press Enter to send)..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              className="h-11 rounded-xl text-xs sm:text-sm bg-slate-50 border-slate-300 focus-visible:bg-white flex-1"
+              className="h-11 rounded-xl text-xs sm:text-sm bg-[#0C1523] border-white/10 text-white placeholder:text-slate-500 focus-visible:border-orange-500 flex-1"
             />
 
             <Button
               type="submit"
               disabled={!inputMessage.trim()}
-              className="rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-950 font-bold text-xs h-11 px-5 shadow-sm shrink-0"
+              className="rounded-xl bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold text-xs h-11 px-5 shadow-lg shadow-orange-500/20 shrink-0"
             >
               <Send className="h-4 w-4 mr-1.5" />
               <span>Send</span>
@@ -545,27 +546,27 @@ export default function SupportMessengerPage() {
 
       {/* New Inquiry Modal */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-[#0F172A] border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-orange-500" />
-                <h3 className="font-heading text-lg font-bold text-navy-950">
+                <MessageSquare className="h-5 w-5 text-orange-400" />
+                <h3 className="font-heading text-lg font-bold text-white">
                   New Support Inquiry
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
-                className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+                className="text-slate-400 hover:text-white text-xs font-bold transition-colors"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreateNewTicket} className="space-y-4 text-xs">
               <div>
-                <Label htmlFor="new-sub" className="text-xs font-bold text-slate-700">
+                <Label htmlFor="new-sub" className="text-xs font-bold text-slate-300">
                   Summary / Topic *
                 </Label>
                 <Input
@@ -574,20 +575,20 @@ export default function SupportMessengerPage() {
                   placeholder="e.g. Inquire about compressor warranty coverage or filter sizes"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 border-white/10 bg-[#080D16] text-white focus:border-orange-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="new-cat" className="text-xs font-bold text-slate-700">
+                  <Label htmlFor="new-cat" className="text-xs font-bold text-slate-300">
                     Category *
                   </Label>
                   <select
                     id="new-cat"
                     value={category}
                     onChange={(e: any) => setCategory(e.target.value)}
-                    className="mt-1 flex h-10 w-full rounded-input border border-slate-300 bg-white px-3 py-2 text-xs font-medium"
+                    className="mt-1 flex h-10 w-full rounded-xl border border-white/10 bg-[#080D16] px-3 py-2 text-xs font-medium text-white focus:border-orange-500"
                   >
                     <option value="general">General Support</option>
                     <option value="warranty">Warranty &amp; Guarantee</option>
@@ -598,14 +599,14 @@ export default function SupportMessengerPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="new-pri" className="text-xs font-bold text-slate-700">
+                  <Label htmlFor="new-pri" className="text-xs font-bold text-slate-300">
                     Urgency *
                   </Label>
                   <select
                     id="new-pri"
                     value={priority}
                     onChange={(e: any) => setPriority(e.target.value)}
-                    className="mt-1 flex h-10 w-full rounded-input border border-slate-300 bg-white px-3 py-2 text-xs font-medium"
+                    className="mt-1 flex h-10 w-full rounded-xl border border-white/10 bg-[#080D16] px-3 py-2 text-xs font-medium text-white focus:border-orange-500"
                   >
                     <option value="normal">Normal</option>
                     <option value="urgent">Urgent (No AC)</option>
@@ -614,7 +615,7 @@ export default function SupportMessengerPage() {
               </div>
 
               <div>
-                <Label htmlFor="new-det" className="text-xs font-bold text-slate-700">
+                <Label htmlFor="new-det" className="text-xs font-bold text-slate-300">
                   Inquiry Details *
                 </Label>
                 <Textarea
@@ -624,16 +625,17 @@ export default function SupportMessengerPage() {
                   placeholder="Describe your question or how our team can assist..."
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
-                  className="mt-1 text-xs"
+                  className="mt-1 text-xs border-white/10 bg-[#080D16] text-white focus:border-orange-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setShowNewModal(false)}
+                  className="border-white/10 text-white hover:bg-white/10"
                 >
                   Cancel
                 </Button>
@@ -641,7 +643,7 @@ export default function SupportMessengerPage() {
                   type="submit"
                   size="sm"
                   loading={submitting}
-                  className="bg-orange-500 hover:bg-orange-600 text-navy-950 font-bold"
+                  className="bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
                 >
                   Submit &amp; Open Chat
                 </Button>

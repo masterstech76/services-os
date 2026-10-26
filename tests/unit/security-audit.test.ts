@@ -3,8 +3,22 @@ import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 import { GET as getJobsRoute, POST as postJobRoute } from "@/app/api/admin/jobs/route";
 import { GET as getCustomerRoute, PATCH as patchCustomerRoute } from "@/app/api/admin/customers/[id]/route";
 import { GET as getInventoryRoute, POST as postInventoryRoute } from "@/app/api/admin/inventory/parts/route";
+import { POST as postRefundRoute } from "@/app/api/stripe/refund/route";
+import { POST as postAssignRoute } from "@/app/api/dispatch/assign/route";
+import { GET as getSuggestRoute } from "@/app/api/dispatch/suggest/route";
+import { GET as getJobsListRoute } from "@/app/api/jobs/route";
+import { POST as postCancelRoute } from "@/app/api/jobs/[id]/cancel/route";
+import { POST as postTechRoute } from "@/app/api/technicians/route";
+import { GET as getRevenueRoute } from "@/app/api/reports/revenue/route";
+import { GET as getPublicInvoiceRoute } from "@/app/api/invoices/public/[token]/route";
 import { getAdminReportsData, getCentralInventoryOverview } from "@/lib/server/admin-portal";
-import { checkRateLimit, resetRateLimits } from "@/lib/server/rate-limit";
+import {
+  checkRateLimit,
+  resetRateLimits,
+  isClientLockedOut,
+  recordSecurityFailure,
+  clearSecurityFailures,
+} from "@/lib/server/rate-limit";
 import { verifyCsrfOrigin } from "@/lib/server/csrf";
 import { resolveRequestActor } from "@/lib/server/auth-guard";
 
@@ -38,6 +52,45 @@ describe("Production Security, Role Authorization & Financial Integrity Audit", 
         process.env.VITEST = origVitest;
         (process.env as any).NODE_ENV = origNodeEnv;
       }
+    });
+
+    it("SEC-001: strictly rejects x-servicepro-internal-secret header spoofing even when CRON_SECRET is present", async () => {
+      const origVitest = process.env.VITEST;
+      const origNodeEnv = process.env.NODE_ENV;
+      const origCron = process.env.CRON_SECRET;
+      try {
+        delete (process.env as any).VITEST;
+        (process.env as any).NODE_ENV = "production";
+        process.env.CRON_SECRET = "super_secret_cron_token_123456789";
+        const req = new Request("http://localhost:3000/api/admin/jobs", {
+          headers: {
+            "x-servicepro-internal-secret": "super_secret_cron_token_123456789",
+            "x-servicepro-role": "owner",
+          },
+        });
+        const actor = await resolveRequestActor(req);
+        expect(actor).toBeNull();
+      } finally {
+        process.env.VITEST = origVitest;
+        (process.env as any).NODE_ENV = origNodeEnv;
+        process.env.CRON_SECRET = origCron;
+      }
+    });
+
+    it("BUG-001: rejects arbitrary or enumeration token substrings like inv_test (404 INVOICE_NOT_FOUND)", async () => {
+      const req = new Request("http://localhost:3000/api/invoices/public/inv_attacker_enumeration");
+      const res = await getPublicInvoiceRoute(req, { params: { token: "inv_attacker_enumeration" } });
+      expect(res.status).toBe(404);
+      const data = await res.json();
+      expect(data.error?.code).toBe("INVOICE_NOT_FOUND");
+    });
+
+    it("BUG-001: permits exact demo token 'tok_demo' in non-production environments", async () => {
+      const req = new Request("http://localhost:3000/api/invoices/public/tok_demo");
+      const res = await getPublicInvoiceRoute(req, { params: { token: "tok_demo" } });
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.invoice).toBeDefined();
     });
 
     it("denies unauthenticated requests to admin work orders with explicit anon header (401)", async () => {
@@ -75,6 +128,127 @@ describe("Production Security, Role Authorization & Financial Integrity Audit", 
       const data = await res.json();
       expect(data.jobs).toBeDefined();
       expect(Array.isArray(data.jobs)).toBe(true);
+    });
+
+    it("strictly denies unauthenticated callers from issuing Stripe refunds (401)", async () => {
+      const req = new Request("http://localhost:3000/api/stripe/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "anon" },
+        body: JSON.stringify({ jobId: "job_today_1", amountCents: 5000 }),
+      });
+      const res = await postRefundRoute(req as any);
+      expect(res.status).toBe(401);
+    });
+
+    it("denies technician role from issuing Stripe refunds (403)", async () => {
+      const req = new Request("http://localhost:3000/api/stripe/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "technician" },
+        body: JSON.stringify({ jobId: "job_today_1", amountCents: 5000 }),
+      });
+      const res = await postRefundRoute(req as any);
+      expect(res.status).toBe(403);
+    });
+
+    it("strictly denies ordinary admin role from issuing Stripe refunds (403 Forbidden - owner only)", async () => {
+      const req = new Request("http://localhost:3000/api/stripe/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "admin" },
+        body: JSON.stringify({ jobId: "job_today_1", amountCents: 5000 }),
+      });
+      const res = await postRefundRoute(req as any);
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data.error?.message).toContain("Required: owner");
+    });
+
+    it("permits owner role to issue Stripe refunds (200 or processed)", async () => {
+      const req = new Request("http://localhost:3000/api/stripe/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "owner" },
+        body: JSON.stringify({ jobId: "job_today_1", amountCents: 5000 }),
+      });
+      const res = await postRefundRoute(req as any);
+      expect([200, 404]).toContain(res.status);
+    });
+
+    it("permits operational admin role to assign technicians to dispatch board", async () => {
+      const req = new Request("http://localhost:3000/api/dispatch/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "admin" },
+        body: JSON.stringify({ jobId: "job_today_1", technicianId: "tech-carlos" }),
+      });
+      const res = await postAssignRoute(req);
+      expect(res.status).not.toBe(401);
+      expect(res.status).not.toBe(403);
+    });
+
+    it("denies technician role from mutating dispatch assignments (403)", async () => {
+      const req = new Request("http://localhost:3000/api/dispatch/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "technician" },
+        body: JSON.stringify({ jobId: "job_today_1", technicianId: "tech-carlos" }),
+      });
+      const res = await postAssignRoute(req);
+      expect(res.status).toBe(403);
+    });
+
+    it("denies customer role from mutating dispatch assignments (403)", async () => {
+      const req = new Request("http://localhost:3000/api/dispatch/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "customer" },
+        body: JSON.stringify({ jobId: "job_today_1", technicianId: "tech-carlos" }),
+      });
+      const res = await postAssignRoute(req);
+      expect(res.status).toBe(403);
+    });
+
+    it("strictly denies unauthenticated callers from mutating technician dispatch assignments (401)", async () => {
+      const req = new Request("http://localhost:3000/api/dispatch/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "anon" },
+        body: JSON.stringify({ jobId: "job_today_1", technicianId: "tech-carlos" }),
+      });
+      const res = await postAssignRoute(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("strictly denies unauthenticated callers from dumping work orders PII via /api/jobs (401)", async () => {
+      const req = new Request("http://localhost:3000/api/jobs", {
+        headers: { "x-servicepro-role": "anon" },
+      });
+      const res = await getJobsListRoute(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("strictly denies unauthenticated callers from canceling jobs (401)", async () => {
+      const req = new Request("http://localhost:3000/api/jobs/job_today_1/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "anon" },
+        body: JSON.stringify({ reason: "Malicious cancel" }),
+      });
+      const res = await postCancelRoute(req, { params: { id: "job_today_1" } });
+      expect(res.status).toBe(401);
+    });
+
+    it("strictly denies unauthenticated callers from viewing revenue reports (401)", async () => {
+      const req = new Request("http://localhost:3000/api/reports/revenue", {
+        headers: { "x-servicepro-role": "anon" },
+      });
+      const res = await getRevenueRoute(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("validates technician email format with Zod and rejects malformed inputs (400)", async () => {
+      const req = new Request("http://localhost:3000/api/technicians", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-servicepro-role": "owner" },
+        body: JSON.stringify({ name: "Bob", phone: "3055550100", email: "not-an-email" }),
+      });
+      const res = await postTechRoute(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error?.code).toBe("VALIDATION_ERROR");
     });
   });
 
@@ -298,6 +472,50 @@ describe("Production Security, Role Authorization & Financial Integrity Audit", 
       expect(blocked.response).toBeDefined();
       expect(blocked.response?.status).toBe(429);
       expect(blocked.response?.headers.get("Retry-After")).toBeDefined();
+    });
+
+    it("enforces maximum ceiling of 5 attempts even when a higher limit is requested", () => {
+      const req = new Request("http://localhost:3000/api/auth/demo-session", {
+        headers: { "x-forwarded-for": "198.51.100.99" },
+      });
+
+      // Request limit of 100, but rate limiter must clamp to strictly <= 5
+      const res = checkRateLimit(req, { limit: 100, windowMs: 60000, keyPrefix: "test_clamp" });
+      expect(res.allowed).toBe(true);
+      expect(res.remaining).toBe(4); // 5 - 1 = 4 remaining, proving limit is clamped to 5
+    });
+
+    it("triggers extended 15-minute anti-hacking lockout after 5 consecutive failures / attempts", async () => {
+      const req = new Request("http://localhost:3000/api/auth/demo-session", {
+        headers: { "x-forwarded-for": "198.51.100.100" },
+      });
+
+      // Execute 5 attempts (allowed)
+      for (let i = 0; i < 5; i++) {
+        const attempt = checkRateLimit(req, { limit: 5, windowMs: 60000, keyPrefix: "test_lockout" });
+        expect(attempt.allowed).toBe(true);
+      }
+
+      // 6th attempt must trigger prolonged 15-minute security lockout
+      const lockedOut = checkRateLimit(req, { limit: 5, windowMs: 60000, keyPrefix: "test_lockout" });
+      expect(lockedOut.allowed).toBe(false);
+      expect(lockedOut.isLockedOut).toBe(true);
+      expect(lockedOut.resetSeconds).toBeGreaterThanOrEqual(890); // ~900s (15 min)
+      expect(lockedOut.response?.status).toBe(429);
+      expect(lockedOut.response?.headers.get("X-RateLimit-Lockout")).toBe("true");
+
+      const body = await lockedOut.response?.json();
+      expect(body.error?.code).toBe("SECURITY_LOCKOUT");
+
+      // Verify helper confirms active lockout
+      const status = isClientLockedOut(req, "test_lockout");
+      expect(status.isLockedOut).toBe(true);
+      expect(status.remainingLockoutSeconds).toBeGreaterThan(0);
+
+      // Verify clearSecurityFailures lifts the lockout
+      clearSecurityFailures(req, "test_lockout");
+      const clearedStatus = isClientLockedOut(req, "test_lockout");
+      expect(clearedStatus.isLockedOut).toBe(false);
     });
   });
 

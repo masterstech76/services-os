@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
 import { updateSessionAndEnforceRoles } from "@/lib/supabase/middleware";
 import { verifyCsrfOrigin } from "@/lib/server/csrf";
-import { checkRateLimit } from "@/lib/server/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/server/rate-limit";
+import { emitSecurityAlert } from "@/lib/server/security-telemetry";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -22,10 +23,18 @@ export async function middleware(request: NextRequest) {
       // Enforce Cross-Site Request Forgery (CSRF) Origin Verification
       const csrf = verifyCsrfOrigin(request);
       if (!csrf.valid && csrf.response) {
+        emitSecurityAlert({
+          code: "CSRF_ORIGIN_MISMATCH",
+          severity: "HIGH",
+          message: `Blocked CSRF mutation attempt on ${pathname}`,
+          ip: getClientIp(request),
+          endpoint: pathname,
+          method,
+        }).catch(() => {});
         return csrf.response;
       }
 
-      // Enforce Tiered Rate Limiting per IP
+      // Enforce Strict Anti-Hacking Rate Limiting per IP (Max 5 attempts + 15 min lockout)
       const isPaymentOrBooking =
         pathname.startsWith("/api/jobs/checkout") ||
         pathname.startsWith("/api/slots/hold") ||
@@ -33,10 +42,11 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith("/api/stripe/") ||
         pathname.startsWith("/api/auth/");
 
-      const limit = isPaymentOrBooking ? 20 : 60;
+      const limit = 5; // Strict ceiling: maximum 5 attempts
       const keyPrefix = isPaymentOrBooking ? "api_mutation_sensitive" : "api_mutation_general";
+      const lockoutMs = isPaymentOrBooking ? 15 * 60_000 : 5 * 60_000; // 15-minute anti-hacking lockout for sensitive operations
 
-      const rl = checkRateLimit(request, { limit, windowMs: 60_000, keyPrefix });
+      const rl = checkRateLimit(request, { limit, windowMs: 60_000, keyPrefix, lockoutMs, maxFailures: 5 });
       if (!rl.allowed && rl.response) {
         return rl.response;
       }

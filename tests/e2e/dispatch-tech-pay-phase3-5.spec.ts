@@ -14,6 +14,11 @@ async function expectNoCriticalOrSeriousAxeViolations(
 }
 
 test.describe("Phases 3, 4 & 5 — Dispatch Board, Tech PWA, Customer Pay Link, Reports & Demo Hub", () => {
+  test.beforeEach(async ({ request }) => {
+    await request.post("/api/admin/catalog", {
+      data: { action: "restore_demo_data", payload: {} },
+    });
+  });
   test("1. Auth guard redirects unauthenticated /admin to /login, then Owner Dispatch Board & JobDrawer work end-to-end", async ({
     page,
   }) => {
@@ -26,13 +31,12 @@ test.describe("Phases 3, 4 & 5 — Dispatch Board, Tech PWA, Customer Pay Link, 
 
     // Sign in as Owner via 1-click Demo Access
     await page.getByTestId("demo-login-owner").click();
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin\/dispatch/);
     await expect(
-      page.getByRole("heading", { name: "Operations Overview" })
+      page.getByRole("heading", { name: "Dispatch Board" })
     ).toBeVisible();
 
-    // Navigate to Dispatch Board
-    await page.goto("/admin/dispatch");
+    // Verify Dispatch Board components
     await expect(page.getByTestId("dispatch-kanban-board")).toBeVisible();
     await expect(page.getByTestId("technician-rail")).toBeVisible();
     await expectNoCriticalOrSeriousAxeViolations(page);
@@ -66,7 +70,10 @@ test.describe("Phases 3, 4 & 5 — Dispatch Board, Tech PWA, Customer Pay Link, 
     await page.setViewportSize({ width: 390, height: 844 });
 
     await page.goto("/login");
-    await page.getByTestId("demo-login-tech").click();
+    await Promise.all([
+      page.waitForResponse((res) => res.url().includes("/api/auth/demo-session") && res.status() === 200),
+      page.getByTestId("demo-login-tech").click(),
+    ]);
     await expect(page).toHaveURL(/\/tech/);
     await expectNoCriticalOrSeriousAxeViolations(page);
 

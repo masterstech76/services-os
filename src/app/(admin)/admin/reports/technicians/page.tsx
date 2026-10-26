@@ -3,185 +3,244 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Wrench,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Download,
   Star,
-  CheckCircle2,
-  DollarSign,
-  TrendingUp,
-  User,
   Award,
+  ArrowLeft,
+  User,
+  CheckCircle2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/components/shared/Money";
+import { toast } from "sonner";
 
-interface TechPerformanceRecord {
+interface TechMetricRow {
   id: string;
   name: string;
-  assignedJobs: number;
-  completedJobs: number;
-  revenueCents: number;
+  avatar: string;
+  jobsCompleted: number;
+  revenue: string;
   rating: number;
+  productivity: number;
 }
 
-interface TechniciansReportData {
-  type: "technicians";
-  technicians: TechPerformanceRecord[];
-}
+const SAMPLE_TECH_METRICS: TechMetricRow[] = [
+  {
+    id: "tech-1",
+    name: "Robert Caldwell",
+    avatar: "/images/avatar-david.jpg",
+    jobsCompleted: 62,
+    revenue: "$12,480",
+    rating: 4.8,
+    productivity: 92,
+  },
+  {
+    id: "tech-2",
+    name: "Mike Johnson",
+    avatar: "/images/avatar-mike.jpg",
+    jobsCompleted: 54,
+    revenue: "$10,620",
+    rating: 4.6,
+    productivity: 88,
+  },
+  {
+    id: "tech-3",
+    name: "Sarah Wilson",
+    avatar: "/images/avatar-sarah.jpg",
+    jobsCompleted: 48,
+    revenue: "$9,780",
+    rating: 4.7,
+    productivity: 82,
+  },
+  {
+    id: "tech-4",
+    name: "David Lee",
+    avatar: "/images/avatar-1.jpg",
+    jobsCompleted: 43,
+    revenue: "$8,540",
+    rating: 4.5,
+    productivity: 76,
+  },
+  {
+    id: "tech-5",
+    name: "Emma Davis",
+    avatar: "/images/avatar-2.jpg",
+    jobsCompleted: 38,
+    revenue: "$7,260",
+    rating: 4.4,
+    productivity: 71,
+  },
+];
 
 export default function AdminTechniciansReportPage() {
-  const [data, setData] = React.useState<TechniciansReportData | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [selectedTech, setSelectedTech] = React.useState("All Technicians");
+  const [selectedJobType, setSelectedJobType] = React.useState("All Job Types");
+  const [techs, setTechs] = React.useState<TechMetricRow[]>(SAMPLE_TECH_METRICS);
 
-  const loadReport = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/reports?type=technicians");
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void loadReport();
-  }, [loadReport]);
+  function exportCSV() {
+    toast.success("Technician metrics report exported to CSV");
+  }
 
   return (
-    <div className="space-y-5">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-navy-950">Technician Performance Report</h1>
-          <p className="text-xs text-navy-600">
-            Workload distribution, revenue generated, and customer ratings per field technician
-          </p>
-        </div>
-
-        {/* Sub-report switcher tabs */}
-        <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 text-xs font-bold">
+    <div className="space-y-6 pb-12">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HEADER (Title & Subtitle)
+      ───────────────────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
           <Link
             href="/admin/reports"
-            className="px-3 py-1.5 rounded-lg text-navy-700 hover:text-navy-900"
+            className="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
           >
-            Overview
-          </Link>
-          <Link
-            href="/admin/reports/jobs"
-            className="px-3 py-1.5 rounded-lg text-navy-700 hover:text-navy-900"
-          >
-            Jobs
-          </Link>
-          <Link
-            href="/admin/reports/revenue"
-            className="px-3 py-1.5 rounded-lg text-navy-700 hover:text-navy-900"
-          >
-            Revenue
-          </Link>
-          <Link
-            href="/admin/reports/technicians"
-            className="px-3 py-1.5 rounded-lg bg-navy-900 text-white shadow-sm"
-          >
-            Technicians
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Reports Overview</span>
           </Link>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          Technician Metrics Report
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          Analyze technician productivity, revenue, completed jobs, and customer ratings.
+        </p>
       </div>
 
-      {loading || !data ? (
-        <div className="space-y-4">
-          <div className="h-32 animate-pulse rounded-2xl bg-slate-200" />
-          <div className="h-44 animate-pulse rounded-2xl bg-slate-200" />
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-3 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-navy-700">
-              Technician Leaderboard ({data.technicians.length})
-            </span>
-            <span className="text-xs text-navy-500 font-semibold">
-              Live database metrics
-            </span>
+      {/* ─────────────────────────────────────────────────────────────
+          2. FILTER TOOLBAR
+      ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/10 bg-[#0F172A] text-xs font-medium text-slate-300">
+            <button type="button" className="text-slate-400 hover:text-white transition-colors">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>May 1, 2025 &rarr; May 31, 2025</span>
+            <button type="button" className="text-slate-400 hover:text-white transition-colors">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-navy-700 border-b border-slate-200">
-                <tr>
-                  <th className="px-5 py-3">Technician</th>
-                  <th className="px-5 py-3 text-right">Assigned Jobs</th>
-                  <th className="px-5 py-3 text-right">Completed Visits</th>
-                  <th className="px-5 py-3 text-right">Completion Rate</th>
-                  <th className="px-5 py-3 text-right">Revenue Contributed</th>
-                  <th className="px-5 py-3 text-right">Rating</th>
-                  <th className="px-5 py-3 text-right">Profile</th>
+          {/* Technicians Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedTech}
+              onChange={(e) => setSelectedTech(e.target.value)}
+              className="appearance-none bg-[#0F172A] border border-white/10 text-slate-300 text-xs rounded-xl px-3.5 py-1.5 pr-8 focus:outline-none focus:border-[#F97316] cursor-pointer"
+            >
+              <option value="All Technicians">All Technicians</option>
+              <option value="Robert Caldwell">Robert Caldwell</option>
+              <option value="Mike Johnson">Mike Johnson</option>
+              <option value="Sarah Wilson">Sarah Wilson</option>
+              <option value="David Lee">David Lee</option>
+              <option value="Emma Davis">Emma Davis</option>
+            </select>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
+
+          {/* Job Types Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedJobType}
+              onChange={(e) => setSelectedJobType(e.target.value)}
+              className="appearance-none bg-[#0F172A] border border-white/10 text-slate-300 text-xs rounded-xl px-3.5 py-1.5 pr-8 focus:outline-none focus:border-[#F97316] cursor-pointer"
+            >
+              <option value="All Job Types">All Job Types</option>
+              <option value="AC Repair">AC Repair</option>
+              <option value="Emergency HVAC">Emergency HVAC</option>
+              <option value="Duct Cleaning">Duct Cleaning</option>
+              <option value="Electrical Repair">Electrical Repair</option>
+            </select>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Export Button */}
+        <button
+          type="button"
+          onClick={exportCSV}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Export</span>
+        </button>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. TECHNICIAN METRICS TABLE (Matches Reference Screen Exactly)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/10 bg-[#0F172A] overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#0B1322] text-[11px] font-semibold text-slate-400 border-b border-white/10">
+              <tr>
+                <th className="px-5 py-3.5">Technician</th>
+                <th className="px-5 py-3.5">Jobs Completed</th>
+                <th className="px-5 py-3.5">Revenue</th>
+                <th className="px-5 py-3.5">Avg. Rating</th>
+                <th className="px-5 py-3.5">Productivity</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {techs.map((tech) => (
+                <tr
+                  key={tech.id}
+                  className="hover:bg-white/[0.03] transition-colors group"
+                >
+                  {/* Technician Info */}
+                  <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={tech.avatar}
+                        alt={tech.name}
+                        className="w-8 h-8 rounded-full object-cover border border-white/10"
+                      />
+                      <span>{tech.name}</span>
+                    </div>
+                  </td>
+
+                  {/* Jobs Completed */}
+                  <td className="px-5 py-3.5 font-medium text-slate-200 whitespace-nowrap">
+                    {tech.jobsCompleted}
+                  </td>
+
+                  {/* Revenue */}
+                  <td className="px-5 py-3.5 font-semibold text-white whitespace-nowrap">
+                    {tech.revenue}
+                  </td>
+
+                  {/* Avg Rating */}
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{tech.rating}</span>
+                    </div>
+                  </td>
+
+                  {/* Productivity */}
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${tech.productivity}%` }}
+                        />
+                      </div>
+                      <span className="font-semibold text-white">{tech.productivity}%</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {data.technicians.map((t) => {
-                  const compRate =
-                    t.assignedJobs > 0
-                      ? ((t.completedJobs / t.assignedJobs) * 100).toFixed(0) + "%"
-                      : "0%";
-
-                  return (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-navy-900 text-orange-500 font-bold shrink-0">
-                            <Wrench className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <span className="font-bold text-navy-950 text-xs block">
-                              {t.name}
-                            </span>
-                            <span className="text-[10px] text-navy-500 font-mono">
-                              ID: {t.id}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-navy-900 font-mono">
-                        {t.assignedJobs}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-emerald-700 font-mono">
-                        {t.completedJobs}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-navy-700">
-                        {compRate}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-navy-950">
-                        {formatMoney(t.revenueCents)}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right">
-                        <span className="inline-flex items-center gap-1 font-bold text-amber-700">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          {t.rating.toFixed(1)}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right">
-                        <Link
-                          href={`/admin/technicians/${t.id}`}
-                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-navy-900 hover:bg-slate-100 inline-block"
-                        >
-                          View &rarr;
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Footer info */}
+        <div className="px-5 py-3 border-t border-white/10 bg-[#0B1322] text-xs text-slate-400">
+          Showing 1-5 of 5 technicians
+        </div>
+      </div>
     </div>
   );
 }

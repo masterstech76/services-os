@@ -20,6 +20,7 @@ import { formatBusinessTime, formatMoneyCents } from "@/lib/domain/format";
 import { businessConfig } from "@config/business.config";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { BookingMiniWindowModal } from "@/components/booking/BookingMiniWindowModal";
 import type { EnrichedJob } from "@/lib/server/operations";
 
 const TABS = [
@@ -30,7 +31,7 @@ const TABS = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
-const DEMO_JOBS: EnrichedJob[] = [
+const DEFAULT_JOBS: EnrichedJob[] = [
   {
     id: "job-1004",
     jobNumber: 1004,
@@ -86,7 +87,7 @@ const DEMO_JOBS: EnrichedJob[] = [
       id: "tech-carlos",
       name: "Carlos Mendez",
       phone: "(305) 555-0188",
-      email: "carlos@techworkservices.com",
+      email: "carlos@servicepro-os.com",
       color: "#F97316",
       commissionPct: 20,
     },
@@ -106,7 +107,7 @@ const DEMO_JOBS: EnrichedJob[] = [
         {
           id: "li-1",
           kind: "labor",
-          description: "Emergency AC Diagnostic & System Test",
+          description: "Emergency Diagnostic Service Call",
           quantity: 1,
           unitPriceCents: 12900,
           taxable: false,
@@ -118,11 +119,11 @@ const DEMO_JOBS: EnrichedJob[] = [
     events: [],
   },
   {
-    id: "job-1003",
-    jobNumber: 1003,
-    status: "assigned",
-    scheduledStart: new Date(Date.now() + 86400000).toISOString(),
-    scheduledEnd: new Date(Date.now() + 93600000).toISOString(),
+    id: "job-1002",
+    jobNumber: 1002,
+    status: "completed",
+    scheduledStart: new Date(Date.now() - 86400000 * 3).toISOString(),
+    scheduledEnd: new Date(Date.now() - 86400000 * 3 + 7200000).toISOString(),
     addressLine1: "1421 Brickell Ave, Apt 18B",
     addressLine2: null,
     city: "Miami",
@@ -130,24 +131,24 @@ const DEMO_JOBS: EnrichedJob[] = [
     zip: "33131",
     lat: 25.7617,
     lng: -80.1918,
-    issueText: "Seasonal 21-point HVAC tune-up and filter replacement.",
+    issueText: "Seasonal maintenance check before high heat wave.",
     issuePhotos: [],
     beforePhotos: [],
     afterPhotos: [],
     estimatedTotalCents: 8900,
-    depositCents: 2000,
+    depositCents: 1780,
     depositPaymentIntentId: null,
     totalCents: 8900,
-    tipCents: 0,
-    billableMinutes: null,
+    tipCents: 2000,
+    billableMinutes: 60,
     notesInternal: null,
-    techNotes: null,
+    techNotes: "Replaced 45/5 capacitor and rinsed outdoor condenser coils.",
     cancelReason: null,
     cancelledAt: null,
     onTheWayAt: null,
-    startedAt: null,
-    completedAt: null,
-    createdAt: new Date().toISOString(),
+    startedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    completedAt: new Date(Date.now() - 86400000 * 3 + 3600000).toISOString(),
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
     isUnassignedUrgent: false,
     customer: {
       id: "cust-demo",
@@ -159,24 +160,47 @@ const DEMO_JOBS: EnrichedJob[] = [
       smsOptOut: false,
     },
     service: {
-      id: "svc-tuneup",
-      name: "21-Point Precision AC Tune-Up",
-      category: "maintenance",
-      skillTag: "maintenance",
+      id: "svc-ac-tuneup",
+      name: "Seasonal AC Precision Tune-Up",
+      category: "tuneup",
+      skillTag: "hvac_tuneup",
       pricingType: "flat",
       priceCents: 8900,
-      durationMinutes: 90,
-      minBillableMinutes: 90,
+      durationMinutes: 60,
+      minBillableMinutes: 60,
     },
     technician: {
       id: "tech-marcus",
       name: "Marcus Vance",
-      phone: "(305) 555-0199",
-      email: "marcus@techworkservices.com",
+      phone: "(305) 555-0192",
+      email: "marcus@servicepro-os.com",
       color: "#3B82F6",
       commissionPct: 20,
     },
-    invoice: null,
+    invoice: {
+      id: "inv-1002",
+      invoiceNumber: "INV-1002",
+      status: "paid",
+      subtotalCents: 8900,
+      taxCents: 0,
+      tipCents: 2000,
+      totalCents: 8900,
+      depositCreditCents: 1780,
+      amountPaidCents: 8900,
+      amountDueCents: 0,
+      publicPayToken: "pay_demo_1002",
+      lineItems: [
+        {
+          id: "li-2",
+          kind: "labor",
+          description: "Comprehensive 21-Point HVAC Tune-Up",
+          quantity: 1,
+          unitPriceCents: 8900,
+          taxable: false,
+          amountCents: 8900,
+        },
+      ],
+    },
     payments: [],
     events: [],
   },
@@ -185,7 +209,7 @@ const DEMO_JOBS: EnrichedJob[] = [
     jobNumber: 1001,
     status: "completed",
     scheduledStart: new Date(Date.now() - 604800000).toISOString(),
-    scheduledEnd: new Date(Date.now() - 597600000).toISOString(),
+    scheduledEnd: new Date(Date.now() - 604800000 + 7200000).toISOString(),
     addressLine1: "1421 Brickell Ave, Apt 18B",
     addressLine2: null,
     city: "Miami",
@@ -193,7 +217,7 @@ const DEMO_JOBS: EnrichedJob[] = [
     zip: "33131",
     lat: 25.7617,
     lng: -80.1918,
-    issueText: "Whole-home antibacterial duct sanitization.",
+    issueText: "Whole-home duct sanitizing after interior remodel.",
     issuePhotos: [],
     beforePhotos: [],
     afterPhotos: [],
@@ -235,7 +259,7 @@ const DEMO_JOBS: EnrichedJob[] = [
       id: "tech-carlos",
       name: "Carlos Mendez",
       phone: "(305) 555-0188",
-      email: "carlos@techworkservices.com",
+      email: "carlos@servicepro-os.com",
       color: "#F97316",
       commissionPct: 20,
     },
@@ -273,13 +297,14 @@ export default function AppointmentsPage() {
   const [jobs, setJobs] = React.useState<EnrichedJob[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = React.useState(false);
 
-  const filterDemoJobs = React.useCallback((status: string) => {
-    if (status === "upcoming") return DEMO_JOBS.filter((j) => ["unassigned", "assigned"].includes(j.status));
-    if (status === "active") return DEMO_JOBS.filter((j) => ["on_the_way", "in_progress"].includes(j.status));
-    if (status === "completed") return DEMO_JOBS.filter((j) => j.status === "completed");
-    if (status === "cancelled") return DEMO_JOBS.filter((j) => j.status === "cancelled");
-    return DEMO_JOBS;
+  const filterDefaultJobs = React.useCallback((status: string) => {
+    if (status === "upcoming") return DEFAULT_JOBS.filter((j) => ["unassigned", "assigned"].includes(j.status));
+    if (status === "active") return DEFAULT_JOBS.filter((j) => ["on_the_way", "in_progress"].includes(j.status));
+    if (status === "completed") return DEFAULT_JOBS.filter((j) => j.status === "completed");
+    if (status === "cancelled") return DEFAULT_JOBS.filter((j) => j.status === "cancelled");
+    return DEFAULT_JOBS;
   }, []);
 
   const fetchAppointments = React.useCallback(async (status: string) => {
@@ -287,21 +312,21 @@ export default function AppointmentsPage() {
     try {
       const res = await fetch(`/api/account/appointments?status=${status}`);
       if (!res.ok) {
-        setJobs(filterDemoJobs(status));
+        setJobs(filterDefaultJobs(status));
         return;
       }
       const data = await res.json();
       if (!data.jobs || data.jobs.length === 0) {
-        setJobs(filterDemoJobs(status));
+        setJobs(filterDefaultJobs(status));
       } else {
         setJobs(data.jobs);
       }
     } catch {
-      setJobs(filterDemoJobs(status));
+      setJobs(filterDefaultJobs(status));
     } finally {
       setLoading(false);
     }
-  }, [filterDemoJobs]);
+  }, [filterDefaultJobs]);
 
   React.useEffect(() => {
     fetchAppointments(selectedTab);
@@ -312,36 +337,37 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-navy-900">
-            Appointments & Service History
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Appointments &amp; Service History
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+          <p className="text-xs sm:text-sm text-slate-300 mt-1">
             Track current service dispatches, view past work orders, and manage schedules.
           </p>
         </div>
 
         <Button
-          asChild
-          className="bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold text-xs sm:text-sm shadow-md"
+          type="button"
+          onClick={() => setBookingModalOpen(true)}
+          className="bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/20 rounded-xl px-5 py-2.5 cursor-pointer"
         >
-          <Link href="/book" className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             <span>Book New Service</span>
-          </Link>
+          </div>
         </Button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-white/10">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setSelectedTab(tab.id)}
-            className={`whitespace-nowrap px-4 py-2 text-xs font-bold rounded-t-lg transition-colors border-b-2 ${
+            className={`whitespace-nowrap px-4 py-2.5 text-xs font-bold rounded-xl transition-all ${
               selectedTab === tab.id
-                ? "border-orange-500 text-orange-600 bg-orange-50/50"
-                : "border-transparent text-slate-600 hover:text-navy-900 hover:bg-slate-50"
+                ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                : "text-slate-300 hover:text-white hover:bg-white/5"
             }`}
           >
             {tab.label}
@@ -353,37 +379,42 @@ export default function AppointmentsPage() {
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-40 rounded-2xl bg-slate-200 animate-pulse" />
+            <div key={i} className="h-44 rounded-3xl bg-white/5 border border-white/10 animate-pulse" />
           ))}
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center space-y-3">
-          <AlertCircle className="h-7 w-7 text-red-600 mx-auto" />
-          <p className="font-bold text-red-900">{error}</p>
+        <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center space-y-3">
+          <AlertCircle className="h-7 w-7 text-red-400 mx-auto" />
+          <p className="font-bold text-white">{error}</p>
           <Button
             onClick={() => fetchAppointments(selectedTab)}
             size="sm"
             variant="outline"
-            className="text-xs"
+            className="text-xs rounded-xl border-white/15 bg-white/5 text-white"
           >
             Retry
           </Button>
         </div>
       ) : jobs.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+        <div className="rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-10 text-center space-y-4 shadow-xl">
+          <div className="h-12 w-12 rounded-2xl bg-orange-500/10 border border-orange-500/25 text-[#F97316] flex items-center justify-center mx-auto">
             <Calendar className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-bold text-navy-900">No Appointments in this Category</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            There are no appointments matching your current filter. You can book an appointment or switch filters.
+          <h3 className="text-lg font-extrabold text-white">No appointments yet</h3>
+          <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
+            There are no appointments matching your current filter. Schedule a certified HVAC technician in under 60 seconds.
           </p>
-          <Button asChild size="sm" className="bg-orange-500 hover:bg-orange-600 text-navy-900 font-bold text-xs">
-            <Link href="/book">Schedule Service</Link>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setBookingModalOpen(true)}
+            className="bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer px-5 py-2.5"
+          >
+            <span>Book Service</span>
           </Button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {jobs.map((job) => {
             const isLive = ["on_the_way", "in_progress"].includes(job.status);
             const canModify = ["unassigned", "assigned"].includes(job.status);
@@ -391,24 +422,24 @@ export default function AppointmentsPage() {
             return (
               <div
                 key={job.id}
-                className={`rounded-2xl border bg-white p-5 sm:p-6 shadow-sm space-y-4 transition-all ${
-                  isLive ? "border-2 border-orange-400 ring-2 ring-orange-100" : "border-slate-200 hover:border-slate-300"
+                className={`rounded-3xl border bg-[#0F172A]/85 backdrop-blur-xl p-6 sm:p-7 shadow-2xl space-y-5 transition-all ${
+                  isLive ? "border-2 border-orange-500 shadow-orange-500/15" : "border-white/10 hover:border-orange-500/30"
                 }`}
               >
                 {/* Top Row: Job #, Service Title, Status */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <span className="font-mono text-xs font-bold text-slate-500">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-bold text-slate-400 bg-white/5 px-2.5 py-1 rounded-md border border-white/10">
                       Job #{job.jobNumber}
                     </span>
-                    <h3 className="text-base font-black text-navy-900">
+                    <h3 className="text-base sm:text-lg font-extrabold text-white">
                       {job.service.name}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
                     {isLive && (
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 animate-pulse">
-                        <Navigation className="h-3 w-3" />
+                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 animate-pulse">
+                        <Navigation className="h-3.5 w-3.5" />
                         <span>En Route</span>
                       </span>
                     )}
@@ -417,16 +448,16 @@ export default function AppointmentsPage() {
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-xs">
+                  <div className="space-y-1.5">
+                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                       Scheduled Time
                     </span>
-                    <p className="font-bold text-navy-900 flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-orange-500" />
+                    <p className="font-bold text-white flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-[#F97316]" />
                       <span>{format(new Date(job.scheduledStart), "EEE, MMM d, yyyy")}</span>
                     </p>
-                    <p className="text-slate-600 flex items-center gap-1.5">
+                    <p className="text-slate-300 flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
                       <span>
                         {formatBusinessTime(job.scheduledStart)} – {formatBusinessTime(job.scheduledEnd)}
@@ -434,69 +465,69 @@ export default function AppointmentsPage() {
                     </p>
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+                  <div className="space-y-1.5">
+                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                       Service Location
                     </span>
-                    <p className="font-bold text-navy-900 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-orange-500" />
+                    <p className="font-bold text-white flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-[#F97316]" />
                       <span className="truncate">{job.addressLine1}</span>
                     </p>
-                    <p className="text-slate-600 truncate">
+                    <p className="text-slate-300 truncate">
                       {job.city}, {job.state} {job.zip}
                     </p>
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+                  <div className="space-y-1.5">
+                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                       Assigned Technician
                     </span>
                     {job.technician ? (
                       <div>
-                        <p className="font-bold text-navy-900 flex items-center gap-1.5">
-                          <User className="h-3.5 w-3.5 text-orange-500" />
+                        <p className="font-bold text-white flex items-center gap-2 text-sm">
+                          <User className="h-4 w-4 text-[#F97316]" />
                           <span>{job.technician.name}</span>
                         </p>
                         <a
                           href={`tel:${job.technician.phone}`}
-                          className="text-slate-600 hover:text-orange-600 font-medium"
+                          className="text-slate-300 hover:text-[#F97316] font-medium transition-colors"
                         >
                           {job.technician.phone}
                         </a>
                       </div>
                     ) : (
-                      <p className="text-slate-500 italic">Assigning nearest tech...</p>
+                      <p className="text-slate-400 italic">Assigning nearest tech...</p>
                     )}
                   </div>
                 </div>
 
                 {/* Bottom Action Bar */}
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-xs text-slate-600">
+                <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-slate-300">
                     <span>Deposit: </span>
-                    <span className="font-bold text-navy-900">
+                    <span className="font-bold text-white">
                       {formatMoneyCents(job.depositCents)}
                     </span>
                     {job.totalCents && (
                       <>
-                        <span className="mx-1.5">•</span>
+                        <span className="mx-2 text-slate-500">•</span>
                         <span>Total: </span>
-                        <span className="font-bold text-navy-900">
+                        <span className="font-bold text-emerald-400">
                           {formatMoneyCents(job.totalCents)}
                         </span>
                       </>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     {isLive && (
                       <Button
                         asChild
                         size="sm"
-                        className="bg-navy-900 hover:bg-navy-800 text-white font-bold text-xs"
+                        className="bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs rounded-xl shadow-md"
                       >
                         <Link href={`/account/appointments/${job.id}/track`}>
-                          <Navigation className="h-3.5 w-3.5 mr-1 text-orange-400" />
+                          <Navigation className="h-3.5 w-3.5 mr-1 text-white" />
                           <span>Track Live ETA</span>
                         </Link>
                       </Button>
@@ -506,7 +537,7 @@ export default function AppointmentsPage() {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="text-xs font-bold border-slate-300 text-navy-900"
+                      className="text-xs font-bold border-white/15 bg-white/5 hover:bg-white/10 text-white rounded-xl"
                     >
                       <Link href={`/account/appointments/${job.id}`}>
                         <span>View Work Order</span>
@@ -520,6 +551,12 @@ export default function AppointmentsPage() {
           })}
         </div>
       )}
+
+      {/* Global Booking Mini Window Modal */}
+      <BookingMiniWindowModal
+        isOpen={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+      />
     </div>
   );
 }

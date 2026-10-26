@@ -38,11 +38,11 @@ export function StepSlot({
       <div>
         <h1
           id="step-4-heading"
-          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-navy-900"
+          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-white"
         >
           Pick a time
         </h1>
-        <p className="text-sm text-navy-700 mt-1">
+        <p className="text-sm text-slate-300 mt-1">
           Select a day and arrival window below.
         </p>
       </div>
@@ -65,8 +65,8 @@ export function StepSlot({
               className={cn(
                 "shrink-0 rounded-full border px-4 py-2.5 text-xs font-bold transition-all min-h-[44px]",
                 isSelected
-                  ? "border-2 border-orange-500 bg-orange-500 text-navy-900 shadow-md"
-                  : "border-slate-200 bg-white text-navy-900 hover:bg-slate-50"
+                  ? "border-2 border-orange-500 bg-[#F97316] text-[#0F172A] shadow-md shadow-orange-500/20 font-black"
+                  : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
               )}
             >
               {day.label}
@@ -83,9 +83,9 @@ export function StepSlot({
       ) : daySlots.length === 0 ? (
         <div
           data-testid="fully-booked-state"
-          className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-2"
+          className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center space-y-2"
         >
-          <p className="text-sm font-semibold text-navy-900">
+          <p className="text-sm font-semibold text-white">
             Fully booked on this day.
           </p>
           {nextAvailableDay && (
@@ -93,7 +93,7 @@ export function StepSlot({
               type="button"
               data-testid="next-available-day-link"
               onClick={() => onSelectDay(nextAvailableDay.dateStr)}
-              className="inline-flex items-center gap-1 text-sm font-semibold text-orange-700 underline hover:text-navy-900 min-h-[44px] px-2"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-[#F97316] underline hover:text-orange-400 min-h-[44px] px-2"
             >
               <span>Fully booked — try {nextAvailableDay.label}</span>
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -104,7 +104,7 @@ export function StepSlot({
         <div className="space-y-5">
           {morningSlots.length > 0 && (
             <div>
-              <h2 className="text-sm font-bold text-navy-900 mb-2.5">
+              <h2 className="text-sm font-bold text-white mb-2.5">
                 Morning
               </h2>
               <div className="grid grid-cols-3 gap-2.5">
@@ -133,7 +133,7 @@ export function StepSlot({
 
           {afternoonSlots.length > 0 && (
             <div>
-              <h2 className="text-sm font-bold text-navy-900 mb-2.5">
+              <h2 className="text-sm font-bold text-white mb-2.5">
                 Afternoon
               </h2>
               <div className="grid grid-cols-3 gap-2.5">

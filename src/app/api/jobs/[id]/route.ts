@@ -8,7 +8,7 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const auth = await requireRole(request, ["owner", "technician"]);
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
   if (!auth.ok) return auth.response;
 
   const store = getLocalDbWithDemo();
@@ -45,7 +45,7 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const auth = await requireRole(request, ["owner", "technician"]);
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
   if (!auth.ok) return auth.response;
 
   const store = getLocalDbWithDemo();
@@ -81,7 +81,7 @@ export async function PATCH(
     afterPhotos?: string[];
   };
 
-  if (body.notesInternal !== undefined && auth.actor.role === "owner") {
+  if (body.notesInternal !== undefined && (auth.actor.role === "owner" || auth.actor.role === "admin")) {
     job.notes_internal = body.notesInternal;
   }
   if (body.techNotes !== undefined) {
@@ -105,7 +105,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const auth = await requireRole(request, ["owner"]);
+  const auth = await requireRole(request, ["owner", "admin"]);
   if (!auth.ok) return auth.response;
 
   const store = getLocalDbWithDemo();

@@ -8,18 +8,18 @@ for (let z = 33125; z <= 33146; z++) {
 miamiZips.push("33149");
 
 const rawConfig: BusinessConfig = {
-  businessName: "TechWork",
-  slug: "techwork",
-  legalName: "TechWork Services LLC",
+  businessName: "ServicePro",
+  slug: "servicepro",
+  legalName: "ServicePro Operations LLC",
   licenseNumber: "CAC1819420",
   phone: "(305) 555-0100",
-  email: "service@techwork.in",
+  email: "dispatch@servicepro-os.com",
   address: "1200 Brickell Ave, Suite 400, Miami, FL 33131",
   city: "Miami",
   state: "FL",
   logo: {
-    light: "/logo-placeholder.svg",
-    dark: "/logo-placeholder.svg",
+    light: "/images/servicepro-icon-transparent.png",
+    dark: "/images/servicepro-icon-transparent.png",
     favicon: "/favicon.ico",
   },
   colors: {
@@ -128,7 +128,7 @@ const rawConfig: BusinessConfig = {
   sms: {
     driver: "console",
     fromEnv: "TWILIO_FROM_NUMBER",
-    reviewUrl: "https://g.page/r/techwork/review",
+    reviewUrl: "https://g.page/r/servicepro/review",
   },
   stripe: {
     publishableKeyEnv: "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
@@ -141,9 +141,9 @@ const rawConfig: BusinessConfig = {
     defaultZoom: 11,
   },
   seo: {
-    title: "TechWork — Same-Day AC Repair & Field Service",
+    title: "ServicePro OS — Same-Day AC Repair & Field Service",
     description: "Licensed & insured HVAC technicians. Book online in 60 seconds with upfront pricing.",
-    heroHeadline: "Fast, Upfront Service by TechWork Pros",
+    heroHeadline: "Fast, Upfront Service by ServicePro Pros",
     heroSubheadline: "Licensed local technicians at your door today. Book online in 60 seconds — no phone tag.",
   },
 };

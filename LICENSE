@@ -1,0 +1,49 @@
+# SERVICEPRO OS — PROPRIETARY SOFTWARE LICENCE
+
+**Copyright Owner:** [Your legal name or company name]  
+**Software:** ServicePro OS  
+**Copyright Notice:** Copyright © 2026 [Your legal name or company name]. All rights reserved.
+
+## 1. Ownership
+
+ServicePro OS, including its original source code, software architecture, documentation, and original design assets, remains the intellectual property of the Copyright Owner, except for third-party materials governed by their respective licences.
+
+The purchase price grants the Buyer only the limited rights expressly stated in this agreement. It does not transfer copyright ownership or any other intellectual property rights.
+
+## 2. Permitted Use
+
+Subject to payment and compliance with this agreement, the Buyer receives a limited, non-exclusive, non-transferable, non-sublicensable licence to use, install, and modify the Software solely for the Buyer's own internal business operations, including deploying the application to schedule field technicians, take bookings, and process service payments from the Buyer's own end-customer clients.
+
+## 3. Prohibition on Resale and Software Redistribution
+
+Without the Copyright Owner's prior written permission, the Buyer must not:
+
+- Resell, redistribute, publish, or commercially distribute the Software, its source code, or any compiled distribution package.
+- Offer the Software as a multi-tenant Software-as-a-Service (SaaS), hosted software platform, or white-label dispatch solution to other businesses, contractors, or third parties.
+- Sublicense, rent, lease, or otherwise grant third parties rights to the Software or its source code.
+- Share, transfer, or provide source-code access to third parties except to authorized technical personnel or direct contractors strictly as necessary for permitted internal operations and subject to appropriate confidentiality obligations.
+- Market the Software, or a derivative work containing substantial portions of its protected code, as the Buyer's own software product for resale, redistribution, or commercial syndication.
+- Remove or alter copyright notices or proprietary attribution.
+
+## 4. Modifications
+
+The Buyer may modify the Software only for the permitted internal use described in this agreement. Modifications do not grant the Buyer ownership of the Copyright Owner's pre-existing code or permission to resell or distribute that code.
+
+## 5. Breach and Remedies
+
+Unauthorized copying, distribution, sublicensing, or resale may constitute a breach of this agreement and, where applicable, copyright infringement. The Copyright Owner may pursue remedies available under applicable law, subject to proof, legal requirements, and any applicable dispute-resolution provisions.
+
+## 6. No Copyright Assignment
+
+Nothing in this agreement constitutes an assignment or transfer of copyright ownership. Any broader rights require a separate written agreement signed by the Copyright Owner.
+
+## 7. Third-Party Components
+
+Third-party libraries, frameworks, fonts, images, and other components remain subject to their respective licences. This agreement does not override those licences or restrict rights that the Copyright Owner does not possess.
+
+## 8. Governing Law
+
+The governing law, jurisdiction, dispute-resolution process, and other applicable terms must be specified in the final agreement after legal review.
+
+---
+**Important:** This licence becomes effective only when properly agreed to by the parties. Replace all placeholders and have an appropriately qualified lawyer review it before accepting payment or delivering the source code.

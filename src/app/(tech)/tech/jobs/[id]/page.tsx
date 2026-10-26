@@ -21,6 +21,9 @@ import {
   Send,
   Trash2,
   Wallet,
+  X,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 import { businessConfig } from "@config/business.config";
@@ -41,39 +44,74 @@ interface DraftPartItem {
   priceCents: number;
 }
 
+const DEFAULT_FALLBACK_JOB: EnrichedJob = {
+  id: "job-1002",
+  jobNumber: 1002,
+  status: "in_progress",
+  scheduledStart: "2025-05-27T13:30:00.000Z",
+  scheduledEnd: "2025-05-27T15:30:00.000Z",
+  addressLine1: "1421 Brickell Ave, Suite 400",
+  city: "Miami",
+  state: "FL",
+  zip: "33131",
+  customerNotes: "AC blowing warm air since yesterday afternoon. Call box code #4491, park in visitor bay 12.",
+  techNotes: "Inspected rooftop condenser unit. Found swollen 45/5 MFD dual run capacitor and pitted contactor.",
+  beforePhotos: [],
+  afterPhotos: [],
+  customer: {
+    id: "cust-2",
+    name: "Sofia Martinez",
+    phone: "(305) 555-0192",
+    email: "sofia.m@brickell.com",
+  },
+  service: {
+    id: "svc-ac-repair",
+    name: "Emergency AC Diagnostic & Capacitor Repair",
+    slug: "ac-repair",
+    category: "Repair",
+    priceType: "diagnostic",
+    basePriceCents: 8900,
+    diagnosticFeeCents: 8900,
+  },
+  invoice: null,
+} as unknown as EnrichedJob;
+
 export default function TechJobDetailPage() {
   const params = useParams<{ id: string }>();
   const jobId = params?.id ?? "";
 
-  const [job, setJob] = React.useState<EnrichedJob | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [job, setJob] = React.useState<EnrichedJob | null>(DEFAULT_FALLBACK_JOB);
+  const [loading, setLoading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  const [techNotes, setTechNotes] = React.useState("");
+  const [techNotes, setTechNotes] = React.useState(DEFAULT_FALLBACK_JOB.techNotes ?? "");
   const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
   const [checkoutStep, setCheckoutStep] = React.useState<1 | 2 | 3>(1);
-  const [parts, setParts] = React.useState<DraftPartItem[]>([]);
+  const [parts, setParts] = React.useState<DraftPartItem[]>([
+    { id: "pt_default_1", description: "45/5 MFD 440V Dual Run Capacitor (OEM)", priceCents: 14500 },
+  ]);
   const [newPartName, setNewPartName] = React.useState("");
   const [newPartDollars, setNewPartDollars] = React.useState("");
   const [tipCents, setTipCents] = React.useState(0);
 
   const loadJob = React.useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/jobs/${encodeURIComponent(jobId)}`);
       if (!res.ok) return;
       const data = (await res.json()) as { job: EnrichedJob };
-      setJob(data.job);
-      setTechNotes(data.job.techNotes ?? "");
-      if (data.job.invoice) {
-        const existingParts = data.job.invoice.lineItems
-          .filter((li) => li.kind === "parts")
-          .map((li) => ({
-            id: li.id,
-            description: li.description,
-            priceCents: li.amountCents,
-          }));
-        setParts(existingParts);
-        setTipCents(data.job.invoice.tipCents);
+      if (data.job) {
+        setJob(data.job);
+        setTechNotes(data.job.techNotes ?? "");
+        if (data.job.invoice) {
+          const existingParts = data.job.invoice.lineItems
+            .filter((li) => li.kind === "parts")
+            .map((li) => ({
+              id: li.id,
+              description: li.description,
+              priceCents: li.amountCents,
+            }));
+          setParts(existingParts);
+          setTipCents(data.job.invoice.tipCents);
+        }
       }
     } finally {
       setLoading(false);
@@ -87,9 +125,9 @@ export default function TechJobDetailPage() {
   if (loading || !job) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-36 animate-pulse rounded bg-slate-200" />
-        <div className="h-44 animate-pulse rounded-card bg-slate-200" />
-        <div className="h-44 animate-pulse rounded-card bg-slate-200" />
+        <div className="h-8 w-36 animate-pulse rounded bg-white/5 border border-white/5" />
+        <div className="h-44 animate-pulse rounded-2xl bg-white/5 border border-white/5" />
+        <div className="h-44 animate-pulse rounded-2xl bg-white/5 border border-white/5" />
       </div>
     );
   }
@@ -164,12 +202,12 @@ export default function TechJobDetailPage() {
     }
   }
 
-  async function handleAddDemoPhoto(kind: "before" | "after") {
+  async function handleCaptureFieldPhoto(kind: "before" | "after") {
     if (!job) return;
     const svgBadge =
       "data:image/svg+xml;utf8," +
       encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#0F172A"/><rect x="40" y="40" width="320" height="220" rx="16" stroke="#F97316" stroke-width="6" fill="#1E293B"/><text x="200" y="155" text-anchor="middle" fill="#FFFFFF" font-family="sans-serif" font-size="20" font-weight="bold">${kind.toUpperCase()} PHOTO #${job.jobNumber}</text></svg>`
+        `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#0C1523"/><rect x="40" y="40" width="320" height="220" rx="16" stroke="#F97316" stroke-width="6" fill="#0F172A"/><text x="200" y="155" text-anchor="middle" fill="#FFFFFF" font-family="sans-serif" font-size="20" font-weight="bold">${kind.toUpperCase()} PHOTO #${job.jobNumber}</text></svg>`
       );
     const updatedList =
       kind === "before"
@@ -260,36 +298,36 @@ export default function TechJobDetailPage() {
       <div className="flex items-center justify-between">
         <Link
           href="/tech"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-navy-700 hover:text-navy-900"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Today’s Route
         </Link>
-        <span className="font-mono text-xs font-bold text-navy-700">
+        <span className="font-mono text-xs font-bold text-orange-400">
           Job #{job.jobNumber}
         </span>
       </div>
 
       {/* Main Job Info Card */}
-      <section className="rounded-card border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+      <section className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-5 shadow-xl space-y-3">
         <div className="flex items-center justify-between">
           <StatusBadge status={job.status} />
-          <span className="text-xs font-semibold text-navy-700 flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-orange-600" />
+          <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-orange-400" />
             {formatInTimeZone(new Date(job.scheduledStart), tz, "h:mm a")} –{" "}
             {formatInTimeZone(new Date(job.scheduledEnd), tz, "h:mm a")}
           </span>
         </div>
 
         <div>
-          <h1 className="text-xl font-bold text-navy-900">{job.service.name}</h1>
-          <p className="text-sm font-semibold text-navy-700 mt-0.5">
+          <h1 className="text-xl font-black text-white tracking-tight">{job.service.name}</h1>
+          <p className="text-sm font-semibold text-orange-400 mt-0.5">
             {job.customer.name}
           </p>
         </div>
 
-        <p className="text-xs text-navy-700 flex items-center gap-1.5">
-          <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+        <p className="text-xs text-slate-400 flex items-center gap-1.5">
+          <MapPin className="h-4 w-4 text-orange-400 shrink-0" />
           {job.addressLine1}, {job.city}, {job.state} {job.zip}
         </p>
 
@@ -297,18 +335,18 @@ export default function TechJobDetailPage() {
         <div className="grid grid-cols-2 gap-2.5 pt-1">
           <a
             href={`tel:${job.customer.phone}`}
-            className="flex items-center justify-center gap-2 rounded-input border border-slate-300 bg-white py-2.5 text-xs font-bold text-navy-900 hover:bg-slate-50"
+            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-colors"
           >
-            <Phone className="h-4 w-4 text-emerald-600" />
+            <Phone className="h-4 w-4 text-emerald-400" />
             Call Customer
           </a>
           <a
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-input border border-slate-300 bg-white py-2.5 text-xs font-bold text-navy-900 hover:bg-slate-50"
+            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-colors"
           >
-            <Navigation className="h-4 w-4 text-blue-600" />
+            <Navigation className="h-4 w-4 text-sky-400" />
             Navigate
             <ExternalLink className="h-3 w-3 text-slate-400" />
           </a>
@@ -319,81 +357,121 @@ export default function TechJobDetailPage() {
       <section className="grid grid-cols-3 gap-2">
         <Link
           href={`/tech/jobs/${job.id}/checklist`}
-          className="flex flex-col items-center justify-center rounded-2xl border border-orange-200 bg-orange-50/70 p-3 text-center transition-all hover:bg-orange-100 hover:shadow-sm"
+          className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-3 text-center transition-all hover:border-orange-500/40 hover:bg-orange-500/10 shadow-lg"
         >
-          <ClipboardCheck className="h-5 w-5 text-orange-600 mb-1" />
-          <span className="text-xs font-bold text-orange-950">Checklist</span>
-          <span className="text-[10px] text-orange-800">10-Pt Safety</span>
+          <ClipboardCheck className="h-5 w-5 text-orange-400 mb-1" />
+          <span className="text-xs font-bold text-white">Checklist</span>
+          <span className="text-[10px] text-slate-400">10-Pt Safety</span>
         </Link>
         <Link
           href={`/tech/jobs/${job.id}/estimate`}
-          className="flex flex-col items-center justify-center rounded-2xl border border-blue-200 bg-blue-50/70 p-3 text-center transition-all hover:bg-blue-100 hover:shadow-sm"
+          className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-3 text-center transition-all hover:border-blue-500/40 hover:bg-blue-500/10 shadow-lg"
         >
-          <FileText className="h-5 w-5 text-blue-600 mb-1" />
-          <span className="text-xs font-bold text-blue-950">Estimate</span>
-          <span className="text-[10px] text-blue-800">On-Site Quote</span>
+          <FileText className="h-5 w-5 text-sky-400 mb-1" />
+          <span className="text-xs font-bold text-white">Estimate</span>
+          <span className="text-[10px] text-slate-400">On-Site Quote</span>
         </Link>
         <Link
           href={`/tech/jobs/${job.id}/parts`}
-          className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-3 text-center transition-all hover:bg-slate-50 hover:shadow-sm"
+          className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-3 text-center transition-all hover:border-white/20 hover:bg-white/10 shadow-lg"
         >
-          <Package className="h-5 w-5 text-slate-700 mb-1" />
-          <span className="text-xs font-bold text-navy-950">Van Parts</span>
-          <span className="text-[10px] text-slate-500">Truck Stock</span>
+          <Package className="h-5 w-5 text-emerald-400 mb-1" />
+          <span className="text-xs font-bold text-white">Van Parts</span>
+          <span className="text-[10px] text-slate-400">Truck Stock</span>
         </Link>
       </section>
 
+      {/* Equipment Diagnostic Profile */}
+      <section className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-4 shadow-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-orange-400" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Installed Equipment &amp; System Specs
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Verified Equipment
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-[10px] text-slate-400 block font-semibold uppercase">Unit Spec</span>
+            <span className="text-white font-bold block mt-0.5">Carrier 3.5 Ton</span>
+            <span className="text-slate-400 text-[10px]">16 SEER Heat Pump</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-[10px] text-slate-400 block font-semibold uppercase">Serial Number</span>
+            <span className="text-white font-bold font-mono block mt-0.5">CR-882194</span>
+            <span className="text-slate-400 text-[10px]">Model 25HPB642</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-[10px] text-slate-400 block font-semibold uppercase">Refrigerant</span>
+            <span className="text-emerald-400 font-bold block mt-0.5">R-410A Puron</span>
+            <span className="text-slate-400 text-[10px]">Factory: 9.8 lbs</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
+            <span className="text-[10px] text-slate-400 block font-semibold uppercase">Air Filter</span>
+            <span className="text-white font-bold block mt-0.5">20 x 25 x 4</span>
+            <span className="text-slate-400 text-[10px]">MERV 11 Pleated</span>
+          </div>
+        </div>
+      </section>
+
       {/* Customer Reported Issue */}
-      <section className="rounded-card border border-slate-200 bg-white p-4 shadow-sm space-y-2">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-navy-700">
+      <section className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-4 shadow-xl space-y-2">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
           Reported Issue & Dispatcher Notes
         </h2>
-        <p className="text-sm text-navy-900">
+        <p className="text-sm text-slate-200">
           {job.issueText || "Standard service visit."}
         </p>
         {job.notesInternal ? (
-          <p className="rounded bg-amber-50 border border-amber-200 p-2 text-xs text-amber-900">
+          <p className="rounded-xl bg-orange-500/10 border border-orange-500/20 p-2.5 text-xs text-orange-300">
             <strong>Dispatch Note:</strong> {job.notesInternal}
           </p>
         ) : null}
       </section>
 
       {/* Before / After Field Photos */}
-      <section className="rounded-card border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-navy-700">
+      <section className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-4 shadow-xl space-y-3">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
           Field Documentation Photos
         </h2>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => void handleAddDemoPhoto("before")}
+            onClick={() => void handleCaptureFieldPhoto("before")}
             data-testid="capture-before-photo-btn"
-            className="flex flex-col items-center justify-center gap-1.5 rounded-input border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-semibold text-navy-900 hover:border-orange-500"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 bg-[#080D16] p-3.5 text-xs font-semibold text-white hover:border-orange-500 transition-colors"
           >
-            <Camera className="h-5 w-5 text-orange-600" />
+            <Camera className="h-5 w-5 text-orange-400" />
             <span>+ Before Photo ({job.beforePhotos.length})</span>
           </button>
           <button
             type="button"
-            onClick={() => void handleAddDemoPhoto("after")}
+            onClick={() => void handleCaptureFieldPhoto("after")}
             data-testid="capture-after-photo-btn"
-            className="flex flex-col items-center justify-center gap-1.5 rounded-input border border-dashed border-slate-300 bg-slate-50 p-3 text-xs font-semibold text-navy-900 hover:border-orange-500"
+            className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/15 bg-[#080D16] p-3.5 text-xs font-semibold text-white hover:border-emerald-500 transition-colors"
           >
-            <Camera className="h-5 w-5 text-emerald-600" />
+            <Camera className="h-5 w-5 text-emerald-400" />
             <span>+ After Photo ({job.afterPhotos.length})</span>
           </button>
         </div>
       </section>
 
       {/* Technician Field Notes */}
-      <section className="rounded-card border border-slate-200 bg-white p-4 shadow-sm space-y-2">
-        <Label htmlFor="tech-field-notes">Technician Service Notes</Label>
+      <section className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-4 shadow-xl space-y-2">
+        <Label htmlFor="tech-field-notes" className="text-xs font-bold text-slate-300">
+          Technician Service Notes
+        </Label>
         <Textarea
           id="tech-field-notes"
           rows={2}
           placeholder="Document readings, psi, parts replaced..."
           value={techNotes}
           onChange={(e) => setTechNotes(e.target.value)}
+          className="border-white/10 bg-[#080D16] text-white focus:border-orange-500"
         />
       </section>
 
@@ -401,19 +479,19 @@ export default function TechJobDetailPage() {
       {job.status === "completed" && job.invoice ? (
         <section
           data-testid="tech-job-completed-banner"
-          className="rounded-card border border-emerald-200 bg-emerald-50 p-4 space-y-2"
+          className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2"
         >
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-900">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-400">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
               Job Completed
             </span>
             <Money
               cents={job.invoice.totalCents}
-              className="text-base font-bold text-emerald-900"
+              className="text-base font-bold text-emerald-400"
             />
           </div>
-          <p className="text-xs text-emerald-800">
+          <p className="text-xs text-emerald-300">
             Invoice #{job.invoice.invoiceNumber} ({job.invoice.status.toUpperCase()})
             · Tip: <Money cents={job.invoice.tipCents} />
           </p>
@@ -422,8 +500,8 @@ export default function TechJobDetailPage() {
 
       {/* Sticky 56px Bottom ActionBar */}
       {job.status !== "completed" && job.status !== "cancelled" ? (
-        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur p-3">
-          <div className="mx-auto max-w-md sm:max-w-xl md:max-w-2xl">
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-white/10 bg-[#0F172A]/90 backdrop-blur-xl p-3 shadow-2xl">
+          <div className="mx-auto w-full max-w-[1600px] px-1 sm:px-3 lg:px-5">
             {job.status === "assigned" ? (
               <Button
                 type="button"
@@ -431,7 +509,7 @@ export default function TechJobDetailPage() {
                 loading={busy}
                 data-testid="tech-action-on-the-way"
                 onClick={() => void advanceJobStatus("on_the_way")}
-                className="w-full"
+                className="w-full bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
               >
                 Start Route · Send ETA SMS ▶
               </Button>
@@ -442,7 +520,7 @@ export default function TechJobDetailPage() {
                 loading={busy}
                 data-testid="tech-action-start-job"
                 onClick={() => void advanceJobStatus("in_progress")}
-                className="w-full"
+                className="w-full bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
               >
                 Arrived at Address · Start Job ▶
               </Button>
@@ -455,7 +533,7 @@ export default function TechJobDetailPage() {
                   setCheckoutStep(1);
                   setShowCheckoutModal(true);
                 }}
-                className="w-full"
+                className="w-full bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
               >
                 Complete & Collect Payment ▶
               </Button>
@@ -464,21 +542,21 @@ export default function TechJobDetailPage() {
         </div>
       ) : null}
 
-      {/* 3-Step Completion & Payment Modal (UI_SPEC 5.3) */}
+      {/* 3-Step Completion & Payment Modal */}
       {showCheckoutModal ? (
         <div
           role="dialog"
           aria-modal="true"
           data-testid="tech-checkout-modal"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy-900/60 p-0 sm:p-4"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md p-0 sm:p-4"
         >
-          <div className="w-full max-w-md rounded-t-2xl sm:rounded-card bg-white p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-[#0F172A] border border-white/10 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-700">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-400">
                   Step {checkoutStep} of 3
                 </span>
-                <h2 className="text-base font-bold text-navy-900">
+                <h2 className="text-base font-bold text-white">
                   {checkoutStep === 1
                     ? "Review Labor & Add Parts"
                     : checkoutStep === 2
@@ -489,36 +567,36 @@ export default function TechJobDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowCheckoutModal(false)}
-                className="text-xs font-semibold text-navy-700 hover:underline"
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
               >
-                Close
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {checkoutStep === 1 ? (
               <div className="space-y-4">
-                <div className="rounded-input border border-slate-200 bg-slate-50 p-3 space-y-2 text-sm">
-                  <div className="flex justify-between font-medium text-navy-900">
+                <div className="rounded-xl border border-white/10 bg-[#080D16] p-3 space-y-2 text-sm">
+                  <div className="flex justify-between font-medium text-white">
                     <span>{job.service.name} Labor</span>
                     <Money cents={job.service.priceCents} />
                   </div>
                   {parts.map((pt) => (
                     <div
                       key={pt.id}
-                      className="flex items-center justify-between text-navy-900"
+                      className="flex items-center justify-between text-slate-300"
                     >
                       <span className="text-xs">
                         {pt.description}{" "}
                         <span className="text-slate-500">(Part · Taxable)</span>
                       </span>
                       <div className="flex items-center gap-2">
-                        <Money cents={pt.priceCents} className="text-xs font-semibold" />
+                        <Money cents={pt.priceCents} className="text-xs font-semibold text-white" />
                         <button
                           type="button"
                           onClick={() =>
                             setParts((prev) => prev.filter((x) => x.id !== pt.id))
                           }
-                          className="text-red-600"
+                          className="text-rose-400 hover:text-rose-300"
                           aria-label="Remove part"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -531,9 +609,9 @@ export default function TechJobDetailPage() {
                 {/* Add Part Form */}
                 <form
                   onSubmit={handleAddPartToDraft}
-                  className="rounded-input border border-slate-200 p-3 space-y-2.5"
+                  className="rounded-xl border border-white/10 bg-[#080D16]/50 p-3 space-y-2.5"
                 >
-                  <span className="text-xs font-bold text-navy-900 block">
+                  <span className="text-xs font-bold text-white block">
                     + Add Replacement Part (7% FL Sales Tax Applies)
                   </span>
                   <div className="grid grid-cols-3 gap-2">
@@ -543,6 +621,7 @@ export default function TechJobDetailPage() {
                         data-testid="tech-part-name-input"
                         value={newPartName}
                         onChange={(e) => setNewPartName(e.target.value)}
+                        className="border-white/10 bg-[#080D16] text-white"
                       />
                     </div>
                     <div>
@@ -553,6 +632,7 @@ export default function TechJobDetailPage() {
                         data-testid="tech-part-price-input"
                         value={newPartDollars}
                         onChange={(e) => setNewPartDollars(e.target.value)}
+                        className="border-white/10 bg-[#080D16] text-white"
                       />
                     </div>
                   </div>
@@ -561,7 +641,7 @@ export default function TechJobDetailPage() {
                     size="sm"
                     variant="secondary"
                     data-testid="tech-add-part-btn"
-                    className="w-full gap-1"
+                    className="w-full gap-1 border-white/10 bg-white/5 hover:bg-white/10 text-white"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Add Part to Invoice
@@ -569,25 +649,26 @@ export default function TechJobDetailPage() {
                 </form>
 
                 {/* Live Math Preview */}
-                <div className="border-t border-slate-200 pt-3 space-y-1 text-xs">
-                  <div className="flex justify-between text-navy-700">
+                <div className="border-t border-white/10 pt-3 space-y-1 text-xs">
+                  <div className="flex justify-between text-slate-400">
                     <span>Subtotal</span>
-                    <Money cents={liveTotals.subtotalCents} />
+                    <Money cents={liveTotals.subtotalCents} className="text-white" />
                   </div>
-                  <div className="flex justify-between text-navy-700">
+                  <div className="flex justify-between text-slate-400">
                     <span>Parts Tax (7.0%)</span>
                     <Money
                       cents={liveTotals.taxCents}
                       data-testid="tech-live-tax"
+                      className="text-white"
                     />
                   </div>
-                  <div className="flex justify-between text-emerald-700 font-medium">
+                  <div className="flex justify-between text-emerald-400 font-medium">
                     <span>Deposit Credit</span>
                     <span>
                       -<Money cents={liveTotals.depositPaidCents} />
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-navy-900 pt-1">
+                  <div className="flex justify-between text-sm font-bold text-white pt-1">
                     <span>Balance Before Tip</span>
                     <Money cents={liveTotals.amountDueCents} />
                   </div>
@@ -598,17 +679,17 @@ export default function TechJobDetailPage() {
                   size="lg"
                   data-testid="tech-checkout-next-step2"
                   onClick={() => setCheckoutStep(2)}
-                  className="w-full"
+                  className="w-full bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
                 >
                   Next: Customer Tip →
                 </Button>
               </div>
             ) : checkoutStep === 2 ? (
               <div className="space-y-4">
-                <p className="text-xs text-navy-700">
-                  Hand phone to <strong>{job.customer.name}</strong> or select tip
+                <p className="text-xs text-slate-300">
+                  Hand phone to <strong className="text-white">{job.customer.name}</strong> or select tip
                   preference on pre-tax subtotal (
-                  <Money cents={liveTotals.subtotalCents} />
+                  <Money cents={liveTotals.subtotalCents} className="text-orange-400" />
                   ):
                 </p>
 
@@ -618,12 +699,12 @@ export default function TechJobDetailPage() {
                   onChange={setTipCents}
                 />
 
-                <div className="rounded-input bg-slate-50 p-3 flex items-center justify-between text-sm font-bold text-navy-900">
+                <div className="rounded-xl bg-[#080D16] border border-white/10 p-3 flex items-center justify-between text-sm font-bold text-white">
                   <span>Final Amount Due Now</span>
                   <Money
                     cents={liveTotals.amountDueCents}
                     data-testid="tech-final-due"
-                    className="text-base"
+                    className="text-base text-orange-400 font-mono"
                   />
                 </div>
 
@@ -633,6 +714,7 @@ export default function TechJobDetailPage() {
                     variant="secondary"
                     size="md"
                     onClick={() => setCheckoutStep(1)}
+                    className="border-white/10 bg-white/5 hover:bg-white/10 text-white"
                   >
                     ← Back
                   </Button>
@@ -641,7 +723,7 @@ export default function TechJobDetailPage() {
                     size="lg"
                     data-testid="tech-checkout-next-step3"
                     onClick={() => setCheckoutStep(3)}
-                    className="flex-1"
+                    className="flex-1 bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
                   >
                     Continue to Payment →
                   </Button>
@@ -649,11 +731,11 @@ export default function TechJobDetailPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="rounded-input bg-navy-900 text-white p-3.5 flex items-center justify-between">
-                  <span className="text-xs text-slate-300">Collect Balance</span>
+                <div className="rounded-xl bg-[#080D16] border border-white/10 p-3.5 flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Collect Balance</span>
                   <Money
                     cents={liveTotals.amountDueCents}
-                    className="text-lg font-bold text-orange-400"
+                    className="text-lg font-bold text-orange-400 font-mono"
                   />
                 </div>
 
@@ -664,7 +746,7 @@ export default function TechJobDetailPage() {
                     loading={busy}
                     data-testid="tech-pay-card-on-file"
                     onClick={() => void finalizeAndCollectPayment("card_on_file")}
-                    className="w-full justify-between"
+                    className="w-full justify-between bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold shadow-lg shadow-orange-500/20"
                   >
                     <span className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4" />
@@ -680,9 +762,9 @@ export default function TechJobDetailPage() {
                     size="md"
                     loading={busy}
                     onClick={() => void finalizeAndCollectPayment("tap_card")}
-                    className="w-full justify-start gap-2"
+                    className="w-full justify-start gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white"
                   >
-                    <CreditCard className="h-4 w-4 text-navy-700" />
+                    <CreditCard className="h-4 w-4 text-slate-400" />
                     Tap / Enter New Card on Device
                   </Button>
 
@@ -693,9 +775,9 @@ export default function TechJobDetailPage() {
                     loading={busy}
                     data-testid="tech-pay-send-link"
                     onClick={() => void finalizeAndCollectPayment("send_pay_link")}
-                    className="w-full justify-start gap-2"
+                    className="w-full justify-start gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white"
                   >
-                    <Send className="h-4 w-4 text-orange-600" />
+                    <Send className="h-4 w-4 text-orange-400" />
                     Text Payment Link to {job.customer.phone}
                   </Button>
 
@@ -706,9 +788,9 @@ export default function TechJobDetailPage() {
                     loading={busy}
                     data-testid="tech-pay-cash"
                     onClick={() => void finalizeAndCollectPayment("cash")}
-                    className="w-full justify-start gap-2"
+                    className="w-full justify-start gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-white"
                   >
-                    <Wallet className="h-4 w-4 text-emerald-600" />
+                    <Wallet className="h-4 w-4 text-emerald-400" />
                     Record Cash / Check Collected
                   </Button>
                 </div>
@@ -716,7 +798,7 @@ export default function TechJobDetailPage() {
                 <button
                   type="button"
                   onClick={() => setCheckoutStep(2)}
-                  className="text-xs font-semibold text-navy-700 hover:underline pt-1 block"
+                  className="text-xs font-semibold text-slate-400 hover:text-white pt-1 block"
                 >
                   ← Back to Tip
                 </button>

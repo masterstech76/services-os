@@ -1,7 +1,47 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireRole } from "@/lib/server/auth-guard";
 import { getLocalDbWithDemo } from "@/lib/server/demo-dataset";
 
-export async function GET() {
+const createTechSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  phone: z.string().min(7, "Valid phone number is required"),
+  email: z.string().email("Valid email address is required"),
+  skills: z.array(z.string()).optional(),
+  zipCodes: z.array(z.string()).optional(),
+  commissionPct: z.number().min(0).max(100).optional(),
+  color: z.string().optional(),
+  days: z.array(z.number().int().min(0).max(6)).optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+});
+
+const patchTechSchema = z.object({
+  id: z.string().min(1, "Technician ID is required"),
+  name: z.string().min(1).optional(),
+  phone: z.string().min(7).optional(),
+  email: z.string().email().optional(),
+  skills: z.array(z.string()).optional(),
+  zipCodes: z.array(z.string()).optional(),
+  commissionPct: z.number().min(0).max(100).optional(),
+  color: z.string().optional(),
+  active: z.boolean().optional(),
+  addTimeOff: z
+    .object({
+      startsAt: z.string().min(1),
+      endsAt: z.string().min(1),
+      reason: z.string().min(1),
+    })
+    .optional(),
+  removeTimeOffId: z.string().optional(),
+});
+
+export async function GET(request: Request) {
+  const auth = await requireRole(request, ["owner", "admin"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const store = getLocalDbWithDemo();
   const technicians = Array.from(store.technicians.values()).map((t) => {
     const hours = Array.from(store.technician_hours.values())
@@ -20,27 +60,23 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const store = getLocalDbWithDemo();
-  const biz = Array.from(store.businesses.values())[0];
-  const body = (await request.json()) as {
-    name: string;
-    phone: string;
-    email: string;
-    skills?: string[];
-    zipCodes?: string[];
-    commissionPct?: number;
-    color?: string;
-    days?: number[];
-    startTime?: string;
-    endTime?: string;
-  };
+  const auth = await requireRole(request, ["owner", "admin"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
 
-  if (!body.name || !body.phone || !body.email) {
+  const raw = await request.json().catch(() => null);
+  const parsed = createTechSchema.safeParse(raw);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: { code: "INVALID_INPUT", message: "Name, phone, and email are required" } },
+      { error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input" } },
       { status: 400 }
     );
   }
+
+  const body = parsed.data;
+  const store = getLocalDbWithDemo();
+  const biz = Array.from(store.businesses.values())[0];
 
   const id = `tech-${body.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now().toString(36).slice(-3)}`;
   const nowIso = new Date().toISOString();
@@ -79,21 +115,23 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireRole(request, ["owner", "admin"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const raw = await request.json().catch(() => null);
+  const parsed = patchTechSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid input" } },
+      { status: 400 }
+    );
+  }
+
+  const body = parsed.data;
   const store = getLocalDbWithDemo();
   const biz = Array.from(store.businesses.values())[0];
-  const body = (await request.json()) as {
-    id: string;
-    name?: string;
-    phone?: string;
-    email?: string;
-    skills?: string[];
-    zipCodes?: string[];
-    commissionPct?: number;
-    color?: string;
-    active?: boolean;
-    addTimeOff?: { startsAt: string; endsAt: string; reason: string };
-    removeTimeOffId?: string;
-  };
 
   const tech = store.technicians.get(body.id);
   if (!tech) {

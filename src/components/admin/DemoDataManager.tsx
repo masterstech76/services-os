@@ -66,6 +66,9 @@ export function DemoDataManager({
         );
         setConfirmClear(false);
         await fetchStats();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("demo-data-changed"));
+        }
         onDataChanged?.();
       } else {
         toast.error("Failed to clear demo data");
@@ -92,6 +95,9 @@ export function DemoDataManager({
           `Demo data restored: loaded ${data.restored?.demoJobsRestored ?? 0} sample jobs with full payment history.`
         );
         await fetchStats();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("demo-data-changed"));
+        }
         onDataChanged?.();
       } else {
         toast.error("Failed to restore demo data");
@@ -190,7 +196,7 @@ export function DemoDataManager({
           {confirmClear ? (
             <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-red-200 shadow-sm">
               <span className="text-xs font-semibold text-red-700 pl-2">
-                Delete all sample jobs?
+                Disable &amp; clear all demo records?
               </span>
               <Button
                 type="button"
@@ -200,7 +206,7 @@ export function DemoDataManager({
                 onClick={handleClearDemoData}
                 className="h-7 px-3 text-xs font-bold"
               >
-                Yes, Delete Demo Data
+                Yes, Disable Demo Data
               </Button>
               <Button
                 type="button"
@@ -224,7 +230,7 @@ export function DemoDataManager({
                   className="gap-1.5 border-amber-300 text-amber-900 hover:bg-amber-100/70"
                 >
                   <Trash2 className="h-3.5 w-3.5 text-amber-700" />
-                  Delete Demo Data
+                  Disable Demo Data
                 </Button>
               ) : null}
 
@@ -237,7 +243,7 @@ export function DemoDataManager({
                 className="gap-1.5"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
-                {hasDemoData ? "Reset / Re-Seed Demo" : "Restore Demo Data"}
+                {hasDemoData ? "Reset / Re-Seed Demo" : "Enable Demo Data"}
               </Button>
             </>
           )}

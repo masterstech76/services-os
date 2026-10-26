@@ -9,7 +9,7 @@ export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const auth = await requireRole(request, ["owner", "technician"]);
+  const auth = await requireRole(request, ["owner", "admin", "technician"]);
   if (!auth.ok) return auth.response;
 
   const store = getLocalDbWithDemo();

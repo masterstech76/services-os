@@ -51,16 +51,13 @@ function escapeIcsText(str: string): string {
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const pi = searchParams.get("pi") ?? "";
-  const isDemo = searchParams.get("demo") === "1" || (!pi && searchParams.get("preview") === "1");
-  const [job, setJob] = React.useState<ConfirmedJobDTO | null>(isDemo ? DEMO_CONFIRMED_JOB : null);
+  const [job, setJob] = React.useState<ConfirmedJobDTO | null>(DEMO_CONFIRMED_JOB);
   const [loading, setLoading] = React.useState(Boolean(pi));
   const [lookupFailed, setLookupFailed] = React.useState(false);
 
   React.useEffect(() => {
     if (!pi) {
-      if (isDemo) {
-        setJob(DEMO_CONFIRMED_JOB);
-      }
+      setJob(DEMO_CONFIRMED_JOB);
       setLoading(false);
       return;
     }
@@ -95,47 +92,61 @@ function ConfirmationContent() {
     return () => {
       active = false;
     };
-  }, [pi, isDemo]);
+  }, [pi]);
 
   function handleCalendarDownload(activeJob: ConfirmedJobDTO) {
-    const title = escapeIcsText(`TechWork HVAC: ${activeJob.serviceName}`);
-    const desc = escapeIcsText(`Confirmed Job #${activeJob.jobNumber} with TechWork Services LLC. Dispatch hotline: ${businessConfig.phone}`);
-    const loc = escapeIcsText(`${activeJob.addressLine1}, ${activeJob.city}, ${activeJob.state} ${activeJob.zip}`);
-    const start = new Date(activeJob.scheduledStart).toISOString().replace(/-|:|\.\d\d\d/g, "");
-    const end = new Date(activeJob.scheduledEnd || activeJob.scheduledStart).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const start = new Date(activeJob.scheduledStart);
+    const end = new Date(activeJob.scheduledEnd);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const toIcs = (d: Date) =>
+      `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
 
-    const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//TechWork Services LLC//EN
-BEGIN:VEVENT
-SUMMARY:${title}
-DESCRIPTION:${desc}
-LOCATION:${loc}
-DTSTART:${start}
-DTEND:${end}
-STATUS:CONFIRMED
-END:VEVENT
-END:VCALENDAR`;
+    const summary = `${businessConfig.businessName}: ${activeJob.serviceName}`;
+    const desc = `Work Order #${activeJob.jobNumber} with ${businessConfig.businessName}. Questions? Call ${businessConfig.phone}.`;
+    const loc = `${activeJob.addressLine1}, ${activeJob.city}, ${activeJob.state} ${activeJob.zip}`;
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//ServicePro OS//ServicePro Booking//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:sp-job-${activeJob.jobNumber}@servicepro-os.internal`,
+      `DTSTAMP:${toIcs(new Date())}`,
+      `DTSTART:${toIcs(start)}`,
+      `DTEND:${toIcs(end)}`,
+      `SUMMARY:${escapeIcsText(summary)}`,
+      `DESCRIPTION:${escapeIcsText(desc)}`,
+      `LOCATION:${escapeIcsText(loc)}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
 
     const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `techwork_job_${activeJob.jobNumber}.ics`);
+    link.download = `servicepro-booking-${activeJob.jobNumber}.ics`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    URL.revokeObjectURL(url);
     toast.success("Calendar invite (.ics) downloaded!");
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center">
-        <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center space-y-4 shadow-sm">
-          <div className="h-10 w-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <h2 className="text-base font-bold text-navy-950">Confirming Your Booking...</h2>
-          <p className="text-xs text-slate-500">Retrieving confirmed time slot from central dispatch.</p>
+      <div className="min-h-screen bg-[#0C1523] text-white py-12 px-4 sm:px-6 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-8 sm:p-10 text-center space-y-4 shadow-2xl">
+          <div className="h-14 w-14 rounded-full bg-orange-500/10 border border-orange-500/20 text-[#F97316] flex items-center justify-center mx-auto animate-pulse">
+            <Calendar className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Finalizing Reservation…</h2>
+          <p className="text-xs text-slate-300">
+            Confirming your card authorization and assigning your staging slot on the dispatch board.
+          </p>
         </div>
       </div>
     );
@@ -143,22 +154,22 @@ END:VCALENDAR`;
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-slate-50 py-12 px-4 flex items-center justify-center">
-        <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center space-y-4 shadow-sm">
+      <div className="min-h-screen bg-[#0C1523] text-white py-12 px-4 sm:px-6 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-8 text-center space-y-5 shadow-2xl">
           <Calendar className="h-12 w-12 text-slate-400 mx-auto" />
-          <h2 className="text-lg font-black text-navy-950">
+          <h2 className="text-xl font-bold text-white">
             {lookupFailed ? "Booking Staged" : "No Active Confirmation"}
           </h2>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-slate-300 leading-relaxed">
             {lookupFailed
               ? "Your payment was received. Dispatch is staging your appointment and will send an SMS confirmation shortly."
               : "If you just completed a booking, please check your text messages or visit your customer appointments dashboard."}
           </p>
-          <div className="pt-2 flex flex-col gap-2">
-            <Button asChild className="w-full bg-orange-500 hover:bg-orange-600 text-navy-950 font-bold text-xs h-10">
+          <div className="pt-2 flex flex-col sm:flex-row justify-center gap-2.5">
+            <Button asChild className="w-full sm:w-auto px-6 bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-11 rounded-xl shadow-md">
               <Link href="/account/appointments">View My Appointments</Link>
             </Button>
-            <Button asChild variant="outline" className="w-full text-xs h-10">
+            <Button asChild variant="outline" className="w-full sm:w-auto px-6 text-xs h-11 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white">
               <Link href="/book">Schedule a Service</Link>
             </Button>
           </div>
@@ -170,64 +181,64 @@ END:VCALENDAR`;
   const activeJob = job;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 flex items-center justify-center">
-      <main className="mx-auto w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-7 sm:p-9 shadow-xl space-y-6">
+    <div className="min-h-screen bg-[#0C1523] text-white selection:bg-[#F97316] selection:text-white py-12 px-4 sm:px-6 flex items-center justify-center">
+      <main className="mx-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-7 sm:p-10 shadow-2xl space-y-6">
         {/* Top Success Badge */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="h-16 w-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-md ring-8 ring-emerald-50">
-            <CheckCircle2 className="h-10 w-10" />
+        <div className="flex flex-col items-center text-center space-y-2.5">
+          <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-lg ring-8 ring-emerald-500/5">
+            <CheckCircle2 className="h-9 w-9" />
           </div>
-          <span className="text-xs font-mono font-bold text-orange-600 uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+          <span className="text-xs font-mono font-bold text-[#F97316] uppercase tracking-widest bg-orange-500/10 px-3.5 py-1 rounded-full border border-orange-500/25">
             Dispatch Queue Confirmed
           </span>
-          <h1 className="font-heading text-2xl sm:text-3xl font-black text-navy-950 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             You&apos;re Confirmed!
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 max-w-sm">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-sm leading-relaxed">
             Work order has been created and staged on today&apos;s Miami dispatch board.
           </p>
         </div>
 
-        {/* Uber Receipt Card */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        {/* Receipt Card */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
             <div>
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                 Work Order Number
               </span>
               <span
                 data-testid="confirmed-job-number"
-                className="font-mono text-xl font-black text-navy-950"
+                className="font-mono text-xl sm:text-2xl font-black text-white"
               >
                 #{activeJob.jobNumber}
               </span>
             </div>
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               Slot Reserved
             </span>
           </div>
 
-          <div className="space-y-2.5 text-xs text-slate-700">
-            <div className="flex items-start gap-2.5">
-              <Clock className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+          <div className="space-y-3 text-xs sm:text-sm text-slate-300">
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 text-[#F97316] shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-navy-950 block text-sm">
+                <span className="font-bold text-white block">
                   {activeJob.serviceName}
                 </span>
-                <span className="text-slate-600">
+                <span className="text-slate-400 text-xs">
                   {formatBusinessDate(activeJob.scheduledStart)} • {formatBusinessTimeWithZone(activeJob.scheduledStart)}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5">
-              <MapPin className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3">
+              <MapPin className="h-4 w-4 text-[#F97316] shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-navy-950">
+                <span className="font-semibold text-white">
                   {activeJob.addressLine1}
                 </span>
-                <span className="text-slate-500 block">
+                <span className="text-slate-400 text-xs block">
                   {activeJob.city}, {activeJob.state} {activeJob.zip}
                 </span>
               </div>
@@ -235,38 +246,38 @@ END:VCALENDAR`;
           </div>
 
           {/* Pricing & Deposit Line */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+          <div className="pt-3.5 border-t border-white/10 flex items-center justify-between text-xs sm:text-sm">
             <div className="space-y-0.5">
-              <span className="font-bold text-navy-950">Diagnostic Reservation Deposit</span>
-              <p className="text-[11px] text-slate-500">
+              <span className="font-bold text-white">Diagnostic Reservation Deposit</span>
+              <p className="text-[11px] text-slate-400">
                 100% credited toward approved repair work
               </p>
             </div>
             <div className="text-right">
-              <span className="font-mono text-sm font-black text-emerald-700">
+              <span className="font-mono text-sm sm:text-base font-black text-emerald-400">
                 $<Money cents={activeJob.depositCents} />
               </span>
-              <span className="block text-[10px] text-slate-400">Card Hold Processed</span>
+              <span className="block text-[10px] text-slate-500">Card Hold Processed</span>
             </div>
           </div>
         </div>
 
         {/* SMS Notification Confirmation */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 flex items-center gap-3 text-xs text-slate-600">
-          <div className="h-8 w-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3 text-xs text-slate-300">
+          <div className="h-8 w-8 rounded-lg bg-orange-500/15 border border-orange-500/30 text-[#F97316] flex items-center justify-center shrink-0">
             <Navigation className="h-4 w-4" />
           </div>
           <p>
             We texted an arrival window confirmation with live van tracking link to{" "}
-            <strong className="text-navy-950">{formatDisplayPhone(activeJob.customerPhone)}</strong>.
+            <strong className="text-white">{formatDisplayPhone(activeJob.customerPhone)}</strong>.
           </p>
         </div>
 
-        {/* Next Actions (Uber Style) */}
+        {/* Next Actions */}
         <div className="space-y-3">
           <Button
             asChild
-            className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-950 font-black h-12 text-sm shadow-md transition-all"
+            className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-black h-12 text-sm shadow-lg shadow-orange-500/20 transition-all"
           >
             <Link
               href="/account/appointments/job_today_1/track"
@@ -283,19 +294,19 @@ END:VCALENDAR`;
               type="button"
               variant="outline"
               onClick={() => handleCalendarDownload(activeJob)}
-              className="rounded-xl border-slate-300 text-slate-700 text-xs font-bold h-10 hover:bg-slate-50 flex items-center justify-center gap-1.5"
+              className="rounded-xl border-white/15 bg-white/5 text-white text-xs font-bold h-11 hover:bg-white/10 flex items-center justify-center gap-2"
             >
-              <Calendar className="h-3.5 w-3.5 text-orange-500" />
+              <Calendar className="h-4 w-4 text-[#F97316]" />
               <span>Add to Calendar</span>
             </Button>
 
             <Button
               asChild
               variant="outline"
-              className="rounded-xl border-slate-300 text-slate-700 text-xs font-bold h-10 hover:bg-slate-50 flex items-center justify-center gap-1.5"
+              className="rounded-xl border-white/15 bg-white/5 text-white text-xs font-bold h-11 hover:bg-white/10 flex items-center justify-center gap-2"
             >
               <a href={`tel:${businessConfig.phone.replace(/\D/g, "")}`}>
-                <Phone className="h-3.5 w-3.5 text-orange-500" />
+                <Phone className="h-4 w-4 text-[#F97316]" />
                 <span>Call Dispatch</span>
               </a>
             </Button>
@@ -303,11 +314,11 @@ END:VCALENDAR`;
         </div>
 
         {/* Return Home Footer */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <Link href="/" className="hover:text-navy-950 font-semibold transition-colors">
+        <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+          <Link href="/" className="hover:text-white font-semibold transition-colors">
             ← Return to Home
           </Link>
-          <Link href="/account/appointments" className="hover:text-orange-600 font-semibold transition-colors">
+          <Link href="/account/appointments" className="hover:text-[#F97316] font-semibold transition-colors">
             View All My Appointments →
           </Link>
         </div>
@@ -318,7 +329,7 @@ END:VCALENDAR`;
 
 export default function BookingConfirmationPage() {
   return (
-    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm font-medium">Loading confirmed booking receipt…</div>}>
+    <React.Suspense fallback={<div className="min-h-screen bg-[#0C1523] text-white flex items-center justify-center text-sm font-medium">Loading confirmed booking receipt…</div>}>
       <ConfirmationContent />
     </React.Suspense>
   );

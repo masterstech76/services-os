@@ -15,6 +15,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "verify-env": "tsx scripts/verify-env.ts",
+    "verify:invariants": "node scripts/verify-plan-invariants.mjs",
+    "export:archive": "node scripts/export-delivery-archive.mjs",
     "sync-config": "tsx scripts/sync-config.ts",
     "create-owner": "tsx scripts/create-owner.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",

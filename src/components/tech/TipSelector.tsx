@@ -68,12 +68,12 @@ export function TipSelector({
               className={cn(
                 "flex flex-col items-center justify-center rounded-input border px-2 py-2 text-xs font-semibold min-h-[48px] transition-colors",
                 isSelected
-                  ? "border-2 border-orange-500 bg-orange-50 text-navy-900"
-                  : "border-slate-200 bg-white text-navy-900 hover:bg-slate-50"
+                  ? "border-2 border-orange-500 bg-orange-500/20 text-white dark:text-white"
+                  : "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10 dark:text-slate-200"
               )}
             >
               <span>{pct}%</span>
-              <span className="text-[11px] font-normal tabular-nums text-navy-700">
+              <span className="text-[11px] font-normal tabular-nums text-slate-300 dark:text-slate-300">
                 {formatMoneyCents(tipAmount)}
               </span>
             </button>
@@ -89,8 +89,8 @@ export function TipSelector({
           className={cn(
             "flex flex-col items-center justify-center rounded-input border px-2 py-2 text-xs font-semibold min-h-[48px] transition-colors",
             mode === "custom"
-              ? "border-2 border-orange-500 bg-orange-50 text-navy-900"
-              : "border-slate-200 bg-white text-navy-900 hover:bg-slate-50"
+              ? "border-2 border-orange-500 bg-orange-500/20 text-white"
+              : "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10"
           )}
         >
           <span>Custom</span>
@@ -105,8 +105,8 @@ export function TipSelector({
           className={cn(
             "flex flex-col items-center justify-center rounded-input border px-2 py-2 text-xs font-semibold min-h-[48px] transition-colors",
             mode === "none"
-              ? "border-2 border-orange-500 bg-orange-50 text-navy-900"
-              : "border-slate-200 bg-white text-navy-900 hover:bg-slate-50"
+              ? "border-2 border-orange-500 bg-orange-500/20 text-white"
+              : "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10"
           )}
         >
           <span>No tip</span>

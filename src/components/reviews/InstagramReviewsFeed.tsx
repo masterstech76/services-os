@@ -135,7 +135,7 @@ const INITIAL_POSTS: ReviewPost[] = [
     rating: 5,
     workOrder: "#WO-0994",
     caption:
-      "Unit was hissing and freezing into a block of solid ice. Another contractor quoted $8,500 for a full replacement. TechWork came out, found a leaky Schrader service valve, tightened the core, and recharged the subcooling. Honest contractors are rare gems! 🧊🙏",
+      "Unit was hissing and freezing into a block of solid ice. Another contractor quoted $8,500 for a full replacement. ServicePro OS came out, found a leaky Schrader service valve, tightened the core, and recharged the subcooling. Honest contractors are rare gems! 🧊🙏",
     tags: ["#HonestPros", "#RefrigerantLeak", "#CoconutGrove", "#SavedThousands"],
     techReply: {
       name: "Marcus V. (Senior Tech)",

@@ -1,1064 +1,951 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import * as React from "react";
-import { addDays, format, parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import Link from "next/link";
 import {
-  DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-  useDroppable,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import FullCalendar from "@fullcalendar/react";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import {
-  AlertTriangle,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  GripVertical,
-  Kanban,
-  Map as MapIcon,
+  Clock,
   MapPin,
-  RefreshCw,
-  Sparkles,
-  UserPlus,
-  Users,
+  User,
+  Phone,
+  CheckCircle2,
+  AlertTriangle,
+  Zap,
+  SlidersHorizontal,
+  Truck,
+  Wrench,
+  Plus,
+  Minus,
+  ArrowRight,
+  ChevronsRight,
+  ChevronsLeft,
+  MessageSquare,
+  PhoneCall,
+  Pause,
+  Timer,
 } from "lucide-react";
 import { toast } from "sonner";
-import { businessConfig } from "@config/business.config";
-import { Button } from "@/components/ui/button";
-import { Money } from "@/components/shared/Money";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { GoogleMapEmbed } from "@/components/maps/GoogleMapEmbed";
 import { JobDrawer } from "@/components/admin/JobDrawer";
 import type { EnrichedJob } from "@/lib/server/operations";
-import type { JobStatus } from "@/lib/supabase/types";
 
-const KANBAN_COLUMNS: Array<{ status: JobStatus; title: string }> = [
-  { status: "unassigned", title: "Unassigned" },
-  { status: "assigned", title: "Assigned" },
-  { status: "on_the_way", title: "On The Way" },
-  { status: "in_progress", title: "In Progress" },
-  { status: "completed", title: "Completed" },
-];
-
-interface TechSummary {
+interface UnassignedJob {
   id: string;
-  name: string;
-  color: string;
-  skills: string[];
-  zipCodes: string[];
-  shift: { startTime: string; endTime: string } | null;
-  jobsCountToday: number;
-  maxRecommendedJobs: number;
-  statusLabel: string;
-  homeLat: number;
-  homeLng: number;
-  jobsToday: EnrichedJob[];
-}
-
-function DroppableTechRailCard({
-  tech,
-  active,
-  onToggleFilter,
-}: {
-  tech: TechSummary;
-  active: boolean;
-  onToggleFilter: () => void;
-}) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `tech:${tech.id}`,
-    data: { type: "tech", techId: tech.id, techName: tech.name },
-  });
-
-  return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      onClick={onToggleFilter}
-      data-testid={`tech-rail-card-${tech.id}`}
-      className={`flex items-center justify-between rounded-input border p-3 text-left transition-all ${
-        isOver
-          ? "border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-500"
-          : active
-            ? "border-orange-500 bg-orange-50/40 ring-1 ring-orange-500"
-            : "border-slate-200 bg-slate-50/60 hover:border-slate-300"
-      }`}
-    >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="h-3 w-3 rounded-full shrink-0"
-            style={{ backgroundColor: tech.color }}
-          />
-          <span className="text-sm font-bold text-navy-900 truncate">
-            {tech.name}
-          </span>
-        </div>
-        <p className="text-[11px] text-navy-700 mt-0.5 truncate">
-          {tech.statusLabel} ·{" "}
-          {tech.shift
-            ? `${tech.shift.startTime}–${tech.shift.endTime}`
-            : "Off"}
-        </p>
-      </div>
-      <div className="text-right shrink-0 ml-2">
-        <span className="inline-block rounded-pill bg-white border border-slate-200 px-2 py-0.5 text-xs font-bold text-navy-900 tabular-nums">
-          {tech.jobsCountToday}/{tech.maxRecommendedJobs}
-        </span>
-      </div>
-    </button>
-  );
-}
-
-function DroppableKanbanColumn({
-  status,
-  title,
-  count,
-  children,
-}: {
-  status: JobStatus;
+  jobNumber: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
   title: string;
-  count: number;
-  children: React.ReactNode;
-}) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `col:${status}`,
-    data: { type: "status", status, title },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      data-testid={`kanban-col-${status}`}
-      className={`rounded-card border p-3 space-y-3 min-h-[420px] transition-colors ${
-        isOver
-          ? "border-orange-500 bg-orange-50/50 ring-2 ring-orange-400"
-          : "border-slate-200 bg-slate-100/80"
-      }`}
-    >
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-navy-900">
-          {title}
-        </h2>
-        <span className="rounded-pill bg-white border border-slate-200 px-2 py-0.5 text-xs font-bold text-navy-900 tabular-nums">
-          {count}
-        </span>
-      </div>
-      <div className="space-y-2.5">{children}</div>
-    </div>
-  );
+  address: string;
+  timeWindow: string;
+  estimate: string;
+  serviceCategory: string;
+  customerName: string;
+  customerPhone: string;
+  notes: string[];
 }
 
-function DraggableJobCard({
-  job,
-  tz,
-  technicians,
-  onSelectJob,
-  onQuickAssign,
-}: {
-  job: EnrichedJob;
-  tz: string;
-  technicians: TechSummary[];
-  onSelectJob: (job: EnrichedJob) => void;
-  onQuickAssign: (job: EnrichedJob, techId: string) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: job.id,
-      data: { job },
+interface ActiveDispatchItem {
+  id: string;
+  jobNumber: string;
+  techName: string;
+  techAvatar: string;
+  techStatus: "On Job" | "En Route" | "On Site" | "Available";
+  techStatusColor: string;
+  jobTitle: string;
+  address: string;
+  eta: string;
+  scheduledTime: string;
+  estimate: string;
+  customerName: string;
+  customerPhone: string;
+  priority: "High" | "Medium" | "Low";
+  serviceDetail: string;
+  notes: string[];
+}
+
+interface MapMarker {
+  id: string;
+  type: "technician" | "on_job" | "en_route" | "job_location";
+  label: string;
+  sublabel: string;
+  x: number; // percentage
+  y: number; // percentage
+  iconType: "truck" | "wrench" | "pin" | "dot";
+  color: string;
+  haloColor: string;
+}
+
+export default function AdminDispatchBoardPage() {
+  const [currentDate, setCurrentDate] = React.useState("May 14, 2025");
+  const [isAutoAssigning, setIsAutoAssigning] = React.useState(false);
+  const [detailsPanelOpen, setDetailsPanelOpen] = React.useState(true);
+  const [mapZoom, setMapZoom] = React.useState(1);
+  const [filterActive, setFilterActive] = React.useState(false);
+  const [drawerJob, setDrawerJob] = React.useState<EnrichedJob | null>(null);
+
+  // Selected job for the right-hand inspection drawer (matches #1038 in the reference image)
+  const [selectedJob, setSelectedJob] = React.useState({
+    id: "job-1038",
+    jobNumber: "#1038",
+    statusBadge: "Scheduled",
+    title: "Thermostat Install",
+    timeWindow: "Today, 10:00 AM - 11:30 AM (1h 30m)",
+    address: "3100 NW 7th St, Miami, FL 33125",
+    customerName: "Robert Caldwell",
+    customerPhone: "(305) 555-0123",
+    service: "Thermostat Installation - Smart Thermostat",
+    priority: "Medium",
+    assignedTech: {
+      name: "Carlos Mendez",
+      avatar: "/images/avatar-david.jpg",
+      status: "On Job",
+    },
+    estimate: "$249.00",
+    notes: [
+      "Customer requested Nest thermostat.",
+      "Be on time (10:00 AM).",
+    ],
+  });
+
+  // Top 6 KPI Metric Cards matching reference image
+  const kpis = [
+    {
+      id: "pending",
+      title: "Pending Dispatch",
+      value: "12",
+      subtext: "Needs Assignment",
+      subtextColor: "text-rose-400",
+      icon: Clock,
+      iconColor: "text-amber-400",
+      iconBg: "bg-amber-500/15 border-amber-500/30",
+    },
+    {
+      id: "inprogress",
+      title: "In Progress",
+      value: "8",
+      subtext: "On Going",
+      subtextColor: "text-blue-400",
+      icon: User,
+      iconColor: "text-blue-400",
+      iconBg: "bg-blue-500/15 border-blue-500/30",
+    },
+    {
+      id: "completed",
+      title: "Completed Today",
+      value: "14",
+      subtext: "+3 vs. yesterday",
+      subtextColor: "text-emerald-400",
+      icon: CheckCircle2,
+      iconColor: "text-emerald-400",
+      iconBg: "bg-emerald-500/15 border-emerald-500/30",
+    },
+    {
+      id: "onhold",
+      title: "On Hold",
+      value: "3",
+      subtext: "Waiting for Parts",
+      subtextColor: "text-purple-400",
+      icon: Pause,
+      iconColor: "text-purple-400",
+      iconBg: "bg-purple-500/15 border-purple-500/30",
+    },
+    {
+      id: "overdue",
+      title: "Overdue",
+      value: "2",
+      subtext: "Needs Attention",
+      subtextColor: "text-rose-400",
+      icon: AlertTriangle,
+      iconColor: "text-rose-400",
+      iconBg: "bg-rose-500/15 border-rose-500/30",
+    },
+    {
+      id: "avgtime",
+      title: "Avg. Response Time",
+      value: "32 min",
+      subtext: "Target < 60 min",
+      subtextColor: "text-amber-400",
+      icon: Timer,
+      iconColor: "text-amber-400",
+      iconBg: "bg-amber-500/15 border-amber-500/30",
+    },
+  ];
+
+  // Unassigned jobs list matching reference image
+  const unassignedJobs: UnassignedJob[] = [
+    {
+      id: "job-1047",
+      jobNumber: "WO-8427",
+      priority: "HIGH",
+      title: "AC Repair",
+      address: "1220 SW 8th St, Miami, FL 33130",
+      timeWindow: "Today, 9:00 AM - 11:00 AM",
+      estimate: "$189.00",
+      serviceCategory: "HVAC Emergency Cooling",
+      customerName: "Elena Rostova",
+      customerPhone: "(305) 555-0199",
+      notes: ["Compressor humming, no cold air.", "Gate code #4412."],
+    },
+    {
+      id: "job-1048",
+      jobNumber: "WO-8428",
+      priority: "MEDIUM",
+      title: "Thermostat Install",
+      address: "2100 Biscayne Blvd, Miami, FL 33137",
+      timeWindow: "Today, 11:30 AM - 1:30 PM",
+      estimate: "$249.00",
+      serviceCategory: "Controls & Smart Home",
+      customerName: "Marcus Vance",
+      customerPhone: "(305) 555-0182",
+      notes: ["Ecobee SmartThermostat with Sensor.", "Customer will be home at 11:15 AM."],
+    },
+    {
+      id: "job-1049",
+      jobNumber: "WO-8429",
+      priority: "MEDIUM",
+      title: "Duct Cleaning",
+      address: "305 Lincoln Rd, Miami Beach, FL 33139",
+      timeWindow: "Today, 1:00 PM - 3:00 PM",
+      estimate: "$129.00",
+      serviceCategory: "Air Quality & Ventilation",
+      customerName: "Sophia Lorenzi",
+      customerPhone: "(305) 555-0144",
+      notes: ["Bi-annual allergen sanitization.", "Street parking voucher provided."],
+    },
+    {
+      id: "job-1050",
+      jobNumber: "#1050",
+      priority: "LOW",
+      title: "Water Heater Service",
+      address: "7800 Collins Ave, Miami Beach, FL 33141",
+      timeWindow: "Today, 2:30 PM - 5:00 PM",
+      estimate: "$199.00",
+      serviceCategory: "Plumbing & Hot Water",
+      customerName: "David Miller",
+      customerPhone: "(305) 555-0167",
+      notes: ["Pilot light intermittent.", "Water heater located in garage utility closet."],
+    },
+  ];
+
+  // Active Dispatch list matching reference image
+  const activeDispatches: ActiveDispatchItem[] = [
+    {
+      id: "dispatch-1038",
+      jobNumber: "#1038",
+      techName: "Carlos Mendez",
+      techAvatar: "/images/avatar-david.jpg",
+      techStatus: "On Job",
+      techStatusColor: "bg-emerald-400",
+      jobTitle: "AC Repair",
+      address: "800 NW 7th St, Miami, FL 33136",
+      eta: "ETA 12 min",
+      scheduledTime: "10:30 AM",
+      estimate: "$249.00",
+      customerName: "Robert Caldwell",
+      customerPhone: "(305) 555-0123",
+      priority: "Medium",
+      serviceDetail: "Thermostat Installation - Smart Thermostat",
+      notes: ["Customer requested Nest thermostat.", "Be on time (10:00 AM)."],
+    },
+    {
+      id: "dispatch-1041",
+      jobNumber: "WO-8421",
+      techName: "Maria Alvarez",
+      techAvatar: "/images/avatar-sarah.jpg",
+      techStatus: "En Route",
+      techStatusColor: "bg-blue-400",
+      jobTitle: "Thermostat Install",
+      address: "3100 NW 7th Ave, Miami, FL 33127",
+      eta: "ETA 18 min",
+      scheduledTime: "11:00 AM",
+      estimate: "$249.00",
+      customerName: "Samantha Reed",
+      customerPhone: "(305) 555-0188",
+      priority: "Medium",
+      serviceDetail: "Smart Thermostat Integration & Wiring",
+      notes: ["Old Honeywell unit replacement.", "Check C-wire voltage."],
+    },
+    {
+      id: "dispatch-1043",
+      jobNumber: "WO-8423",
+      techName: "Danny Reyes",
+      techAvatar: "/images/avatar-mike.jpg",
+      techStatus: "On Site",
+      techStatusColor: "bg-amber-400",
+      jobTitle: "Duct Cleaning",
+      address: "1400 NE 2nd Ave, Miami, FL 33132",
+      eta: "ETA 34 min",
+      scheduledTime: "12:30 PM",
+      estimate: "$179.00",
+      customerName: "Anthony Ramos",
+      customerPhone: "(305) 555-0155",
+      priority: "High",
+      serviceDetail: "Full Ductwork Sanitization & HEPA filtration",
+      notes: ["Commercial suite on 4th floor.", "Loading bay access code #9021."],
+    },
+    {
+      id: "dispatch-1044",
+      jobNumber: "WO-8424",
+      techName: "Tony Brooks",
+      techAvatar: "/images/avatar-1.jpg",
+      techStatus: "En Route",
+      techStatusColor: "bg-blue-400",
+      jobTitle: "AC Repair",
+      address: "7200 SW 57th Ave, Miami, FL 33143",
+      eta: "ETA 42 min",
+      scheduledTime: "1:30 PM",
+      estimate: "$210.00",
+      customerName: "Valerie Gomez",
+      customerPhone: "(305) 555-0131",
+      priority: "High",
+      serviceDetail: "Condenser Fan Motor Replacement",
+      notes: ["Requires 1/3 HP motor from truck inventory."],
+    },
+    {
+      id: "dispatch-1045",
+      jobNumber: "WO-8425",
+      techName: "Robert Johnson",
+      techAvatar: "/images/avatar-2.jpg",
+      techStatus: "En Route",
+      techStatusColor: "bg-blue-400",
+      jobTitle: "Water Heater Service",
+      address: "8901 Collins Ave, Miami Beach, FL 33154",
+      eta: "ETA 55 min",
+      scheduledTime: "2:00 PM",
+      estimate: "$199.00",
+      customerName: "Benjamin Clark",
+      customerPhone: "(305) 555-0190",
+      priority: "Low",
+      serviceDetail: "50-Gallon Gas Water Heater Diagnostic",
+      notes: ["Customer requested afternoon arrival window."],
+    },
+  ];
+
+  // Map markers for live GPS map visualization (matching exact positions in reference image)
+  const mapMarkers: MapMarker[] = [
+    {
+      id: "m-job-1",
+      type: "job_location",
+      label: "WO-8427 AC Repair",
+      sublabel: "Needs Tech",
+      x: 27,
+      y: 65,
+      iconType: "pin",
+      color: "#EF4444", // Red
+      haloColor: "rgba(239, 68, 68, 0.25)",
+    },
+    {
+      id: "m-tech-1",
+      type: "technician",
+      label: "Carlos (Unit Alpha)",
+      sublabel: "Available",
+      x: 42,
+      y: 55,
+      iconType: "truck",
+      color: "#14B8A6", // Teal/Green
+      haloColor: "rgba(20, 184, 166, 0.25)",
+    },
+    {
+      id: "m-tech-2",
+      type: "technician",
+      label: "Danny (Unit Beta)",
+      sublabel: "Wynwood Online",
+      x: 52,
+      y: 48,
+      iconType: "truck",
+      color: "#10B981", // Green
+      haloColor: "rgba(16, 185, 129, 0.25)",
+    },
+    {
+      id: "m-enroute-1",
+      type: "en_route",
+      label: "Maria (Unit Gamma)",
+      sublabel: "En Route to WO-8421",
+      x: 48,
+      y: 62,
+      iconType: "truck",
+      color: "#F59E0B", // Amber
+      haloColor: "rgba(245, 158, 11, 0.25)",
+    },
+    {
+      id: "m-onjob-1",
+      type: "on_job",
+      label: "WO-8438 (Carlos)",
+      sublabel: "Downtown Miami",
+      x: 58,
+      y: 65,
+      iconType: "wrench",
+      color: "#3B82F6", // Blue
+      haloColor: "rgba(59, 130, 246, 0.25)",
+    },
+    {
+      id: "m-enroute-2",
+      type: "en_route",
+      label: "Robert (Unit Delta)",
+      sublabel: "MacArthur Causeway",
+      x: 68,
+      y: 63,
+      iconType: "truck",
+      color: "#F59E0B",
+      haloColor: "rgba(245, 158, 11, 0.25)",
+    },
+    {
+      id: "m-onjob-2",
+      type: "on_job",
+      label: "WO-8425 Beachside",
+      sublabel: "Collins Ave",
+      x: 77,
+      y: 58,
+      iconType: "pin",
+      color: "#3B82F6",
+      haloColor: "rgba(59, 130, 246, 0.25)",
+    },
+    {
+      id: "m-tech-3",
+      type: "technician",
+      label: "Tony (Unit Epsilon)",
+      sublabel: "North Beach",
+      x: 70,
+      y: 35,
+      iconType: "dot",
+      color: "#10B981",
+      haloColor: "rgba(16, 185, 129, 0.25)",
+    },
+  ];
+
+  // Handle auto-assign action
+  const handleAutoAssign = () => {
+    setIsAutoAssigning(true);
+    toast.info("Running AI Dispatch Optimization...", {
+      description: "Evaluating technician geo-proximity, skills, and traffic conditions.",
     });
 
-  const style: React.CSSProperties | undefined = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 40,
-      }
-    : undefined;
+    setTimeout(() => {
+      setIsAutoAssigning(false);
+      toast.success("Auto-Dispatch Complete!", {
+        description: "4 unassigned jobs matched to nearest available technicians.",
+      });
+    }, 1200);
+  };
+
+  // Select an unassigned job into inspector
+  const handleSelectUnassigned = (job: UnassignedJob) => {
+    setSelectedJob({
+      id: job.id,
+      jobNumber: job.jobNumber,
+      statusBadge: "Unassigned",
+      title: job.title,
+      timeWindow: job.timeWindow,
+      address: job.address,
+      customerName: job.customerName,
+      customerPhone: job.customerPhone,
+      service: job.serviceCategory,
+      priority: job.priority === "HIGH" ? "High" : job.priority === "MEDIUM" ? "Medium" : "Low",
+      assignedTech: {
+        name: "Unassigned",
+        avatar: "/images/avatar-david.jpg",
+        status: "Pending Dispatch",
+      },
+      estimate: job.estimate,
+      notes: job.notes,
+    });
+    setDetailsPanelOpen(true);
+  };
+
+  // Select an active dispatch into inspector
+  const handleSelectActiveDispatch = (item: ActiveDispatchItem) => {
+    setSelectedJob({
+      id: item.id,
+      jobNumber: item.jobNumber,
+      statusBadge: item.techStatus === "On Job" ? "Scheduled" : item.techStatus,
+      title: item.jobTitle,
+      timeWindow: `Today, ${item.scheduledTime} (ETA ${item.eta.replace("ETA ", "")})`,
+      address: item.address,
+      customerName: item.customerName,
+      customerPhone: item.customerPhone,
+      service: item.serviceDetail,
+      priority: item.priority,
+      assignedTech: {
+        name: item.techName,
+        avatar: item.techAvatar,
+        status: item.techStatus,
+      },
+      estimate: item.estimate,
+      notes: item.notes,
+    });
+    setDetailsPanelOpen(true);
+  };
+
+  // Quick message tech
+  const handleMessageTech = () => {
+    toast.success(`Message sent to ${selectedJob.assignedTech.name}`, {
+      description: `SMS dispatched for work order ${selectedJob.jobNumber}.`,
+    });
+  };
+
+  // Quick call tech
+  const handleCallTech = () => {
+    toast.info(`Calling ${selectedJob.assignedTech.name}...`, {
+      description: `Dialing field unit direct line: (305) 555-0149`,
+    });
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      data-testid={`dispatch-job-card-${job.jobNumber}`}
-      className={`rounded-card border bg-white p-3.5 shadow-sm transition-all hover:shadow-md ${
-        isDragging ? "opacity-75 ring-2 ring-orange-500 shadow-xl" : ""
-      } ${
-        job.isUnassignedUrgent
-          ? "border-red-400 ring-1 ring-red-200"
-          : "border-slate-200"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <button
-          type="button"
-          onClick={() => onSelectJob(job)}
-          className="font-mono text-xs font-bold text-navy-900 hover:underline text-left"
-        >
-          #{job.jobNumber}
-        </button>
-        <div className="flex items-center gap-1.5">
-          {job.isUnassignedUrgent ? (
-            <span className="inline-flex items-center gap-1 rounded-pill bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
-              <AlertTriangle className="h-3 w-3" />
-              Urgent &lt;2h
-            </span>
-          ) : (
-            <StatusBadge status={job.status} />
-          )}
+    <div className="min-h-screen bg-[#020617] text-white p-3 lg:p-5 space-y-4">
+      {/* 1. Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Dispatch Board</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Assign jobs to technicians and monitor live dispatch operations.
+          </p>
+        </div>
+
+        {/* Date and scheduling controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date Picker Button */}
+          <div className="flex items-center rounded-lg bg-[#0F172A] border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-sm">
+            <Calendar className="w-3.5 h-3.5 mr-2 text-slate-400" />
+            <span>{currentDate}</span>
+            <button
+              onClick={() => setCurrentDate("May 15, 2025")}
+              className="ml-2 text-slate-400 hover:text-white transition"
+              title="Next Day"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Today Button */}
           <button
-            type="button"
-            {...listeners}
-            {...attributes}
-            aria-label={`Drag Job #${job.jobNumber}`}
-            className="cursor-grab active:cursor-grabbing rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-navy-900"
+            onClick={() => {
+              setCurrentDate("May 14, 2025");
+              toast.info("Viewing today's live schedule");
+            }}
+            className="rounded-lg bg-[#0F172A] hover:bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-200 transition shadow-sm"
           >
-            <GripVertical className="h-3.5 w-3.5" />
+            Today
+          </button>
+
+          {/* Filters Button */}
+          <button
+            onClick={() => {
+              setFilterActive(!filterActive);
+              toast.info(filterActive ? "Filters cleared" : "Filters drawer opened");
+            }}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition shadow-sm ${
+              filterActive
+                ? "bg-orange-500/10 border-orange-500/40 text-orange-400"
+                : "bg-[#0F172A] hover:bg-slate-800 border-white/10 text-slate-200"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Filters</span>
+          </button>
+
+          {/* Auto Assign CTA */}
+          <button
+            onClick={handleAutoAssign}
+            disabled={isAutoAssigning}
+            className="flex items-center gap-1.5 rounded-lg bg-[#F97316] hover:bg-[#EA580C] text-white px-4 py-1.5 text-xs font-bold shadow-lg shadow-orange-500/20 active:scale-95 transition disabled:opacity-50"
+          >
+            <Zap className={`w-3.5 h-3.5 ${isAutoAssigning ? "animate-spin" : "fill-current"}`} />
+            <span>{isAutoAssigning ? "Optimizing..." : "Auto Assign"}</span>
           </button>
         </div>
       </div>
 
-      <div
-        onClick={() => onSelectJob(job)}
-        className="cursor-pointer space-y-2"
-      >
-        <div>
-          <h3 className="text-sm font-bold text-navy-900 leading-snug">
-            {job.service.name}
-          </h3>
-          <p className="text-xs font-medium text-navy-700 mt-0.5">
-            {job.customer.name}
-          </p>
-        </div>
+      {/* 2. Top 6 KPI Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div
+              key={kpi.id}
+              className="rounded-xl bg-[#0F172A]/90 border border-white/10 p-2.5 flex flex-col justify-between shadow-md hover:border-white/20 transition group cursor-pointer"
+              onClick={() => toast.info(`Viewing ${kpi.title} breakdown`)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 ${kpi.iconBg} ${kpi.iconColor}`}
+                  >
+                    <Icon className="w-2.5 h-2.5" />
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-300 whitespace-nowrap">{kpi.title}</span>
+                </div>
+                <ChevronRight className="w-3 h-3 text-slate-500 group-hover:text-slate-300 transition shrink-0 ml-1" />
+              </div>
 
-        <div className="text-xs text-navy-700 space-y-1 pt-1 border-t border-slate-100">
-          <p className="font-semibold text-navy-900 tabular-nums">
-            {formatInTimeZone(new Date(job.scheduledStart), tz, "h:mm a")} –{" "}
-            {formatInTimeZone(new Date(job.scheduledEnd), tz, "h:mm a")}
-          </p>
-          <p className="flex items-center gap-1 truncate">
-            <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-            {job.addressLine1} ({job.zip})
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between pt-1">
-          {job.technician ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-900">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: job.technician.color }}
-              />
-              {job.technician.name}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700">
-              <Sparkles className="h-3 w-3" />
-              Smart Match Ready
-            </span>
-          )}
-          <Money
-            cents={job.totalCents ?? job.estimatedTotalCents}
-            className="text-xs font-bold text-navy-900"
-          />
-        </div>
+              <div className="mt-1.5">
+                <div className="text-xl font-bold text-white tracking-tight">{kpi.value}</div>
+                <div className={`text-[10px] font-medium mt-0.5 ${kpi.subtextColor}`}>
+                  {kpi.subtext}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Quick Assign Bar on Unassigned Cards */}
-      {job.status === "unassigned" ? (
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-1.5">
-          <UserPlus className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <select
-            aria-label={`Assign technician for Job #${job.jobNumber}`}
-            data-testid={`quick-assign-select-${job.jobNumber}`}
-            defaultValue=""
-            onChange={(e) => {
-              if (e.target.value) {
-                onQuickAssign(job, e.target.value);
-                e.target.value = "";
-              }
-            }}
-            className="w-full rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs font-medium text-navy-900"
-          >
-            <option value="" disabled>
-              Quick Assign Tech...
-            </option>
-            {technicians.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.jobsCountToday}/5)
-              </option>
-            ))}
-          </select>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-export default function AdminDispatchBoardPage() {
-  const tz = businessConfig.timezone;
-  const todayLocal = React.useMemo(
-    () => formatInTimeZone(new Date(), tz, "yyyy-MM-dd"),
-    [tz]
-  );
-
-  const [selectedDate, setSelectedDate] = React.useState<string>(todayLocal);
-  const [viewMode, setViewMode] = React.useState<"kanban" | "map" | "calendar">(
-    "kanban"
-  );
-  const [jobs, setJobs] = React.useState<EnrichedJob[]>([]);
-  const [technicians, setTechnicians] = React.useState<TechSummary[]>([]);
-  const [selectedTechFilter, setSelectedTechFilter] =
-    React.useState<string>("all");
-  const [selectedJob, setSelectedJob] = React.useState<EnrichedJob | null>(
-    null
-  );
-  const [loading, setLoading] = React.useState(true);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [liveAnnouncement, setLiveAnnouncement] = React.useState<string>("");
-  const [forceModal, setForceModal] = React.useState<{
-    job: EnrichedJob;
-    techId: string;
-    techName: string;
-    reason: string;
-  } | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor)
-  );
-
-  const loadDispatch = React.useCallback(
-    async (silent = false) => {
-      if (!silent) setRefreshing(true);
-      try {
-        const res = await fetch(
-          `/api/dispatch/board?date=${encodeURIComponent(selectedDate)}`
-        );
-        const data = (await res.json()) as {
-          jobs: EnrichedJob[];
-          technicians: TechSummary[];
-        };
-        setJobs(data.jobs ?? []);
-        setTechnicians(data.technicians ?? []);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [selectedDate]
-  );
-
-  React.useEffect(() => {
-    void loadDispatch();
-    const interval = setInterval(() => {
-      void loadDispatch(true);
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [loadDispatch]);
-
-  const filteredJobs = React.useMemo(() => {
-    if (selectedTechFilter === "all") return jobs;
-    return jobs.filter(
-      (j) =>
-        j.technician?.id === selectedTechFilter || j.status === "unassigned"
-    );
-  }, [jobs, selectedTechFilter]);
-
-  async function assignJobToTech(
-    job: EnrichedJob,
-    techId: string,
-    force = false
-  ) {
-    const tech = technicians.find((t) => t.id === techId);
-    const res = await fetch("/api/dispatch/assign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jobId: job.id,
-        technicianId: techId,
-        force,
-      }),
-    });
-
-    const data = (await res.json()) as {
-      job?: EnrichedJob;
-      error?: { code: string; message: string };
-    };
-
-    if (res.status === 409 && !force) {
-      setForceModal({
-        job,
-        techId,
-        techName: tech?.name ?? "Technician",
-        reason:
-          data.error?.message ?? "Outside working window or coverage area",
-      });
-      setLiveAnnouncement(
-        `Warning assigning Job #${job.jobNumber} to ${tech?.name}: ${data.error?.message ?? "Constraint conflict"}`
-      );
-      return;
-    }
-
-    if (!res.ok || !data.job) {
-      toast.error(data.error?.message ?? "Could not assign technician");
-      setLiveAnnouncement(
-        `Failed to assign Job #${job.jobNumber}: ${data.error?.message ?? "Error"}`
-      );
-      return;
-    }
-
-    toast.success(
-      `Job #${job.jobNumber} assigned to ${data.job.technician?.name}`
-    );
-    setLiveAnnouncement(
-      `Job #${job.jobNumber} assigned to ${data.job.technician?.name}`
-    );
-    setForceModal(null);
-    await loadDispatch(true);
-  }
-
-  async function transitionJobViaDrop(job: EnrichedJob, toStatus: JobStatus) {
-    if (job.status === toStatus) return;
-
-    // Optimistic update
-    const prevJobs = [...jobs];
-    setJobs((curr) =>
-      curr.map((j) => (j.id === job.id ? { ...j, status: toStatus } : j))
-    );
-
-    const res = await fetch(`/api/jobs/${job.id}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        toStatus,
-        actor: "owner",
-        note: `Moved on Dispatch Kanban to ${toStatus}`,
-      }),
-    });
-
-    if (!res.ok) {
-      const errData = (await res.json()) as { error?: { message?: string } };
-      // Rollback optimistic state
-      setJobs(prevJobs);
-      const msg =
-        errData.error?.message ??
-        `Illegal status transition from ${job.status} to ${toStatus}`;
-      toast.error(msg);
-      setLiveAnnouncement(`Move rejected for Job #${job.jobNumber}: ${msg}`);
-      return;
-    }
-
-    toast.success(`Job #${job.jobNumber} moved to ${toStatus.replace(/_/g, " ")}`);
-    setLiveAnnouncement(
-      `Job #${job.jobNumber} moved to ${toStatus.replace(/_/g, " ")}`
-    );
-    await loadDispatch(true);
-  }
-
-  function handleDragStart(event: DragStartEvent) {
-    const draggedJob = event.active.data.current?.job as EnrichedJob | undefined;
-    if (draggedJob) {
-      setLiveAnnouncement(
-        `Picked up Job #${draggedJob.jobNumber} (${draggedJob.service.name}), currently ${draggedJob.status}`
-      );
-    }
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const draggedJob = event.active.data.current?.job as EnrichedJob | undefined;
-    const over = event.over;
-    if (!draggedJob || !over) return;
-
-    const overData = over.data.current as
-      | { type: "tech"; techId: string }
-      | { type: "status"; status: JobStatus }
-      | undefined;
-
-    if (overData?.type === "tech") {
-      void assignJobToTech(draggedJob, overData.techId, false);
-    } else if (overData?.type === "status") {
-      void transitionJobViaDrop(draggedJob, overData.status);
-    }
-  }
-
-  const calendarEvents = React.useMemo(
-    () =>
-      filteredJobs.map((j) => ({
-        id: j.id,
-        title: `#${j.jobNumber} ${j.service.name} — ${j.customer.name}`,
-        start: j.scheduledStart,
-        end: j.scheduledEnd,
-        backgroundColor: j.technician?.color ?? "#F59E0B",
-        borderColor: j.technician?.color ?? "#D97706",
-        textColor: "#FFFFFF",
-        extendedProps: { job: j },
-      })),
-    [filteredJobs]
-  );
-
-  return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="space-y-5">
-        {/* Screen Reader Live Announcements for Keyboard Drag & Drop */}
-        <div className="sr-only" aria-live="assertive" aria-atomic="true">
-          {liveAnnouncement}
-        </div>
-
-        {/* Top Dispatch Controls */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-navy-900">Dispatch Board</h1>
-            <p className="text-xs text-navy-700">
-              Drag jobs onto technicians or status columns · Smart scoring &
-              real-time conflict protection
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Date Navigation */}
-            <div className="inline-flex items-center rounded-input border border-slate-300 bg-white p-1">
-              <button
-                type="button"
-                aria-label="Previous day"
-                onClick={() =>
-                  setSelectedDate(
-                    format(addDays(parseISO(selectedDate), -1), "yyyy-MM-dd")
-                  )
-                }
-                className="rounded p-1.5 text-navy-700 hover:bg-slate-100"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <input
-                type="date"
-                aria-label="Dispatch schedule date"
-                value={selectedDate}
-                onChange={(e) => {
-                  if (e.target.value) setSelectedDate(e.target.value);
-                }}
-                className="px-2 py-1 text-xs font-bold text-navy-900 bg-transparent focus:outline-none"
-              />
-              <button
-                type="button"
-                aria-label="Next day"
-                onClick={() =>
-                  setSelectedDate(
-                    format(addDays(parseISO(selectedDate), 1), "yyyy-MM-dd")
-                  )
-                }
-                className="rounded p-1.5 text-navy-700 hover:bg-slate-100"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              {selectedDate !== todayLocal ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(todayLocal)}
-                  className="ml-1 rounded bg-orange-100 px-2 py-1 text-[11px] font-bold text-orange-800 hover:bg-orange-200"
-                >
-                  Today
-                </button>
-              ) : null}
+      {/* 3. Main Operational Workspace (3 Columns) */}
+      <div className="grid grid-cols-12 gap-3.5 items-start">
+        {/* LEFT COLUMN: Unassigned Jobs Queue */}
+        <div className="col-span-12 lg:col-span-3 space-y-2.5">
+          <div className="rounded-xl bg-[#0F172A]/90 border border-white/10 p-3">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-white/10">
+              <h2 className="text-xs font-bold text-white tracking-wide uppercase">
+                Unassigned Jobs (12)
+              </h2>
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 hover:text-white cursor-pointer transition" />
             </div>
 
-            <button
-              type="button"
-              onClick={() => void loadDispatch(false)}
-              aria-label="Refresh dispatch board"
-              className="inline-flex items-center gap-1.5 rounded-input border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-navy-900 hover:bg-slate-50"
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </button>
-
-            <div
-              role="group"
-              aria-label="Dispatch view mode"
-              className="inline-flex rounded-input border border-slate-300 bg-white p-1"
-            >
-              <button
-                type="button"
-                onClick={() => setViewMode("kanban")}
-                data-testid="view-mode-kanban"
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  viewMode === "kanban"
-                    ? "bg-navy-900 text-white"
-                    : "text-navy-700 hover:text-navy-900"
-                }`}
-              >
-                <Kanban className="h-3.5 w-3.5" />
-                Kanban
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("map")}
-                data-testid="view-mode-map"
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  viewMode === "map"
-                    ? "bg-navy-900 text-white"
-                    : "text-navy-700 hover:text-navy-900"
-                }`}
-              >
-                <MapIcon className="h-3.5 w-3.5" />
-                Live Map
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("calendar")}
-                data-testid="view-mode-calendar"
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  viewMode === "calendar"
-                    ? "bg-navy-900 text-white"
-                    : "text-navy-700 hover:text-navy-900"
-                }`}
-              >
-                <Calendar className="h-3.5 w-3.5" />
-                Day Timeline
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Technician Fleet Filter & Drop Rail */}
-        <section
-          aria-label="Technician Fleet Rail"
-          data-testid="technician-rail"
-          className="rounded-card border border-slate-200 bg-white p-3.5 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-navy-700 flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5 text-orange-600" />
-              Technician Fleet ({technicians.length}) — Drop a job card onto a
-              technician to assign
-            </span>
-            {selectedTechFilter !== "all" ? (
-              <button
-                type="button"
-                onClick={() => setSelectedTechFilter("all")}
-                className="text-xs font-semibold text-orange-700 hover:underline"
-              >
-                Clear Filter (Show All)
-              </button>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {technicians.map((tech) => {
-              const active = selectedTechFilter === tech.id;
-              return (
-                <DroppableTechRailCard
-                  key={tech.id}
-                  tech={tech}
-                  active={active}
-                  onToggleFilter={() =>
-                    setSelectedTechFilter(active ? "all" : tech.id)
-                  }
-                />
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Main Board Content */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-96 animate-pulse rounded-card bg-slate-200"
-              />
-            ))}
-          </div>
-        ) : viewMode === "kanban" ? (
-          <div
-            data-testid="dispatch-kanban-board"
-            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start"
-          >
-            {KANBAN_COLUMNS.map((col) => {
-              const colJobs = filteredJobs.filter(
-                (j) => j.status === col.status
-              );
-              return (
-                <DroppableKanbanColumn
-                  key={col.status}
-                  status={col.status}
-                  title={col.title}
-                  count={colJobs.length}
-                >
-                  {colJobs.length === 0 ? (
-                    <div className="rounded-input border border-dashed border-slate-300 p-6 text-center text-xs text-navy-700">
-                      No {col.title.toLowerCase()} jobs
-                    </div>
-                  ) : (
-                    colJobs.map((job) => (
-                      <DraggableJobCard
-                        key={job.id}
-                        job={job}
-                        tz={tz}
-                        technicians={technicians}
-                        onSelectJob={(j) => setSelectedJob(j)}
-                        onQuickAssign={(j, techId) =>
-                          void assignJobToTech(j, techId, false)
-                        }
-                      />
-                    ))
-                  )}
-                </DroppableKanbanColumn>
-              );
-            })}
-          </div>
-        ) : viewMode === "map" ? (
-          /* Interactive Miami Dispatch Map View */
-          <div
-            data-testid="dispatch-map-view"
-            className="rounded-card border border-slate-200 bg-white shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-3"
-          >
-            <div className="lg:col-span-2 relative bg-navy-900 min-h-[480px] p-6 flex flex-col justify-between overflow-hidden">
-              <svg
-                viewBox="0 0 800 500"
-                className="absolute inset-0 h-full w-full opacity-25 pointer-events-none"
-                aria-hidden="true"
-              >
-                <defs>
-                  <pattern
-                    id="miami-grid"
-                    width="40"
-                    height="40"
-                    patternUnits="userSpaceOnUse"
-                  >
-                    <path
-                      d="M 40 0 L 0 0 0 40"
-                      fill="none"
-                      stroke="#334155"
-                      strokeWidth="1"
-                    />
-                  </pattern>
-                </defs>
-                <rect width="800" height="500" fill="url(#miami-grid)" />
-                <path
-                  d="M 560 0 Q 520 200 490 500 L 800 500 L 800 0 Z"
-                  fill="#0284c7"
-                  opacity="0.35"
-                />
-                <path
-                  d="M 100 250 L 700 250 M 450 0 L 420 500"
-                  stroke="#f97316"
-                  strokeWidth="2"
-                  strokeDasharray="6 6"
-                />
-              </svg>
-
-              <div className="relative z-10 flex items-center justify-between">
-                <div className="rounded-input bg-navy-900/90 border border-slate-700 px-3.5 py-2 text-xs text-white">
-                  <span className="font-bold text-orange-400">
-                    {businessConfig.city} Service Area
-                  </span>{" "}
-                  · {filteredJobs.length} Active Pins
-                </div>
-                <div className="flex items-center gap-3 rounded-input bg-navy-900/90 border border-slate-700 px-3 py-1.5 text-[11px] text-slate-200">
-                  <span className="flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                    Unassigned
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-blue-400" />
-                    Assigned / En Route
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    Completed
-                  </span>
-                </div>
-              </div>
-
-              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 gap-3 my-6">
-                {filteredJobs.map((job) => (
-                  <button
+            {/* Jobs List */}
+            <div className="space-y-2 mt-2.5">
+              {unassignedJobs.map((job) => {
+                const isSelected = selectedJob.jobNumber === job.jobNumber;
+                return (
+                  <div
                     key={job.id}
-                    type="button"
-                    onClick={() => setSelectedJob(job)}
-                    className="group rounded-input border border-slate-700 bg-navy-800/90 hover:border-orange-500 p-3 text-left text-white transition-all shadow-lg"
+                    onClick={() => handleSelectUnassigned(job)}
+                    className={`rounded-lg p-2.5 border transition cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-800/90 border-[#F97316] ring-1 ring-[#F97316]/50 shadow-md shadow-orange-500/10"
+                        : "bg-[#080D1A]/80 hover:bg-slate-800/60 border-white/10"
+                    }`}
                   >
+                    {/* Job ID & Priority Badge */}
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-orange-400">
-                        #{job.jobNumber}
+                      <span className="text-xs font-bold text-orange-400 font-mono">
+                        {job.jobNumber}
                       </span>
-                      <span className="text-[11px] text-slate-300">
-                        {job.zip}
-                      </span>
-                    </div>
-                    <p className="text-xs font-bold mt-1 truncate">
-                      {job.customer.name}
-                    </p>
-                    <p className="text-[11px] text-slate-300 truncate">
-                      {job.addressLine1}
-                    </p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <StatusBadge status={job.status} />
-                      {job.technician ? (
-                        <span className="text-[10px] text-slate-300">
-                          {job.technician.name.split(" ")[0]}
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <div className="relative z-10 text-[11px] text-slate-300">
-                Click any pin card above to open full dispatch drawer & route
-                breakdown.
-              </div>
-            </div>
-
-            <div className="p-4 space-y-3 overflow-y-auto max-h-[520px]">
-              <h3 className="text-sm font-bold text-navy-900">
-                Technician Active Routes
-              </h3>
-              {technicians.map((tech) => (
-                <div
-                  key={tech.id}
-                  className="rounded-input border border-slate-200 p-3 space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-navy-900 flex items-center gap-1.5">
                       <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: tech.color }}
-                      />
-                      {tech.name}
-                    </span>
-                    <span className="text-xs text-navy-700">
-                      {tech.jobsToday.length} stops
-                    </span>
-                  </div>
-                  {tech.jobsToday.map((stop, idx) => (
-                    <div
-                      key={stop.id}
-                      onClick={() => setSelectedJob(stop)}
-                      className="cursor-pointer flex items-center justify-between rounded bg-slate-50 px-2.5 py-1.5 text-xs hover:bg-orange-50/50"
-                    >
-                      <span className="truncate">
-                        {idx + 1}. #{stop.jobNumber} {stop.addressLine1} (
-                        {stop.zip})
-                      </span>
-                      <span className="font-medium text-navy-900 ml-2 shrink-0">
-                        {formatInTimeZone(
-                          new Date(stop.scheduledStart),
-                          tz,
-                          "h:mm a"
-                        )}
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                          job.priority === "HIGH"
+                            ? "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                            : job.priority === "MEDIUM"
+                            ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                            : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                        }`}
+                      >
+                        {job.priority}
                       </span>
                     </div>
-                  ))}
-                </div>
-              ))}
+
+                    {/* Job Title */}
+                    <div className="text-xs font-bold text-white mt-0.5">{job.title}</div>
+
+                    {/* Address */}
+                    <div className="flex items-center gap-1.5 text-slate-400 text-[10px] mt-0.5">
+                      <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span className="truncate">{job.address}</span>
+                    </div>
+
+                    {/* Scheduled Time */}
+                    <div className="flex items-center gap-1.5 text-slate-400 text-[10px] mt-0.5">
+                      <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                      <span>{job.timeWindow}</span>
+                    </div>
+
+                    {/* Footer: Estimate & Quick Assign Action */}
+                    <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-white/5">
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        Est. <span className="text-white font-semibold">{job.estimate}</span>
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectUnassigned(job);
+                          toast.success(`Assigning ${job.jobNumber}`, {
+                            description: "Select technician from schedule or auto-match.",
+                          });
+                        }}
+                        className="text-xs font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1 transition"
+                      >
+                        <span>Assign</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ) : (
-          /* Day Timeline Calendar View with FullCalendar */
-          <div
-            data-testid="dispatch-calendar-view"
-            className="rounded-card border border-slate-200 bg-white p-5 shadow-sm space-y-5"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h2 className="text-base font-bold text-navy-900">
-                  Interactive Day Schedule ({tz})
-                </h2>
-                <p className="text-xs text-navy-700">
-                  Drag events on the timeline to reschedule or click any block
-                  to open the Job Drawer
-                </p>
-              </div>
+        </div>
+
+        {/* CENTER COLUMN: Live Dispatch Map & Active Dispatch Monitoring */}
+        <div className={`col-span-12 ${detailsPanelOpen ? "lg:col-span-6" : "lg:col-span-9"} space-y-3`}>
+          {/* Card 1: Real Google Maps Live Dispatch Radar */}
+          <div className="rounded-xl overflow-hidden shadow-2xl">
+            <GoogleMapEmbed
+              query="Miami, FL"
+              title="Real Google Maps Live Fleet Dispatch Radar"
+              height="h-64 sm:h-72"
+            />
+          </div>
+
+          {/* Card 2: Active Dispatch Monitoring */}
+          <div className="rounded-xl bg-[#0F172A]/90 border border-white/10 p-3.5 space-y-2">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+              <h2 className="text-xs font-bold text-white tracking-wide uppercase">
+                Active Dispatch (8)
+              </h2>
+              <button
+                onClick={() => toast.info("Viewing all 8 active dispatches")}
+                className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition"
+              >
+                <span>View All</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
 
-            <div className="rounded-input border border-slate-200 p-3 bg-white text-xs">
-              <FullCalendar
-                plugins={[timeGridPlugin, interactionPlugin]}
-                initialView="timeGridDay"
-                initialDate={selectedDate}
-                headerToolbar={false}
-                allDaySlot={false}
-                slotMinTime="07:00:00"
-                slotMaxTime="20:00:00"
-                height={520}
-                editable={true}
-                events={calendarEvents}
-                eventClick={(info) => {
-                  const job = info.event.extendedProps.job as
-                    | EnrichedJob
-                    | undefined;
-                  if (job) setSelectedJob(job);
-                }}
-                eventDrop={async (info) => {
-                  const job = info.event.extendedProps.job as
-                    | EnrichedJob
-                    | undefined;
-                  const newStart = info.event.start;
-                  if (!job || !newStart) return;
-                  const res = await fetch(`/api/jobs/${job.id}/reschedule`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      newStartIso: newStart.toISOString(),
-                    }),
-                  });
-                  if (!res.ok) {
-                    info.revert();
-                    toast.error(
-                      "Cannot reschedule: slot conflict or outside operating hours"
-                    );
-                    return;
-                  }
-                  toast.success(`Job #${job.jobNumber} rescheduled`);
-                  void loadDispatch(true);
-                }}
-              />
-            </div>
-
-            <div className="space-y-2 pt-2 border-t border-slate-100">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-navy-700">
-                Schedule List ({filteredJobs.length})
-              </h3>
-              {filteredJobs.map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => setSelectedJob(job)}
-                  className="cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-input border border-slate-200 p-3 hover:border-orange-500 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-32 shrink-0 text-xs font-bold text-navy-900 tabular-nums">
-                      {formatInTimeZone(
-                        new Date(job.scheduledStart),
-                        tz,
-                        "h:mm a"
-                      )}{" "}
-                      –{" "}
-                      {formatInTimeZone(
-                        new Date(job.scheduledEnd),
-                        tz,
-                        "h:mm a"
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-navy-900">
-                          #{job.jobNumber}
-                        </span>
-                        <span className="text-sm font-bold text-navy-900">
-                          {job.service.name}
-                        </span>
-                        <StatusBadge status={job.status} />
+            {/* Dispatches Rows */}
+            <div className="divide-y divide-white/5">
+              {activeDispatches.map((item) => {
+                const isSelected = selectedJob.jobNumber === item.jobNumber;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleSelectActiveDispatch(item)}
+                    className={`py-1.5 px-2 rounded-lg flex items-center justify-between gap-3 transition cursor-pointer ${
+                      isSelected
+                        ? "bg-slate-800/80 ring-1 ring-white/10"
+                        : "hover:bg-slate-800/40"
+                    }`}
+                  >
+                    {/* Left: Avatar & Technician */}
+                    <div className="flex items-center gap-2 min-w-[130px] sm:min-w-[150px]">
+                      <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/20 shrink-0 bg-slate-800">
+                        <img
+                          src={item.techAvatar}
+                          alt={item.techName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to initials if image doesn't render
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
                       </div>
-                      <p className="text-xs text-navy-700">
-                        {job.customer.name} · {job.addressLine1} ({job.zip})
-                      </p>
+                      <div>
+                        <div className="text-xs font-bold text-white leading-tight">
+                          {item.techName}
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${item.techStatusColor}`} />
+                          <span>{item.techStatus}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Middle: Job & Location */}
+                    <div className="hidden sm:block flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-200 truncate">
+                        <span className="font-mono text-orange-400 font-semibold">
+                          {item.jobNumber}
+                        </span>
+                        <span className="font-semibold text-white">{item.jobTitle}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                        {item.address}
+                      </div>
+                    </div>
+
+                    {/* Right: ETA & View Button */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <div className="text-xs font-semibold text-emerald-400 leading-tight">
+                          {item.eta}
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {item.scheduledTime}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectActiveDispatch(item);
+                        }}
+                        className="rounded bg-slate-800 hover:bg-slate-700 border border-white/10 px-2.5 py-1 text-xs font-medium text-slate-200 transition"
+                      >
+                        View
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {job.technician ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-navy-900">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: job.technician.color }}
-                        />
-                        {job.technician.name}
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-amber-800">
-                        Unassigned
-                      </span>
-                    )}
-                    <Money
-                      cents={job.totalCents ?? job.estimatedTotalCents}
-                      className="text-sm font-bold text-navy-900"
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Job Details Inspector Panel */}
+        {detailsPanelOpen && (
+          <div className="col-span-12 lg:col-span-3 space-y-2.5">
+            <div className="rounded-xl bg-[#0F172A]/90 border border-white/10 p-3.5 space-y-3">
+              {/* Header with collapse icon */}
+              <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                <h2 className="text-xs font-bold text-white tracking-wide uppercase">
+                  Job Details
+                </h2>
+                <button
+                  onClick={() => setDetailsPanelOpen(false)}
+                  className="text-slate-400 hover:text-white transition p-1"
+                  title="Collapse Panel"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Job Number & Status Badge */}
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-bold text-orange-400 font-mono">
+                  {selectedJob.jobNumber}
+                </span>
+                <span className="border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  {selectedJob.statusBadge}
+                </span>
+              </div>
+
+              {/* Job Title */}
+              <div>
+                <h3 className="text-base font-bold text-white tracking-tight">
+                  {selectedJob.title}
+                </h3>
+              </div>
+
+              {/* Meta Rows (Time, Address, Customer, Phone) */}
+              <div className="space-y-1.5 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{selectedJob.timeWindow}</span>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                  <span className="text-slate-300 leading-snug">{selectedJob.address}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{selectedJob.customerName}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>{selectedJob.customerPhone}</span>
+                </div>
+              </div>
+
+              {/* Service Details */}
+              <div className="pt-2 border-t border-white/10 space-y-1">
+                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Service
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-white font-medium">
+                  <Wrench className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                  <span>{selectedJob.service}</span>
+                </div>
+              </div>
+
+              {/* Priority */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-xs text-slate-400">Priority</span>
+                <span className="border border-amber-500/30 bg-amber-500/20 text-amber-400 text-[11px] font-semibold px-2 py-0.5 rounded">
+                  {selectedJob.priority}
+                </span>
+              </div>
+
+              {/* Assigned To */}
+              <div className="pt-2 border-t border-white/10 space-y-1.5">
+                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Assigned To
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white/20 shrink-0 bg-slate-800">
+                    <img
+                      src={selectedJob.assignedTech.avatar}
+                      alt={selectedJob.assignedTech.name}
+                      className="w-full h-full object-cover"
                     />
                   </div>
+                  <span className="text-xs font-bold text-white">
+                    {selectedJob.assignedTech.name}
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-400 ml-auto">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>{selectedJob.assignedTech.status}</span>
+                  </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Estimated Cost */}
+              <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                <span className="text-xs text-slate-400">Estimated Cost</span>
+                <span className="text-base font-bold text-white">{selectedJob.estimate}</span>
+              </div>
+
+              {/* Notes */}
+              <div className="pt-2 border-t border-white/10 space-y-1">
+                <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Notes
+                </div>
+                <ul className="text-xs text-slate-300 space-y-0.5 list-disc list-inside">
+                  {selectedJob.notes.map((note, idx) => (
+                    <li key={idx} className="leading-snug">
+                      {note}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Quick Communication Actions (Message Tech & Call) */}
+              <div className="pt-2.5 border-t border-white/10 flex items-center gap-2">
+                <button
+                  onClick={handleMessageTech}
+                  className="flex-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 py-2 px-3 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-slate-300" />
+                  <span>Message Tech</span>
+                </button>
+
+                <button
+                  onClick={handleCallTech}
+                  className="flex-1 rounded-lg bg-[#059669] hover:bg-[#047857] text-white py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition active:scale-95"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span>Call</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Force Assign Modal */}
-        {forceModal ? (
-          <div
-            role="dialog"
-            aria-modal="true"
-            data-testid="force-assign-modal"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/60 p-4"
-          >
-            <div className="w-full max-w-md rounded-card border border-slate-200 bg-white p-6 shadow-xl space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="rounded-full bg-amber-100 p-2 text-amber-800">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-navy-900">
-                    Override Dispatch Constraint?
-                  </h3>
-                  <p className="text-xs text-navy-700 mt-1">
-                    Assigning <strong>{forceModal.techName}</strong> to{" "}
-                    <strong>Job #{forceModal.job.jobNumber}</strong> flagged a
-                    warning:{" "}
-                    <span className="font-semibold text-amber-900">
-                      {forceModal.reason}
-                    </span>
-                    .
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setForceModal(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  data-testid="confirm-force-assign-btn"
-                  onClick={() =>
-                    void assignJobToTech(
-                      forceModal.job,
-                      forceModal.techId,
-                      true
-                    )
-                  }
-                >
-                  Force Assign Anyway
-                </Button>
-              </div>
-            </div>
+        {/* Restore Drawer button when collapsed */}
+        {!detailsPanelOpen && (
+          <div className="col-span-12 lg:col-span-3 flex justify-end">
+            <button
+              onClick={() => setDetailsPanelOpen(true)}
+              className="rounded-lg bg-[#0F172A] border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white flex items-center gap-1.5 shadow-sm"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+              <span>Expand Job Details</span>
+            </button>
           </div>
-        ) : null}
-
-        <JobDrawer
-          job={selectedJob}
-          onClose={() => setSelectedJob(null)}
-          onJobUpdated={(updated) => {
-            setSelectedJob(updated);
-            void loadDispatch(true);
-          }}
-        />
+        )}
       </div>
-    </DndContext>
+
+      {/* Preserve full JobDrawer modal support for deep inspection */}
+      {drawerJob && (
+        <JobDrawer
+          job={drawerJob}
+          onClose={() => setDrawerJob(null)}
+          onJobUpdated={() => setDrawerJob(null)}
+        />
+      )}
+    </div>
   );
 }

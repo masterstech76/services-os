@@ -55,5 +55,12 @@ if (typeof require !== "undefined" && require.main === module) {
     );
     process.exit(1);
   }
-  console.log("[verify-env] Environment and business.config.ts verified successfully.");
+
+  // Production Security Assertion: Disallow demo bypass in production builds
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_AUTH === "true") {
+    console.error("[verify-env] SECURITY VIOLATION: ALLOW_DEMO_AUTH cannot be true in production builds.");
+    process.exit(1);
+  }
+
+  console.log("[verify-env] Environment, business.config.ts, and production security verified successfully.");
 }

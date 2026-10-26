@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { requireRole } from "@/lib/server/auth-guard";
 import { collectJobPayment } from "@/lib/server/operations";
 import { verifyCsrfOrigin } from "@/lib/server/csrf";
 import { checkRateLimit } from "@/lib/server/rate-limit";
@@ -15,14 +16,20 @@ const recordPaymentSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // 1. CSRF Protection
+  // 1. Role Authorization
+  const auth = await requireRole(req, ["owner", "admin", "technician"]);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  // 2. CSRF Protection
   const csrf = verifyCsrfOrigin(req);
   if (!csrf.valid && csrf.response) {
     return csrf.response;
   }
 
-  // 2. Sensitive rate limiting (20 payment records / min per IP)
-  const rl = checkRateLimit(req, { limit: 20, windowMs: 60_000, keyPrefix: "payment_record" });
+  // 3. Sensitive rate limiting (maximum 5 attempts with 15-minute lockout to stop brute-force hacking)
+  const rl = checkRateLimit(req, { limit: 5, windowMs: 60_000, keyPrefix: "payment_record", lockoutMs: 15 * 60_000, maxFailures: 5 });
   if (!rl.allowed && rl.response) {
     return rl.response;
   }

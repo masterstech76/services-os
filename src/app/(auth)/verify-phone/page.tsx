@@ -1,9 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Smartphone, ArrowRight, ShieldCheck, CheckCircle2, RotateCw, Phone } from "lucide-react";
+import { ArrowRight, CheckCircle2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { businessConfig } from "@config/business.config";
 import { Button } from "@/components/ui/button";
@@ -117,28 +118,30 @@ function VerifyPhoneContent() {
   };
 
   return (
-    <div className="w-full max-w-md rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-5 sm:p-9 shadow-xl space-y-5 sm:space-y-6">
+    <div className="w-full max-w-md rounded-2xl border border-white/15 bg-[#0F172A]/90 backdrop-blur-xl p-5 sm:p-8 shadow-2xl space-y-5 sm:space-y-6 text-white">
       {/* Header */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-navy-950 text-orange-400 mb-3 sm:mb-4 shadow-md ring-4 ring-orange-500/10">
-          <Smartphone className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" />
-        </div>
-        <h1 className="text-xl sm:text-3xl font-black text-navy-950 tracking-tight">
+        <img
+          src="/images/servicepro-icon-transparent.png?v=green"
+          alt="ServicePro OS"
+          className="h-11 w-auto object-contain mb-3"
+        />
+        <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
           Verify Mobile Number
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm">
+        <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-sm">
           Enter the 6-digit security code sent via SMS to{" "}
-          <strong className="text-navy-950 font-bold">{phoneParam}</strong>
+          <strong className="text-white font-bold">{phoneParam}</strong>
         </p>
       </div>
 
       {verified ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center space-y-2">
-          <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto" />
-          <h3 className="font-heading font-black text-base text-emerald-950">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center space-y-2">
+          <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto" />
+          <h3 className="font-heading font-black text-base text-emerald-300">
             Phone Number Verified!
           </h3>
-          <p className="text-xs text-emerald-700">
+          <p className="text-xs text-emerald-200/80">
             Redirecting to your customer portal...
           </p>
         </div>
@@ -160,10 +163,10 @@ function VerifyPhoneContent() {
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 onPaste={handlePaste}
-                className={`h-11 w-9 sm:h-14 sm:w-12 rounded-xl sm:rounded-2xl border text-center font-mono text-lg sm:text-2xl font-black transition-all ${
+                className={`h-11 w-9 sm:h-14 sm:w-12 rounded-xl border text-center font-mono text-lg sm:text-2xl font-black transition-all ${
                   digit
-                    ? "border-navy-950 bg-slate-50 text-navy-950 ring-2 ring-navy-950/20"
-                    : "border-slate-300 bg-white text-navy-950 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30"
+                    ? "border-[#F97316] bg-[#0B111E] text-white ring-2 ring-[#F97316]/30"
+                    : "border-white/15 bg-[#0B111E]/80 text-white focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/30"
                 } focus:outline-none`}
               />
             ))}
@@ -177,8 +180,8 @@ function VerifyPhoneContent() {
               onClick={handleResend}
               className={`flex items-center gap-1 font-bold ${
                 timer > 0
-                  ? "text-slate-400 cursor-not-allowed"
-                  : "text-orange-600 hover:text-orange-700 hover:underline"
+                  ? "text-slate-500 cursor-not-allowed"
+                  : "text-[#F97316] hover:text-orange-400 hover:underline"
               }`}
             >
               <RotateCw className="h-3.5 w-3.5" />
@@ -189,9 +192,9 @@ function VerifyPhoneContent() {
               <button
                 type="button"
                 onClick={() => setOtp(["1", "2", "3", "4", "5", "6"])}
-                className="text-slate-400 hover:text-slate-600 text-[11px] underline"
+                className="text-slate-400 hover:text-slate-300 text-[11px] underline"
               >
-                Use demo code (123456)
+                Use verification code (123456)
               </button>
             ) : null}
           </div>
@@ -200,7 +203,7 @@ function VerifyPhoneContent() {
           <Button
             type="submit"
             disabled={otp.some((d) => !d) || verifying}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-navy-950 font-black h-12 text-sm rounded-xl shadow-md transition-all"
+            className="w-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold h-12 text-sm rounded-xl shadow-lg transition-all"
           >
             {verifying ? (
               "Verifying Code..."
@@ -215,11 +218,11 @@ function VerifyPhoneContent() {
       )}
 
       {/* Footer Navigation */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs text-slate-500">
-        <Link href="/login" className="hover:text-navy-950 font-semibold transition-colors">
+      <div className="flex items-center justify-between pt-4 border-t border-white/10 text-xs text-slate-400">
+        <Link href="/login" className="hover:text-white font-semibold transition-colors">
           ← Back to Sign In
         </Link>
-        <Link href="/contact" className="hover:text-orange-600 font-semibold transition-colors">
+        <Link href="/contact" className="hover:text-[#F97316] font-semibold transition-colors">
           Need Help?
         </Link>
       </div>
@@ -229,14 +232,14 @@ function VerifyPhoneContent() {
 
 export default function VerifyPhonePage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+    <main className="w-full flex justify-center">
       <React.Suspense
         fallback={
-          <div className="w-full max-w-md h-96 rounded-3xl bg-white animate-pulse" />
+          <div className="w-full max-w-md h-96 rounded-3xl bg-[#0F172A]/90 animate-pulse" />
         }
       >
         <VerifyPhoneContent />
       </React.Suspense>
-    </div>
+    </main>
   );
 }

@@ -103,10 +103,10 @@ export function PhotoUploader({ photos, maxPhotos = 5, onChange }: PhotoUploader
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="flex aspect-square flex-col items-center justify-center rounded-card border-2 border-dashed border-slate-200 bg-slate-50 text-navy-900 hover:border-orange-500 hover:bg-orange-50/40 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-orange-500 min-h-[88px]"
+            className="flex aspect-square flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/20 bg-white/5 text-white hover:border-orange-500 hover:bg-orange-500/10 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-orange-500 min-h-[88px] transition-colors"
             aria-label="Add photo"
           >
-            <Camera className="h-6 w-6 text-navy-700 mb-1" aria-hidden="true" />
+            <Camera className="h-6 w-6 text-slate-400 mb-1" aria-hidden="true" />
             <span className="text-xs font-semibold">Add photo</span>
           </button>
         )}
@@ -114,7 +114,7 @@ export function PhotoUploader({ photos, maxPhotos = 5, onChange }: PhotoUploader
         {photos.map((photo, index) => (
           <div
             key={photo.id}
-            className="relative aspect-square overflow-hidden rounded-card border border-slate-200 bg-slate-100"
+            className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-[#080D1A]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

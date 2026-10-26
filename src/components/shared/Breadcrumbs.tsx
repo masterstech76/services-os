@@ -9,21 +9,21 @@ export interface BreadcrumbItem {
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="py-3 px-4 sm:px-6 bg-[#FFF7ED]/50 border-b border-orange-100 text-xs">
-      <div className="max-w-7xl mx-auto flex items-center gap-1.5 text-slate-500 font-medium overflow-x-auto">
-        <Link href="/" className="flex items-center gap-1 hover:text-[#EA580C] transition-colors shrink-0">
+    <nav aria-label="Breadcrumb" className="py-3 px-4 sm:px-6 bg-[#0B1320]/80 backdrop-blur-md border-b border-white/10 text-xs">
+      <div className="max-w-7xl mx-auto flex items-center gap-1.5 text-slate-400 font-medium overflow-x-auto">
+        <Link href="/" className="flex items-center gap-1 text-slate-400 hover:text-[#F97316] transition-colors shrink-0">
           <Home className="h-3.5 w-3.5" />
           <span>Home</span>
         </Link>
         {items.map((it, idx) => (
           <React.Fragment key={idx}>
-            <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
+            <ChevronRight className="h-3 w-3 text-slate-500 shrink-0" />
             {it.href ? (
-              <Link href={it.href} className="hover:text-[#EA580C] transition-colors shrink-0">
+              <Link href={it.href} className="text-slate-400 hover:text-[#F97316] transition-colors shrink-0">
                 {it.label}
               </Link>
             ) : (
-              <span className="text-[#0F172A] font-bold shrink-0" aria-current="page">
+              <span className="text-white font-semibold shrink-0" aria-current="page">
                 {it.label}
               </span>
             )}

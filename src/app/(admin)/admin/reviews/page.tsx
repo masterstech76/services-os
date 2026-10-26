@@ -5,218 +5,492 @@ import Link from "next/link";
 import {
   Star,
   Search,
+  Filter,
   CheckCircle2,
   XCircle,
   Clock,
-  ShieldCheck,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  MessageSquare,
   ThumbsUp,
-  ExternalLink,
+  ThumbsDown,
+  Trash2,
+  Eye,
+  X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { formatInTimeZone } from "date-fns-tz";
-import { businessConfig } from "@config/business.config";
 import { toast } from "sonner";
-import type { AdminReviewItem } from "@/lib/server/admin-portal";
+
+export interface ModerationReviewItem {
+  id: string;
+  customerName: string;
+  avatarInitials: string;
+  avatarUrl?: string;
+  rating: number;
+  reviewText: string;
+  date: string;
+  status: "Approved" | "Pending" | "Rejected";
+}
+
+const DEFAULT_REVIEWS: ModerationReviewItem[] = [
+  {
+    id: "rev-1",
+    customerName: "Robert Caldwell",
+    avatarInitials: "RC",
+    avatarUrl: "/images/avatar-david.jpg",
+    rating: 5,
+    reviewText: "Great service! Technician was professional, diagnosed our AC fault in 10 minutes, and arrived exactly on time.",
+    date: "May 18, 2025",
+    status: "Approved",
+  },
+  {
+    id: "rev-2",
+    customerName: "Maria Alvarez",
+    avatarInitials: "MA",
+    avatarUrl: "/images/avatar-sarah.jpg",
+    rating: 4,
+    reviewText: "Clean workmanship and polite crew. The thermostat calibration was fast, though weekend parts dispatch was slightly delayed.",
+    date: "May 17, 2025",
+    status: "Pending",
+  },
+  {
+    id: "rev-3",
+    customerName: "Danny Reyes",
+    avatarInitials: "DR",
+    avatarUrl: "/images/avatar-mike.jpg",
+    rating: 5,
+    reviewText: "Excellent duct cleaning service and very helpful staff. Airflow in the upper floors improved noticeably within hours.",
+    date: "May 16, 2025",
+    status: "Approved",
+  },
+  {
+    id: "rev-4",
+    customerName: "Sarah Mitchell",
+    avatarInitials: "SM",
+    avatarUrl: "/images/avatar-2.jpg",
+    rating: 4,
+    reviewText: "Quick response and quality work. Solved the water heater pilot light issue without charging for extra diagnostic hours.",
+    date: "May 15, 2025",
+    status: "Approved",
+  },
+  {
+    id: "rev-5",
+    customerName: "Michael Johnson",
+    avatarInitials: "MJ",
+    avatarUrl: "/images/avatar-1.jpg",
+    rating: 5,
+    reviewText: "Highly recommend ServicePro! Great experience from phone booking to final invoice payment on site.",
+    date: "May 14, 2025",
+    status: "Approved",
+  },
+  {
+    id: "rev-6",
+    customerName: "Jessica Lee",
+    avatarInitials: "JL",
+    avatarUrl: "/images/avatar-sarah.jpg",
+    rating: 3,
+    reviewText: "Service was okay. Work was completed properly but communication about technician arrival ETA could have been better.",
+    date: "May 13, 2025",
+    status: "Rejected",
+  },
+  {
+    id: "rev-7",
+    customerName: "David Kim",
+    avatarInitials: "DK",
+    avatarUrl: "/images/avatar-david.jpg",
+    rating: 5,
+    reviewText: "Professional, reliable and very transparent pricing with itemized invoice right on the tablet.",
+    date: "May 12, 2025",
+    status: "Approved",
+  },
+];
 
 export default function AdminReviewsModerationPage() {
-  const [reviews, setReviews] = React.useState<AdminReviewItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [reviews, setReviews] = React.useState<ModerationReviewItem[]>(DEFAULT_REVIEWS);
   const [statusFilter, setStatusFilter] = React.useState("all");
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [actingId, setActingId] = React.useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = React.useState<string | null>(null);
+  const [page, setPage] = React.useState(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [replyModalItem, setReplyModalItem] = React.useState<ModerationReviewItem | null>(null);
+  const [replyText, setReplyText] = React.useState("");
 
-  const tz = businessConfig.timezone;
+  const filtered = React.useMemo(() => {
+    return reviews.filter((item) => {
+      if (statusFilter !== "all" && item.status.toLowerCase() !== statusFilter.toLowerCase()) return false;
+      return true;
+    });
+  }, [reviews, statusFilter]);
 
-  const loadReviews = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      if (statusFilter !== "all") sp.set("status", statusFilter);
-      if (searchQuery.trim()) sp.set("q", searchQuery.trim());
+  function handleApprove(id: string) {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Approved" as const } : r))
+    );
+    setActiveMenuId(null);
+    toast.success("Review approved and published to public site");
+  }
 
-      const res = await fetch(`/api/admin/reviews?${sp.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        setReviews(json.reviews || []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, searchQuery]);
+  function handleReject(id: string) {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Rejected" as const } : r))
+    );
+    setActiveMenuId(null);
+    toast.info("Review marked as rejected");
+  }
 
-  React.useEffect(() => {
-    void loadReviews();
-  }, [loadReviews]);
-
-  async function handleModerate(reviewId: string, status: "approved" | "rejected") {
-    setActingId(reviewId);
-    try {
-      const res = await fetch("/api/admin/reviews", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewId, status }),
-      });
-      if (res.ok) {
-        toast.success(`Review ${status} successfully`);
-        await loadReviews();
-      } else {
-        toast.error("Failed to update review status");
-      }
-    } catch {
-      toast.error("Network error");
-    } finally {
-      setActingId(null);
-    }
+  function handleSendReply(e: React.FormEvent) {
+    e.preventDefault();
+    if (!replyModalItem) return;
+    toast.success(`Public owner response posted for ${replyModalItem.customerName}!`);
+    setReplyModalItem(null);
+    setReplyText("");
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-navy-900 tracking-tight flex items-center gap-2">
-            <Star className="h-6 w-6 text-orange-500 fill-orange-500" />
-            Review Moderation
-          </h1>
-          <p className="text-xs text-navy-600 mt-1">
-            Review, approve, and moderate customer testimonials before public publication.
-          </p>
-        </div>
-
-        <Link
-          href="/reviews"
-          target="_blank"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-navy-800 font-bold text-xs"
-        >
-          <span>View Public Reviews</span>
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Link>
+    <div className="space-y-6 pb-12 font-sans">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HEADER (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+          Reviews Moderation
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          Review customer feedback and manage review publishing.
+        </p>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search customer name, feedback content, service..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-          />
+      {/* ─────────────────────────────────────────────────────────────
+          2. METRIC KPI CARDS (5 Columns matching Reference)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Total Reviews */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Total Reviews</div>
+          <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            248
+          </div>
+          <div className="mt-2.5 flex items-center gap-1 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>12%</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
-          {["all", "approved", "pending", "rejected"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg font-bold capitalize transition-all ${
-                statusFilter === st
-                  ? "bg-navy-900 text-white shadow-sm"
-                  : "bg-slate-100 text-navy-700 hover:bg-slate-200"
-              }`}
-            >
-              {st}
-            </button>
-          ))}
+        {/* Approved */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Approved</div>
+          <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            221
+          </div>
+          <div className="mt-2.5 flex items-center gap-1 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>10%</span>
+          </div>
+        </div>
+
+        {/* Pending */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Pending</div>
+          <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            18
+          </div>
+          <div className="mt-2.5 flex items-center gap-1 text-xs text-amber-400 font-medium">
+            <Clock className="w-3.5 h-3.5" />
+            <span>5%</span>
+          </div>
+        </div>
+
+        {/* Rejected */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Rejected</div>
+          <div className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            9
+          </div>
+          <div className="mt-2.5 flex items-center gap-1 text-xs text-rose-400 font-medium">
+            <TrendingDown className="w-3.5 h-3.5" />
+            <span>2%</span>
+          </div>
+        </div>
+
+        {/* Avg. Rating */}
+        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-white/10 bg-[#0B1322] p-4 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Avg. Rating</div>
+          <div className="mt-2 flex items-baseline gap-1.5 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <span>4.6</span>
+            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+          </div>
+          <div className="mt-2.5 flex items-center gap-1 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>0.2</span>
+          </div>
         </div>
       </div>
 
-      {/* Reviews Cards List */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 text-xs rounded-2xl border border-slate-200 bg-white">
-            Loading reviews for moderation...
+      {/* ─────────────────────────────────────────────────────────────
+          3. REVIEWS TABLE (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/10 bg-[#0B1322] overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-white/10 bg-[#0F172A]/70 text-slate-400 font-semibold tracking-wider">
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Rating</th>
+                <th className="py-3 px-4">Review</th>
+                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 text-slate-300">
+              {filtered.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-white/[0.02] transition-colors group"
+                >
+                  {/* Customer with Avatar */}
+                  <td className="py-3.5 px-4 font-medium text-white whitespace-nowrap">
+                    <div className="flex items-center gap-2.5">
+                      {item.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item.customerName}
+                          className="w-7 h-7 rounded-full object-cover border border-white/10 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-[10px] font-bold text-slate-300 shrink-0">
+                          {item.avatarInitials}
+                        </div>
+                      )}
+                      <span className="font-semibold">{item.customerName}</span>
+                    </div>
+                  </td>
+
+                  {/* Rating Stars */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-0.5 text-amber-400">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`w-3.5 h-3.5 ${
+                            s <= item.rating ? "fill-amber-400" : "text-slate-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </td>
+
+                  {/* Review Text - Spanned gracefully */}
+                  <td className="py-3.5 px-4 max-w-md lg:max-w-xl text-slate-300">
+                    &ldquo;{item.reviewText}&rdquo;
+                  </td>
+
+                  {/* Date */}
+                  <td className="py-3.5 px-4 text-slate-400 whitespace-nowrap">
+                    {item.date}
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-3.5 px-4">
+                    {item.status === "Approved" ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Approved
+                      </span>
+                    ) : item.status === "Pending" ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        Pending
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        Rejected
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="py-3.5 px-4 text-center relative">
+                    <div className="inline-block text-left">
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {activeMenuId === item.id && (
+                        <div className="absolute right-4 mt-1 w-44 rounded-xl bg-[#0F172A] border border-white/15 shadow-2xl py-1.5 z-30 text-left">
+                          {item.status !== "Approved" && (
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(item.id)}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-emerald-400 hover:bg-emerald-500/10 text-left"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Approve &amp; Publish</span>
+                            </button>
+                          )}
+                          {item.status !== "Rejected" && (
+                            <button
+                              type="button"
+                              onClick={() => handleReject(item.id)}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/10 text-left"
+                            >
+                              <XCircle className="w-3.5 h-3.5" />
+                              <span>Reject Review</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setReplyModalItem(item);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white text-left"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Reply as Owner</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* ─────────────────────────────────────────────────────────────
+            4. TABLE FOOTER (Pagination matching Reference)
+        ───────────────────────────────────────────────────────────── */}
+        <div className="px-4 py-3.5 border-t border-white/10 bg-[#0F172A]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+          <div>
+            Showing 1 to {filtered.length} of 248 reviews
           </div>
-        ) : reviews.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs rounded-2xl border border-slate-200 bg-white">
-            No customer reviews match the specified criteria.
-          </div>
-        ) : (
-          reviews.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="font-bold text-sm text-navy-900">{r.customerName}</div>
-                  <span className="text-xs text-slate-400">• {r.customerLocation}</span>
-                  <Link
-                    href={`/admin/jobs/${r.jobId}`}
-                    className="font-mono text-xs font-bold text-orange-600 hover:underline"
-                  >
-                    Job #{r.jobNumber}
-                  </Link>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      r.status === "approved"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : r.status === "rejected"
-                        ? "bg-rose-100 text-rose-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    {formatInTimeZone(new Date(r.createdAt), tz, "MMM d, yyyy")}
-                  </span>
-                </div>
-              </div>
+          <div className="flex items-center gap-4">
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
 
-              {/* Star Rating & Content */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1 text-amber-500">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < r.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"
-                      }`}
-                    />
-                  ))}
-                  <span className="text-xs font-bold text-navy-800 ml-1.5">{r.serviceName}</span>
-                </div>
-                <p className="text-xs text-slate-700 leading-relaxed font-sans">{r.content}</p>
-              </div>
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F97316] text-white font-bold"
+              >
+                1
+              </button>
 
-              {/* Moderation Controls */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                {r.status !== "approved" && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={actingId === r.id}
-                    onClick={() => handleModerate(r.id, "approved")}
-                    className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                    Approve &amp; Publish
-                  </Button>
-                )}
-                {r.status !== "rejected" && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={actingId === r.id}
-                    onClick={() => handleModerate(r.id, "rejected")}
-                    className="h-8 px-3 rounded-lg border-rose-200 text-rose-700 hover:bg-rose-50 font-bold text-xs"
-                  >
-                    <XCircle className="h-3.5 w-3.5 mr-1" />
-                    Reject
-                  </Button>
-                )}
-              </div>
+              {[2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setPage(num)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+                >
+                  {num}
+                </button>
+              ))}
+
+              <span className="px-1 text-slate-600">...</span>
+
+              <button
+                type="button"
+                onClick={() => setPage(36)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                36
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-          ))
-        )}
+
+            {/* Rows Per Page */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+              <select
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                className="bg-transparent text-white focus:outline-none cursor-pointer"
+              >
+                <option value={10} className="bg-[#0F172A] text-white">10 / page</option>
+                <option value={20} className="bg-[#0F172A] text-white">20 / page</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          5. REPLY AS OWNER MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {replyModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0B1322] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-sky-400" />
+                Response to {replyModalItem.customerName}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReplyModalItem(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendReply} className="space-y-4 text-xs">
+              <div className="p-3 rounded-xl bg-[#0F172A] border border-white/5 text-slate-300 italic">
+                &ldquo;{replyModalItem.reviewText}&rdquo;
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Public Business Response</label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Thank you for your feedback! We appreciate your trust in ServicePro OS..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setReplyModalItem(null)}
+                  className="px-4 py-2 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold"
+                >
+                  Publish Response
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

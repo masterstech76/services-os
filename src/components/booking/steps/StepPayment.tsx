@@ -59,115 +59,120 @@ export function StepPayment({
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1
           id="step-6-heading"
-          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-navy-900"
+          className="font-heading text-[26px] sm:text-[30px] leading-tight font-extrabold text-white"
         >
           Your booking
         </h1>
         <div
           data-testid="hold-countdown"
-          className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-500/40 px-3.5 py-1.5 text-xs font-bold tabular-nums text-navy-900"
+          className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/15 border border-orange-500/30 px-3.5 py-1.5 text-xs font-bold tabular-nums text-[#F97316]"
         >
-          <Clock className="h-3.5 w-3.5 text-orange-700" aria-hidden="true" />
+          <Clock className="h-3.5 w-3.5 text-[#F97316]" aria-hidden="true" />
           <span>Hold expires in {formatCountdown(remainingSeconds)}</span>
         </div>
       </div>
 
       {/* Summary Card */}
-      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-sm space-y-3">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm space-y-3">
         <div>
-          <div className="text-base font-bold text-navy-900">
+          <div className="text-base font-bold text-white">
             {selectedService?.name} ·{" "}
             {selectedSlotStart && formatBusinessDate(selectedSlotStart)},{" "}
             {selectedSlotStart && formatBusinessTime(selectedSlotStart)}
           </div>
-          <div className="text-sm text-navy-700 mt-0.5">
+          <div className="text-sm text-slate-300 mt-0.5">
             {addressLine1}
             {addressLine2 ? `, ${addressLine2}` : ""}, {city} {zip}
           </div>
         </div>
 
-        <div className="border-t border-slate-200 pt-3 space-y-1.5 text-sm">
-          <div className="flex items-center justify-between text-navy-700">
+        <div className="border-t border-white/10 pt-3 space-y-1.5 text-sm">
+          <div className="flex items-center justify-between text-slate-300">
             <span>Service estimate</span>
-            <Money cents={estimate.estimateCents} data-testid="checkout-estimate" />
+            <Money cents={estimate.estimateCents} data-testid="checkout-estimate" className="text-white" />
           </div>
-          <div className="flex items-center justify-between font-bold text-base text-navy-900">
+          <div className="flex items-center justify-between font-bold text-base text-white">
             <span>Deposit due now ({estimate.depositPctUsed}%)</span>
             <Money
               cents={estimate.depositCents}
               emphasis
               data-testid="checkout-deposit"
+              className="text-[#F97316] font-black"
             />
           </div>
-          <div className="flex items-center justify-between text-navy-700">
+          <div className="flex items-center justify-between text-slate-300">
             <span>Remaining after the job</span>
             <Money
               cents={estimate.remainingEstimateCents}
               data-testid="checkout-remaining"
+              className="text-white"
             />
           </div>
-          <p className="text-xs text-navy-700">+ parts/tax if any</p>
+          <p className="text-xs text-slate-400">+ parts/tax if any</p>
         </div>
       </div>
 
       {/* Payment Card */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-3.5">
+      <div className="rounded-2xl border border-white/10 bg-[#0F172A] p-5 shadow-sm space-y-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-navy-900 flex items-center gap-1.5">
-            <CreditCard className="h-4 w-4 text-orange-700" aria-hidden="true" />
+          <span className="text-sm font-bold text-white flex items-center gap-1.5">
+            <CreditCard className="h-4 w-4 text-[#F97316]" aria-hidden="true" />
             <span>Card payment</span>
           </span>
-          <span className="text-xs font-semibold text-navy-700">
+          <span className="text-xs font-semibold text-emerald-400">
             Secured by Stripe
           </span>
         </div>
 
         <div>
-          <Label htmlFor="mock-card-number">Card number</Label>
+          <Label htmlFor="mock-card-number" className="text-slate-300 text-xs mb-1.5 block">Card number</Label>
           <Input
             id="mock-card-number"
             data-testid="mock-card-number"
             value={cardNumber}
             onChange={(e) => onChangeCardNumber(e.target.value)}
+            className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="mock-card-expiry">Expiration</Label>
+            <Label htmlFor="mock-card-expiry" className="text-slate-300 text-xs mb-1.5 block">Expiration</Label>
             <Input
               id="mock-card-expiry"
               value={cardExpiry}
               onChange={(e) => onChangeCardExpiry(e.target.value)}
+              className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
             />
           </div>
           <div>
-            <Label htmlFor="mock-card-cvc">CVC</Label>
+            <Label htmlFor="mock-card-cvc" className="text-slate-300 text-xs mb-1.5 block">CVC</Label>
             <Input
               id="mock-card-cvc"
               value={cardCvc}
               onChange={(e) => onChangeCardCvc(e.target.value)}
+              className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
             />
           </div>
         </div>
 
         {paymentError && (
-          <p role="alert" className="text-xs font-semibold text-danger">
+          <p role="alert" className="text-xs font-semibold text-red-400">
             {paymentError}
           </p>
         )}
       </div>
 
       {/* Tip Info Banner */}
-      <div className="flex items-start gap-2 rounded-xl bg-slate-100 p-3.5 text-xs text-navy-700">
-        <Info className="h-4 w-4 text-navy-900 shrink-0 mt-0.5" aria-hidden="true" />
+      <div className="flex items-start gap-2 rounded-xl bg-white/5 border border-white/10 p-3.5 text-xs text-slate-300">
+        <Info className="h-4 w-4 text-[#F97316] shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           You can add a tip ({businessConfig.booking.tipPresets.join("/")}%) after the job is done.
         </span>
       </div>
 
       {/* SMS Consent Notice */}
-      <p className="text-xs text-navy-700 leading-relaxed">
+      <p className="text-xs text-slate-400 leading-relaxed">
         By booking you agree to receive booking and service texts from{" "}
         {businessConfig.businessName}. Msg &amp; data rates may apply. Reply STOP to opt out.
       </p>

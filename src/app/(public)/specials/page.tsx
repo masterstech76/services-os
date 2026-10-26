@@ -128,7 +128,6 @@ export default function SpecialsPage() {
   const [selectedFilter, setSelectedFilter] = React.useState<"all" | "repair" | "tuneup" | "upgrade">("all");
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
 
-  // Filtered list
   const filteredDeals = React.useMemo(() => {
     if (selectedFilter === "all") return DEALS;
     return DEALS.filter((d) => d.category === selectedFilter);
@@ -150,81 +149,80 @@ export default function SpecialsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 text-navy-900 pb-20">
-      {/* Amazon Deals Header Banner */}
-      <section className="bg-navy-950 text-white pt-10 pb-12 px-4 sm:px-6 border-b border-slate-800">
-        <div className="max-w-6xl mx-auto space-y-4">
-          <Breadcrumbs
-            items={[{ label: "Deals & Specials" }]}
-          />
+    <div className="min-h-screen bg-[#0C1523] text-white selection:bg-[#F97316] selection:text-white pb-20">
+      <Breadcrumbs items={[{ label: "Deals & Specials" }]} />
 
+      {/* Header Banner */}
+      <section className="relative overflow-hidden pt-10 pb-12 sm:pt-16 sm:pb-16 border-b border-white/10">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#F97316]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
-                <Flame className="h-3.5 w-3.5 fill-orange-400 text-orange-400" />
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 text-[#F97316] border border-orange-500/25 px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
+                <Flame className="h-3.5 w-3.5 fill-[#F97316] text-[#F97316]" />
                 <span>Today&apos;s Verified HVAC Deals &amp; Instant Coupons</span>
               </div>
-              <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-                Amazon-Style Savings on Professional Service
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                Verified Savings on Professional Service
               </h1>
-              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
                 Clip verified digital coupons to claim upfront discounted diagnostics, tune-ups, and duct sanitization across {businessConfig.city}.
               </p>
             </div>
 
-            {/* Urgency Box (Amazon Lightning Deal Style) */}
-            <div className="rounded-2xl border border-orange-500/30 bg-orange-950/40 p-4 sm:p-5 flex flex-col items-center justify-center text-center space-y-1.5 min-w-[220px]">
-              <span className="text-[11px] font-bold text-orange-400 uppercase tracking-widest flex items-center gap-1">
+            {/* Urgency Box */}
+            <div className="rounded-2xl border border-orange-500/30 bg-[#0F172A]/85 backdrop-blur-xl p-5 flex flex-col items-center justify-center text-center space-y-1.5 min-w-[220px] shadow-xl">
+              <span className="text-[11px] font-bold text-[#F97316] uppercase tracking-widest flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
                 <span>Seasonal Allocation</span>
               </span>
-              <div className="font-mono text-2xl font-black text-white">
+              <div className="text-2xl font-black text-white">
                 Limited Slots
               </div>
-              <span className="text-[11px] text-slate-300">
+              <span className="text-xs text-slate-300">
                 100% Satisfaction Guarantee
               </span>
             </div>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 pt-4 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 pt-2 overflow-x-auto pb-1 scrollbar-none">
             <button
               onClick={() => setSelectedFilter("all")}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
                 selectedFilter === "all"
-                  ? "bg-orange-500 text-navy-950 shadow-sm"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10"
               }`}
             >
               All Deals ({DEALS.length})
             </button>
             <button
               onClick={() => setSelectedFilter("repair")}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
                 selectedFilter === "repair"
-                  ? "bg-orange-500 text-navy-950 shadow-sm"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10"
               }`}
             >
               Repair &amp; Diagnostics
             </button>
             <button
               onClick={() => setSelectedFilter("tuneup")}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
                 selectedFilter === "tuneup"
-                  ? "bg-orange-500 text-navy-950 shadow-sm"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10"
               }`}
             >
               Tune-Ups &amp; Duct Care
             </button>
             <button
               onClick={() => setSelectedFilter("upgrade")}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
                 selectedFilter === "upgrade"
-                  ? "bg-orange-500 text-navy-950 shadow-sm"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10"
               }`}
             >
               Smart Upgrades
@@ -233,8 +231,8 @@ export default function SpecialsPage() {
         </div>
       </section>
 
-      {/* Main Deals Grid (Amazon Card Layout) */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-10">
+      {/* Main Deals Grid */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 relative z-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredDeals.map((deal) => {
             const isCopied = copiedCode === deal.code;
@@ -242,15 +240,15 @@ export default function SpecialsPage() {
             return (
               <div
                 key={deal.id}
-                className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6 relative overflow-hidden"
+                className="rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-6 sm:p-8 shadow-2xl hover:border-orange-500/30 transition-all duration-300 flex flex-col justify-between space-y-6 relative overflow-hidden group"
               >
                 {/* Top Badge Strip */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black uppercase tracking-wider bg-rose-600 text-white px-2.5 py-0.5 rounded-md">
+                    <span className="text-[11px] font-black uppercase tracking-wider bg-rose-500 text-white px-2.5 py-0.5 rounded-md shadow-sm">
                       {deal.savingsBadge}
                     </span>
-                    <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+                    <span className="text-[11px] font-bold text-[#F97316] bg-orange-500/10 px-2.5 py-0.5 rounded border border-orange-500/25">
                       {deal.dealType}
                     </span>
                   </div>
@@ -263,42 +261,42 @@ export default function SpecialsPage() {
                 {/* Price & Title Block */}
                 <div className="space-y-3">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl sm:text-4xl font-black text-navy-950 font-heading">
+                    <span className="text-3xl sm:text-4xl font-black text-white">
                       {deal.dealPrice}
                     </span>
-                    <span className="text-sm font-semibold text-slate-400 line-through">
+                    <span className="text-sm font-semibold text-slate-500 line-through">
                       {deal.regularPrice}
                     </span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
                       Save {deal.savings}
                     </span>
                   </div>
 
-                  <h2 className="font-heading text-xl sm:text-2xl font-black text-navy-950">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                     {deal.title}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                     {deal.description}
                   </p>
                 </div>
 
                 {/* Checklist Features */}
-                <div className="space-y-2 py-3 border-y border-slate-100">
+                <div className="space-y-2.5 py-3 border-y border-white/10">
                   {deal.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-slate-700">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <div key={idx} className="flex items-center gap-2.5 text-xs text-slate-300">
+                      <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
                       <span>{feat}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Progress Claim Bar (Amazon Lightning Deals) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                {/* Progress Claim Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
                     <span>{deal.claimedPercent}% claimed</span>
-                    <span className="text-orange-600 font-bold">Limited daily technician slots</span>
+                    <span className="text-[#F97316] font-bold">Limited daily slots</span>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"
                       style={{ width: `${deal.claimedPercent}%` }}
@@ -312,21 +310,21 @@ export default function SpecialsPage() {
                   <button
                     type="button"
                     onClick={() => handleClipCoupon(deal.code)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-xs font-bold transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all ${
                       isCopied
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                        : "border-slate-300 bg-white text-slate-800 hover:border-orange-500 hover:bg-orange-50/50"
+                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400"
+                        : "border-white/15 bg-white/5 text-slate-200 hover:border-orange-500/40 hover:bg-orange-500/10"
                     }`}
                   >
                     {isCopied ? (
                       <>
-                        <Check className="h-4 w-4 text-emerald-600" />
+                        <Check className="h-4 w-4 text-emerald-400" />
                         <span>Code {deal.code} Clipped!</span>
                       </>
                     ) : (
                       <>
-                        <Copy className="h-4 w-4 text-slate-500" />
-                        <span>Clip Code: <strong className="font-mono text-navy-950">{deal.code}</strong></span>
+                        <Copy className="h-4 w-4 text-slate-400" />
+                        <span>Clip Code: <strong className="font-mono text-white ml-1">{deal.code}</strong></span>
                       </>
                     )}
                   </button>
@@ -334,11 +332,11 @@ export default function SpecialsPage() {
                   {/* Redeem & Book Button */}
                   <Button
                     asChild
-                    className="flex-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-950 font-black text-xs h-10 shadow-sm"
+                    className="flex-1 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-11 shadow-lg shadow-orange-500/20"
                   >
                     <Link href={deal.bookUrl} className="flex items-center justify-center gap-1.5">
                       <span>Redeem Deal</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                      <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                 </div>
@@ -347,24 +345,24 @@ export default function SpecialsPage() {
           })}
         </div>
 
-        {/* Commercial & Multi-Unit Promo Banner */}
-        <section className="mt-12 rounded-3xl bg-navy-900 text-white p-8 sm:p-10 shadow-lg space-y-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <span className="text-xs font-mono font-bold text-orange-400 uppercase tracking-widest">
+        {/* Commercial & Multi-Unit Promo Banner (Buttons Placed Cleanly at the Bottom) */}
+        <section className="mt-12 rounded-3xl border border-white/10 bg-gradient-to-r from-[#0F172A] via-[#1E293B]/60 to-[#0F172A] text-white p-8 sm:p-10 shadow-2xl space-y-6">
+          <div className="space-y-2 max-w-2xl">
+            <span className="text-xs font-bold text-[#F97316] uppercase tracking-widest block">
               Commercial &amp; Property Managers
             </span>
-            <h3 className="font-heading text-2xl sm:text-3xl font-black">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Manage Multiple Units or Commercial Rooftops?
             </h3>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              We offer volume pricing agreements, quarterly preventative maintenance contracts, and Net-30 terms for commercial accounts across Miami-Dade.
+              We offer volume pricing agreements, quarterly preventative maintenance contracts, and Net-30 terms for commercial accounts across {businessConfig.city}.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row items-center gap-3">
             <Button
               asChild
-              className="rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-950 font-bold text-xs h-11 px-6 shadow"
+              className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-12 px-6 shadow-lg shadow-orange-500/20 w-full sm:w-auto"
             >
               <Link href="/services/commercial-hvac">
                 Commercial Programs
@@ -373,7 +371,7 @@ export default function SpecialsPage() {
             <Button
               asChild
               variant="outline"
-              className="rounded-xl border-slate-700 text-white hover:bg-slate-800 text-xs font-bold h-11 px-6"
+              className="rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs font-bold h-12 px-6 backdrop-blur-md w-full sm:w-auto"
             >
               <Link href="/contact">
                 Request Fleet Quote

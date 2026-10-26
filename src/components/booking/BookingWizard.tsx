@@ -146,9 +146,22 @@ function getInitialDayString(): string {
   return dayInTz;
 }
 
+const DEFAULT_INITIAL_SERVICES: ServiceDTO[] = businessConfig.services.map((s) => ({
+  id: s.id,
+  name: s.name,
+  category: s.category,
+  skillTag: s.skillTag,
+  pricing: s.pricing,
+  priceCents: s.price,
+  durationMinutes: s.durationMinutes,
+  minBillableMinutes: s.minBillableMinutes,
+  depositPctOverride: s.depositPctOverride ?? null,
+  description: s.description,
+}));
+
 const initialWizardState: WizardState = {
   step: 1,
-  selectedService: null,
+  selectedService: DEFAULT_INITIAL_SERVICES[0] ?? null,
   zip: "",
   zipChecked: false,
   zipServed: false,
@@ -265,15 +278,15 @@ export const PROMO_COUPONS: Record<
   },
 };
 
-export function BookingWizard() {
+export function BookingWizard({ isModal = false }: { isModal?: boolean } = {}) {
   const searchParams = useSearchParams();
   const [state, dispatch] = React.useReducer(wizardReducer, initialWizardState);
   const [hydrated, setHydrated] = React.useState(false);
   const [isOffline, setIsOffline] = React.useState(false);
 
   // Step 1 services list
-  const [services, setServices] = React.useState<ServiceDTO[]>([]);
-  const [loadingServices, setLoadingServices] = React.useState(true);
+  const [services, setServices] = React.useState<ServiceDTO[]>(DEFAULT_INITIAL_SERVICES);
+  const [loadingServices, setLoadingServices] = React.useState(false);
 
   // Step 2 ZIP check
   const [checkingZip, setCheckingZip] = React.useState(false);
@@ -379,12 +392,13 @@ export function BookingWizard() {
   React.useEffect(() => {
     let active = true;
     const api = getBookingApi();
-    setLoadingServices(true);
     api
       .getServices()
       .then((list) => {
         if (!active) return;
-        setServices(list);
+        if (list.length > 0) {
+          setServices(list);
+        }
         const preselectId = searchParams.get("serviceId") || searchParams.get("service");
         if (preselectId) {
           const found = list.find((s) => s.id === preselectId);
@@ -933,7 +947,7 @@ export function BookingWizard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-navy-900">
+    <div className={cn("flex flex-col bg-[#0C1523] text-white selection:bg-[#F97316] selection:text-white relative", isModal ? "h-full w-full overflow-hidden" : "min-h-screen")}>
       {/* Offline banner */}
       {isOffline && (
         <div
@@ -946,30 +960,32 @@ export function BookingWizard() {
       )}
 
       {/* Top Glass Header */}
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-sm">
-        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4 sm:px-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 font-heading font-bold text-base sm:text-lg text-navy-900 focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-orange-500 rounded-xl"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-900 text-orange-500 shadow-sm">
-              <Snowflake className="h-4 w-4" aria-hidden="true" />
-            </div>
-            <span>{businessConfig.businessName}</span>
-          </Link>
-          <PhoneLink phone={businessConfig.phone} label="Call" />
-        </div>
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0C1523]/90 backdrop-blur-md shadow-md">
+        {!isModal && (
+          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 font-heading font-bold text-base sm:text-lg text-white focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-orange-500 rounded-xl"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 border border-orange-500/20 text-[#F97316] shadow-sm">
+                <Snowflake className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <span>{businessConfig.businessName}</span>
+            </Link>
+            <PhoneLink phone={businessConfig.phone} label="Call" className="text-xs font-bold text-[#F97316]" />
+          </div>
+        )}
 
         {/* 7-segment progress bar */}
-        <div className="mx-auto max-w-2xl px-4 sm:px-6 pb-3.5">
-          <div className="flex items-center justify-between text-xs font-bold text-navy-700 mb-2">
+        <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6 pb-3.5", isModal && "pt-3.5")}>
+          <div className="flex items-center justify-between text-xs font-bold text-slate-300 mb-2">
             <span aria-live="polite" className="inline-flex items-center gap-1.5">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[11px] font-extrabold text-navy-900">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[11px] font-extrabold text-white">
                 {state.step}
               </span>
               <span>Step {state.step} of 7</span>
             </span>
-            <span className="text-navy-900">
+            <span className="text-white font-semibold">
               {state.step === 1 && "1. Select Service"}
               {state.step === 2 && "2. Service Area ZIP"}
               {state.step === 3 && "3. Describe Issue"}
@@ -992,7 +1008,7 @@ export function BookingWizard() {
                 key={seg}
                 className={cn(
                   "h-2 rounded-full transition-colors duration-200",
-                  seg <= state.step ? "bg-orange-500" : "bg-slate-200"
+                  seg <= state.step ? "bg-[#F97316]" : "bg-white/10"
                 )}
               />
             ))}
@@ -1001,8 +1017,8 @@ export function BookingWizard() {
       </header>
 
       {/* Main Step Card Container */}
-      <main className="flex-1 mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-32">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-8 shadow-xl">
+      <main className={cn("flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-5 overflow-y-auto", isModal ? "pb-6" : "pb-32")}>
+        <div className="rounded-3xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-5 sm:p-8 shadow-2xl">
           {/* STEP 1: Select service */}
           {state.step === 1 && (
             <Step1Service
@@ -1010,6 +1026,7 @@ export function BookingWizard() {
               loadingServices={loadingServices}
               selectedService={state.selectedService}
               onSelectService={(s) => dispatch({ type: "SELECT_SERVICE", service: s })}
+              onContinue={handleContinue}
             />
           )}
 
@@ -1111,18 +1128,25 @@ export function BookingWizard() {
 
       {/* Sticky Footer with Summary + Actions for Steps 1–6 */}
       {state.step < 7 && (
-        <footer className="fixed bottom-0 inset-x-0 z-20 border-t border-slate-200/80 bg-white/95 backdrop-blur-md shadow-xl pb-[env(safe-area-inset-bottom)]">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 sm:px-6 py-3">
+        <footer
+          className={cn(
+            "z-20 border-t border-white/10 bg-[#0C1523]/95 backdrop-blur-md shadow-2xl",
+            isModal
+              ? "sticky bottom-0 inset-x-0 w-full shrink-0"
+              : "fixed bottom-0 inset-x-0 pb-[env(safe-area-inset-bottom)]"
+          )}
+        >
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 py-3.5">
             {state.selectedService && (
               <div className="hidden sm:flex flex-col text-xs">
-                <span className="font-bold text-navy-900">{state.selectedService.name}</span>
-                <span className="text-navy-700">
+                <span className="font-bold text-white">{state.selectedService.name}</span>
+                <span className="text-slate-300">
                   Est. {formatMoneyCents(estimate.estimateCents)} ·{" "}
-                  <strong className="text-orange-700">
+                  <strong className="text-[#F97316]">
                     {formatMoneyCents(estimate.depositCents)} deposit due
                   </strong>
                   {state.couponCode && (
-                    <span className="inline-flex items-center gap-1 ml-1.5 font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 ml-1.5 font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                       <Tag className="h-2.5 w-2.5" />
                       {state.couponCode} (-{formatMoneyCents(state.couponDiscountCents)})
                     </span>
@@ -1131,7 +1155,7 @@ export function BookingWizard() {
               </div>
             )}
 
-            <div className="flex flex-1 items-center gap-3">
+            <div className="flex flex-1 sm:flex-initial items-center justify-end gap-3">
               {state.step > 1 && (
                 <Button
                   type="button"
@@ -1139,7 +1163,7 @@ export function BookingWizard() {
                   size="lg"
                   onClick={handleBack}
                   data-testid="wizard-back-btn"
-                  className="px-5 rounded-full"
+                  className="px-5 rounded-xl border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold"
                 >
                   <ChevronLeft className="h-5 w-5 mr-1" aria-hidden="true" />
                   <span>Back</span>
@@ -1150,7 +1174,7 @@ export function BookingWizard() {
                 type="button"
                 variant="primary"
                 size="lg"
-                className="flex-1 rounded-full font-bold shadow-md"
+                className="flex-1 sm:flex-initial sm:min-w-[260px] px-8 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[#0F172A] hover:text-[#0F172A] font-extrabold shadow-lg shadow-orange-500/20 py-4"
                 data-testid="wizard-continue-btn"
                 loading={checkingZip || holdingSlot || startingCheckout || submittingPayment}
                 disabled={
@@ -1167,7 +1191,7 @@ export function BookingWizard() {
                     <Lock className="h-4 w-4" aria-hidden="true" />
                   </span>
                 ) : (
-                  <span>Continue →</span>
+                  <span>Continue to Next Step →</span>
                 )}
               </Button>
             </div>
@@ -1182,23 +1206,23 @@ export function BookingWizard() {
           aria-modal="true"
           aria-labelledby="hold-expired-title"
           data-testid="hold-expired-modal"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-700">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#0F172A] p-6 sm:p-8 text-center shadow-2xl space-y-4">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/15 border border-orange-500/30 text-[#F97316]">
               <Clock className="h-6 w-6" aria-hidden="true" />
             </div>
-            <h2 id="hold-expired-title" className="text-lg font-bold text-navy-900">
+            <h2 id="hold-expired-title" className="text-lg font-bold text-white">
               Your time hold expired
             </h2>
-            <p className="text-sm text-navy-700">
+            <p className="text-sm text-slate-300">
               We hold arrival windows for {businessConfig.booking.holdMinutes} minutes so other customers can book. Please pick a new time.
             </p>
             <Button
               type="button"
               variant="primary"
               size="lg"
-              className="w-full rounded-full"
+              className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold"
               data-testid="pick-new-time-btn"
               onClick={handlePickNewTimeFromModal}
             >
@@ -1214,41 +1238,41 @@ export function BookingWizard() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/70 backdrop-blur-xs p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
         >
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 text-left shadow-2xl border border-slate-200 space-y-5">
+          <div className="w-full max-w-md rounded-3xl bg-[#0F172A] p-6 sm:p-8 text-left shadow-2xl border border-white/10 space-y-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-navy-950 shadow-sm shrink-0">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500/15 border border-orange-500/30 text-[#F97316] shadow-sm shrink-0">
                 <Lock className="h-6 w-6" />
               </div>
               <div>
-                <h2 id="auth-modal-title" className="text-lg font-black text-navy-900 leading-tight">
+                <h2 id="auth-modal-title" className="text-lg font-black text-white leading-tight">
                   Login Required Before Payment
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   Verify your customer account to finalize your booking window.
                 </p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span className="font-semibold text-navy-900">Customer:</span>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-300">
+                <span className="font-semibold text-white">Customer:</span>
                 <span>{state.customerName}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span className="font-semibold text-navy-900">Email:</span>
+              <div className="flex justify-between text-slate-300">
+                <span className="font-semibold text-white">Email:</span>
                 <span>{state.customerEmail}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
-                <span className="font-semibold text-navy-900">Phone:</span>
+              <div className="flex justify-between text-slate-300">
+                <span className="font-semibold text-white">Phone:</span>
                 <span>{state.customerPhone}</span>
               </div>
             </div>
 
             <form onSubmit={handleCustomerLoginAndProceed} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-navy-900 uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
                   Customer Password
                 </label>
                 <Input
@@ -1256,19 +1280,19 @@ export function BookingWizard() {
                   placeholder="Enter your password (or demo password)"
                   value={authPassword}
                   onChange={(e) => setAuthPassword(e.target.value)}
-                  className="h-11"
+                  className="h-11 bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
                   required
                 />
               </div>
 
               {authError && (
-                <p className="text-xs text-danger font-medium">{authError}</p>
+                <p className="text-xs text-red-400 font-medium">{authError}</p>
               )}
 
               <Button
                 type="submit"
                 disabled={authLoading}
-                className="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-navy-900 font-black text-sm shadow-md"
+                className="w-full h-12 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[#0F172A] hover:text-[#0F172A] font-black text-sm shadow-lg shadow-orange-500/20"
               >
                 {authLoading ? "Verifying Account..." : "Sign In & Proceed to Payment →"}
               </Button>
@@ -1277,7 +1301,7 @@ export function BookingWizard() {
                 <button
                   type="button"
                   onClick={() => setAuthModalOpen(false)}
-                  className="text-xs text-slate-400 hover:text-slate-600 font-semibold"
+                  className="text-xs text-slate-400 hover:text-white font-semibold transition-colors"
                 >
                   Cancel and Edit Details
                 </button>

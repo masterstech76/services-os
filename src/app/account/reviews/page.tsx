@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   AlertCircle,
   Plus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -126,18 +127,18 @@ export default function CustomerReviewsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-navy-950 flex items-center gap-2">
-            <Star className="h-6 w-6 text-amber-500 fill-amber-400" />
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+            <Star className="h-6 w-6 text-amber-400 fill-amber-400" />
             My Service Reviews
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Share feedback on your completed HVAC repairs and technician visits
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Share feedback on your completed HVAC repairs and technician visits.
           </p>
         </div>
 
         <Button
           onClick={() => setModalOpen(true)}
-          className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-10 px-4 self-start sm:self-auto shadow-sm"
+          className="rounded-xl bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold text-xs h-10 px-4 self-start sm:self-auto shadow-lg shadow-orange-500/20"
         >
           <Plus className="mr-1.5 h-4 w-4" />
           Write a Review
@@ -150,16 +151,16 @@ export default function CustomerReviewsPage() {
           Loading your verified service reviews...
         </div>
       ) : reviews.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center space-y-3">
-          <MessageSquare className="mx-auto h-10 w-10 text-slate-300" />
-          <h2 className="text-base font-bold text-navy-950">No Reviews Written Yet</h2>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <div className="rounded-2xl border border-dashed border-white/15 bg-[#0F172A]/85 backdrop-blur-xl p-12 text-center space-y-3 shadow-xl">
+          <MessageSquare className="mx-auto h-10 w-10 text-slate-500" />
+          <h2 className="text-base font-bold text-white">No Reviews Written Yet</h2>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
             Once a technician completes service at your property, you can share feedback and rate your experience.
           </p>
           <Button
             onClick={() => setModalOpen(true)}
             variant="outline"
-            className="rounded-xl text-xs font-bold mt-2"
+            className="rounded-xl text-xs font-bold mt-2 border-white/10 text-white hover:bg-white/10"
           >
             Leave Your First Review
           </Button>
@@ -169,7 +170,7 @@ export default function CustomerReviewsPage() {
           {reviews.map((rev) => (
             <div
               key={rev.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 flex flex-col justify-between"
+              className="rounded-2xl border border-white/10 bg-[#0F172A]/85 backdrop-blur-xl p-5 shadow-xl space-y-4 flex flex-col justify-between hover:border-orange-500/30 transition-all"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -180,33 +181,33 @@ export default function CustomerReviewsPage() {
                         className={`h-4 w-4 ${
                           star <= rev.rating
                             ? "fill-amber-400 text-amber-400"
-                            : "text-slate-200"
+                            : "text-white/20"
                         }`}
                       />
                     ))}
                   </div>
 
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     Verified &amp; {rev.status}
                   </span>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed italic">
                   &ldquo;{rev.content}&rdquo;
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                 <div>
-                  <p className="font-bold text-navy-950">{rev.serviceName}</p>
+                  <p className="font-bold text-white">{rev.serviceName}</p>
                   <p className="text-[11px] text-slate-400">
                     Job #{rev.jobNumber} • {new Date(rev.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <Link
                   href={`/account/appointments/${rev.jobId}`}
-                  className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                  className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1"
                 >
                   View Job <ArrowRight className="h-3 w-3" />
                 </Link>
@@ -218,52 +219,52 @@ export default function CustomerReviewsPage() {
 
       {/* Review Submission Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg rounded-3xl bg-[#0F172A] border border-white/10 p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
-                <h2 className="text-lg font-bold text-navy-950 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-orange-500" />
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-orange-400" />
                   Leave a Service Review
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Help fellow homeowners by sharing your technician experience
+                <p className="text-xs text-slate-400">
+                  Help fellow homeowners by sharing your technician experience.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {submitSuccess ? (
-              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-6 text-center space-y-2">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" />
-                <h3 className="text-sm font-bold text-emerald-900">Review Submitted!</h3>
-                <p className="text-xs text-emerald-700">
+              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-6 text-center space-y-2">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Review Submitted!</h3>
+                <p className="text-xs text-emerald-300">
                   Thank you for your valuable feedback. Your review is now live.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmitReview} className="space-y-4">
                 {submitError && (
-                  <div className="rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700 flex items-center gap-2">
+                  <div className="rounded-xl bg-rose-500/15 border border-rose-500/30 p-3 text-xs text-rose-300 flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 shrink-0" />
                     <span>{submitError}</span>
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">
+                  <label className="text-xs font-bold text-slate-300">
                     Select Completed Service
                   </label>
                   <select
                     value={selectedJobId}
                     onChange={(e) => setSelectedJobId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-800 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-xs text-white focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                   >
                     <option value="job-1001">Job #1001 — AC Repair &amp; Diagnostic (Oct 14)</option>
                     <option value="job-1002">Job #1002 — Seasonal AC Tune-Up (Oct 08)</option>
@@ -271,7 +272,7 @@ export default function CustomerReviewsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">
+                  <label className="text-xs font-bold text-slate-300">
                     Overall Satisfaction Rating
                   </label>
                   <div className="flex items-center gap-2 pt-1">
@@ -288,19 +289,19 @@ export default function CustomerReviewsPage() {
                           className={`h-7 w-7 transition-colors ${
                             star <= (hoverRating || rating)
                               ? "fill-amber-400 text-amber-400"
-                              : "text-slate-200"
+                              : "text-white/20"
                           }`}
                         />
                       </button>
                     ))}
-                    <span className="text-xs font-bold text-slate-600 ml-2">
+                    <span className="text-xs font-bold text-slate-300 ml-2">
                       {hoverRating || rating} of 5 Stars
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700">
+                  <label className="text-xs font-bold text-slate-300">
                     Your Review Feedback
                   </label>
                   <textarea
@@ -309,23 +310,23 @@ export default function CustomerReviewsPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Describe the technician's punctuality, the solution provided, and overall quality of service..."
-                    className="w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    className="w-full rounded-xl border border-white/10 bg-[#080D16] p-3 text-xs text-white placeholder:text-slate-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setModalOpen(false)}
-                    className="rounded-xl text-xs font-bold"
+                    className="rounded-xl text-xs font-bold border-white/10 text-white hover:bg-white/10"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={submitting || !content.trim()}
-                    className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs"
+                    className="rounded-xl bg-[#F97316] hover:bg-orange-600 text-[#0C1523] font-bold text-xs shadow-lg shadow-orange-500/20"
                   >
                     {submitting ? "Submitting..." : "Publish Review"}
                   </Button>

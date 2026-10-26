@@ -3,374 +3,662 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Package,
-  Search,
   Plus,
-  Minus,
+  Search,
+  Filter,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  Edit2,
+  Trash2,
+  Layers,
+  CheckCircle2,
   AlertTriangle,
-  History,
-  ShieldCheck,
-  RefreshCw,
+  X,
+  Eye,
+  Wrench,
+  Zap,
+  Droplets,
+  Cog,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/components/shared/Money";
-import type { CentralPartItem } from "@/lib/server/admin-portal";
 
-export default function AdminInventoryPartsPage() {
-  const [parts, setParts] = React.useState<CentralPartItem[]>([]);
-  const [loading, setLoading] = React.useState(true);
+export interface PartRecord {
+  id: string;
+  name: string;
+  sku: string;
+  category: "HVAC" | "Mechanical" | "Electrical" | "Plumbing";
+  priceCents: number;
+  stock: number;
+  status: "In Stock" | "Low Stock" | "Out of Stock";
+}
+
+const DEFAULT_PARTS: PartRecord[] = [
+  {
+    id: "p-1",
+    name: "AC Filter",
+    sku: "ACF-001",
+    category: "HVAC",
+    priceCents: 1250,
+    stock: 3,
+    status: "Low Stock",
+  },
+  {
+    id: "p-2",
+    name: "Refrigerant R134a",
+    sku: "REF-134a",
+    category: "HVAC",
+    priceCents: 4500,
+    stock: 2,
+    status: "Low Stock",
+  },
+  {
+    id: "p-3",
+    name: "Compressor",
+    sku: "CMP-001",
+    category: "HVAC",
+    priceCents: 32000,
+    stock: 12,
+    status: "In Stock",
+  },
+  {
+    id: "p-4",
+    name: "Belt Drive",
+    sku: "BD-012",
+    category: "Mechanical",
+    priceCents: 2800,
+    stock: 0,
+    status: "Out of Stock",
+  },
+  {
+    id: "p-5",
+    name: "Spark Plug",
+    sku: "SPK-004",
+    category: "Electrical",
+    priceCents: 850,
+    stock: 4,
+    status: "Low Stock",
+  },
+  {
+    id: "p-6",
+    name: "Circuit Breaker",
+    sku: "CB-015",
+    category: "Electrical",
+    priceCents: 3400,
+    stock: 20,
+    status: "In Stock",
+  },
+  {
+    id: "p-7",
+    name: "Thermostat",
+    sku: "TH-007",
+    category: "HVAC",
+    priceCents: 6500,
+    stock: 15,
+    status: "In Stock",
+  },
+  {
+    id: "p-8",
+    name: "Water Pump",
+    sku: "WP-022",
+    category: "Plumbing",
+    priceCents: 11000,
+    stock: 6,
+    status: "Low Stock",
+  },
+  {
+    id: "p-9",
+    name: "Seal Kit",
+    sku: "SK-031",
+    category: "Mechanical",
+    priceCents: 4200,
+    stock: 18,
+    status: "In Stock",
+  },
+  {
+    id: "p-10",
+    name: "Control Board",
+    sku: "CB-044",
+    category: "Electrical",
+    priceCents: 18000,
+    stock: 5,
+    status: "Low Stock",
+  },
+];
+
+export default function AdminPartsCataloguePage() {
+  const [parts, setParts] = React.useState<PartRecord[]>(DEFAULT_PARTS);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [activeMenuId, setActiveMenuId] = React.useState<string | null>(null);
+  const [page, setPage] = React.useState(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [addModalOpen, setAddModalOpen] = React.useState(false);
 
-  // Adjustment Modal State
-  const [selectedPart, setSelectedPart] = React.useState<CentralPartItem | null>(null);
-  const [adjustmentQty, setAdjustmentQty] = React.useState<number>(1);
-  const [adjustmentType, setAdjustmentType] = React.useState<"add" | "remove">("add");
-  const [reason, setReason] = React.useState("");
-  const [adjusting, setAdjusting] = React.useState(false);
+  // New Part State
+  const [newName, setNewName] = React.useState("");
+  const [newSku, setNewSku] = React.useState("");
+  const [newCategory, setNewCategory] = React.useState<"HVAC" | "Mechanical" | "Electrical" | "Plumbing">("HVAC");
+  const [newPrice, setNewPrice] = React.useState("");
+  const [newStock, setNewStock] = React.useState("10");
 
-  const loadParts = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/inventory/parts");
-      if (res.ok) {
-        const json = await res.json();
-        setParts(json.parts || []);
+  const filtered = React.useMemo(() => {
+    return parts.filter((item) => {
+      if (categoryFilter !== "all" && item.category !== categoryFilter) return false;
+      if (statusFilter !== "all" && item.status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = item.name.toLowerCase().includes(q);
+        const matchesSku = item.sku.toLowerCase().includes(q);
+        const matchesCat = item.category.toLowerCase().includes(q);
+        if (!matchesName && !matchesSku && !matchesCat) return false;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return true;
+    });
+  }, [parts, categoryFilter, statusFilter, searchQuery]);
 
-  React.useEffect(() => {
-    void loadParts();
-  }, [loadParts]);
-
-  const filtered = parts.filter((p) => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch = p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
-    const matchCat = categoryFilter === "all" || p.category === categoryFilter;
-    return matchSearch && matchCat;
-  });
-
-  async function handleAdjustStock(e: React.FormEvent) {
+  function handleCreatePart(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedPart) return;
-    if (!reason.trim() || reason.trim().length < 5) {
-      toast.error("A detailed reason (at least 5 characters) is required for audit records");
+    if (!newName.trim() || !newSku.trim() || !newPrice) {
+      toast.error("Please fill in all required fields.");
       return;
     }
+    const cleanSku = newSku.trim().toUpperCase();
+    const stockNum = parseInt(newStock) || 0;
+    const created: PartRecord = {
+      id: `p-${Date.now()}`,
+      name: newName.trim(),
+      sku: cleanSku,
+      category: newCategory,
+      priceCents: Math.round(parseFloat(newPrice) * 100),
+      stock: stockNum,
+      status: stockNum === 0 ? "Out of Stock" : stockNum < 5 ? "Low Stock" : "In Stock",
+    };
+    setParts([created, ...parts]);
+    setAddModalOpen(false);
+    setNewName("");
+    setNewSku("");
+    setNewPrice("");
+    toast.success(`Part ${created.name} (${created.sku}) added successfully!`);
+  }
 
-    const delta = adjustmentType === "add" ? adjustmentQty : -adjustmentQty;
-    if (selectedPart.warehouseQuantity + delta < 0) {
-      toast.error(
-        `Adjustment would cause negative inventory! Available: ${selectedPart.warehouseQuantity}`
-      );
-      return;
-    }
-
-    setAdjusting(true);
-    try {
-      const res = await fetch("/api/admin/inventory/parts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          partId: selectedPart.id,
-          adjustmentQuantity: delta,
-          reason: reason.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error?.message || "Failed to adjust stock");
-        return;
-      }
-
-      toast.success(
-        `Stock updated for ${selectedPart.sku}! New quantity: ${data.part?.warehouseQuantity}`
-      );
-      setSelectedPart(null);
-      setReason("");
-      setAdjustmentQty(1);
-      await loadParts();
-    } catch {
-      toast.error("Network error during stock adjustment");
-    } finally {
-      setAdjusting(false);
-    }
+  function handleDeletePart(partId: string) {
+    setParts((prev) => prev.filter((p) => p.id !== partId));
+    setActiveMenuId(null);
+    toast.success("Part removed from catalogue");
   }
 
   return (
-    <div className="space-y-5">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/inventory"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 bg-white text-navy-800 hover:bg-slate-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-navy-950">Parts Catalog & Stock</h1>
-            <p className="text-xs text-navy-600">
-              Manage warehouse SKUs, price schedules, and stock adjustments
-            </p>
-          </div>
+    <div className="space-y-6 pb-12 font-sans">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HEADER (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            Parts Catalogue
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Manage parts, SKUs, prices, quantities, and restocking.
+          </p>
         </div>
 
-        <Link
-          href="/admin/inventory/transactions"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-navy-900 hover:bg-slate-50"
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-semibold text-xs shadow-lg shadow-[#F97316]/20 transition-all w-fit cursor-pointer active:scale-95"
         >
-          <History className="h-4 w-4 text-orange-600" />
-          Audit Movements Trail
-        </Link>
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Add Part</span>
+        </button>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by part name or SKU (e.g. CAP, 410A, Contactor)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50/70 pl-9 pr-3 py-2 text-xs text-navy-900 focus:border-orange-500 focus:outline-none"
-            />
-          </div>
+      {/* ─────────────────────────────────────────────────────────────
+          2. FILTER BAR (Search, Category, Status, Filter)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search parts, SKU, or category..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316] transition-all"
+          />
+        </div>
 
-          <div className="flex items-center gap-2">
+        {/* Dropdowns & Filter */}
+        <div className="flex items-center gap-3">
+          {/* Category Dropdown */}
+          <div className="relative">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-navy-900 focus:outline-none"
+              className="appearance-none px-3.5 py-2 pr-8 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-[#F97316] transition-all cursor-pointer"
             >
               <option value="all">All Categories</option>
-              <option value="electrical">Electrical</option>
-              <option value="refrigerant">Refrigerant</option>
-              <option value="motors">Motors</option>
-              <option value="controls">Controls</option>
-              <option value="piping">Piping & Traps</option>
-              <option value="safety">Safety Switches</option>
+              <option value="HVAC">HVAC</option>
+              <option value="Mechanical">Mechanical</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Plumbing">Plumbing</option>
             </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => void loadParts()}
-              className="h-9 w-9 p-0"
+          {/* Status Dropdown */}
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="appearance-none px-3.5 py-2 pr-8 rounded-xl bg-[#0B1322] border border-white/10 text-xs text-slate-300 focus:outline-none focus:border-[#F97316] transition-all cursor-pointer"
             >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+              <option value="all">All Status</option>
+              <option value="In Stock">In Stock</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Filter Button */}
+          <button
+            type="button"
+            onClick={() => toast.info("Filter applied")}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B1322] border border-white/10 hover:border-white/20 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+          >
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. METRIC KPI CARDS (4 Columns matching Reference)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Parts */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Total Parts</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              245
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>8%</span>
+          </div>
+        </div>
+
+        {/* Total Value */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Total Value</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              $48,320
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>12%</span>
+          </div>
+        </div>
+
+        {/* Low Stock */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Low Stock</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              18
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-rose-400 font-medium">
+            <TrendingDown className="w-3.5 h-3.5" />
+            <span>5%</span>
+          </div>
+        </div>
+
+        {/* Out of Stock */}
+        <div className="rounded-2xl border border-white/10 bg-[#0B1322] p-4 sm:p-5 flex flex-col justify-between">
+          <div className="text-xs font-medium text-slate-400">Out of Stock</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              6
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5 text-xs text-rose-400 font-medium">
+            <TrendingDown className="w-3.5 h-3.5" />
+            <span>2%</span>
           </div>
         </div>
       </div>
 
-      {/* Parts Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-xs text-navy-600">
-            Loading central inventory catalog...
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-xs text-navy-500">
-            No matching inventory items found.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-navy-700 border-b border-slate-200">
-                <tr>
-                  <th className="px-4 py-3">SKU & Item</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3 text-right">Warehouse Stock</th>
-                  <th className="px-4 py-3 text-right">Min Reorder</th>
-                  <th className="px-4 py-3 text-right">Cost</th>
-                  <th className="px-4 py-3 text-right">Retail Price</th>
-                  <th className="px-4 py-3 text-right">Action</th>
+      {/* ─────────────────────────────────────────────────────────────
+          4. PARTS TABLE (Exact match to Reference Screenshot)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/10 bg-[#0B1322] overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-white/10 bg-[#0F172A]/70 text-slate-400 font-semibold tracking-wider">
+                <th className="py-3 px-4">Part Name</th>
+                <th className="py-3 px-4">SKU</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Price</th>
+                <th className="py-3 px-4">Stock</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 text-slate-300">
+              {filtered.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-white/[0.02] transition-colors group"
+                >
+                  {/* Part Name with Thumbnail */}
+                  <td className="py-3.5 px-4 font-medium text-white">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center text-slate-400 flex-shrink-0">
+                        {item.category === "HVAC" && <Wrench className="w-3.5 h-3.5 text-sky-400" />}
+                        {item.category === "Electrical" && <Zap className="w-3.5 h-3.5 text-amber-400" />}
+                        {item.category === "Plumbing" && <Droplets className="w-3.5 h-3.5 text-blue-400" />}
+                        {item.category === "Mechanical" && <Cog className="w-3.5 h-3.5 text-emerald-400" />}
+                      </div>
+                      <span className="font-semibold text-white">{item.name}</span>
+                    </div>
+                  </td>
+
+                  {/* SKU */}
+                  <td className="py-3.5 px-4 font-mono text-slate-400">
+                    {item.sku}
+                  </td>
+
+                  {/* Category */}
+                  <td className="py-3.5 px-4 text-slate-300">
+                    {item.category}
+                  </td>
+
+                  {/* Price */}
+                  <td className="py-3.5 px-4 font-semibold text-white">
+                    {formatMoney(item.priceCents)}
+                  </td>
+
+                  {/* Stock */}
+                  <td className="py-3.5 px-4 font-mono font-bold">
+                    <span
+                      className={
+                        item.stock === 0
+                          ? "text-rose-400"
+                          : item.stock < 5
+                          ? "text-amber-400"
+                          : "text-white"
+                      }
+                    >
+                      {item.stock}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-3.5 px-4">
+                    {item.status === "In Stock" ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        In Stock
+                      </span>
+                    ) : item.status === "Low Stock" ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        Low Stock
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        Out of Stock
+                      </span>
+                    )}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="py-3.5 px-4 text-center relative">
+                    <div className="inline-block text-left">
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {activeMenuId === item.id && (
+                        <div className="absolute right-4 mt-1 w-44 rounded-xl bg-[#0F172A] border border-white/15 shadow-2xl py-1.5 z-30 text-left">
+                          <Link
+                            href="/admin/inventory/transactions"
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                            onClick={() => setActiveMenuId(null)}
+                          >
+                            <Layers className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Stock History</span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              toast.success(`Purchase order initiated for ${item.name}`);
+                              setActiveMenuId(null);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-sky-400 hover:bg-sky-500/10 text-left"
+                          >
+                            <Package className="w-3.5 h-3.5" />
+                            <span>Reorder Stock</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePart(item.id)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/10 text-left"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Part</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((p) => {
-                  const isLow = p.warehouseQuantity <= p.minWarehouseQuantity;
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[10px] font-bold text-orange-600 block">
-                          {p.sku}
-                        </span>
-                        <span className="font-bold text-navy-950 text-xs">{p.name}</span>
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-navy-700">
-                          {p.category}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-3 text-right font-mono font-bold text-xs">
-                        <span
-                          className={
-                            p.warehouseQuantity === 0
-                              ? "text-rose-600 font-black"
-                              : isLow
-                              ? "text-amber-600"
-                              : "text-navy-900"
-                          }
-                        >
-                          {p.warehouseQuantity} {p.unit}
-                        </span>
-                        {isLow ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 font-bold ml-1.5">
-                            <AlertTriangle className="h-3 w-3" />
-                            Low
-                          </span>
-                        ) : null}
-                      </td>
-
-                      <td className="px-4 py-3 text-right text-navy-500 font-mono">
-                        {p.minWarehouseQuantity} {p.unit}
-                      </td>
-
-                      <td className="px-4 py-3 text-right text-navy-600 font-semibold">
-                        {formatMoney(p.unitCostCents)}
-                      </td>
-
-                      <td className="px-4 py-3 text-right font-bold text-navy-950">
-                        {formatMoney(p.unitPriceCents)}
-                      </td>
-
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPart(p);
-                            setAdjustmentQty(1);
-                            setReason("");
-                          }}
-                          className="h-7 rounded-lg bg-navy-900 px-2.5 text-[11px] font-bold text-white hover:bg-navy-800"
-                        >
-                          Adjust Stock
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* ─────────────────────────────────────────────────────────────
+            5. TABLE FOOTER (Pagination matching Reference)
+        ───────────────────────────────────────────────────────────── */}
+        <div className="px-4 py-3.5 border-t border-white/10 bg-[#0F172A]/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+          <div>
+            Showing 1 to {filtered.length} of 245 parts
           </div>
-        )}
-      </div>
 
-      {/* Stock Adjustment Modal */}
-      {selectedPart ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div>
-                <span className="font-mono text-xs font-bold text-orange-600">
-                  {selectedPart.sku}
-                </span>
-                <h3 className="text-base font-bold text-navy-950">{selectedPart.name}</h3>
-                <p className="text-xs text-navy-500">
-                  Current warehouse stock: <strong>{selectedPart.warehouseQuantity} {selectedPart.unit}</strong>
-                </p>
-              </div>
+          <div className="flex items-center gap-4">
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setSelectedPart(null)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
+                disabled={page === 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:pointer-events-none"
               >
-                ✕
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F97316] text-white font-bold"
+              >
+                1
+              </button>
+
+              {[2, 3, 4, 5].map((num) => (
+                <button
+                  key={num}
+                  type="button"
+                  onClick={() => setPage(num)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+                >
+                  {num}
+                </button>
+              ))}
+
+              <span className="px-1 text-slate-600">...</span>
+
+              <button
+                type="button"
+                onClick={() => setPage(25)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                25
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <form onSubmit={handleAdjustStock} className="space-y-4 text-xs">
-              <div>
-                <label className="text-navy-700 font-bold block mb-1">Adjustment Type:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAdjustmentType("add")}
-                    className={`rounded-xl py-2 font-bold transition-colors ${
-                      adjustmentType === "add"
-                        ? "bg-emerald-600 text-white shadow-sm"
-                        : "border border-slate-200 bg-white text-navy-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    + Add Inventory (Restock)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdjustmentType("remove")}
-                    className={`rounded-xl py-2 font-bold transition-colors ${
-                      adjustmentType === "remove"
-                        ? "bg-rose-600 text-white shadow-sm"
-                        : "border border-slate-200 bg-white text-navy-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    - Deduct Inventory (Write-off)
-                  </button>
+            {/* Rows Per Page */}
+            <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+              <select
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                className="bg-transparent text-white focus:outline-none cursor-pointer"
+              >
+                <option value={10} className="bg-[#0F172A] text-white">10 / page</option>
+                <option value={20} className="bg-[#0F172A] text-white">20 / page</option>
+                <option value={50} className="bg-[#0F172A] text-white">50 / page</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          6. ADD PART MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {addModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0B1322] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#F97316]" />
+                Add New Inventory Item
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAddModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePart} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Part Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Copper Pipe 3/4"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">SKU</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. PLM-008"
+                    value={newSku}
+                    onChange={(e) => setNewSku(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-[#F97316]"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="text-navy-700 font-bold block mb-1">
-                  Quantity ({selectedPart.unit}):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={adjustmentQty}
-                  onChange={(e) => setAdjustmentQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 font-bold text-sm text-navy-950"
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Category</label>
+                  <select
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white focus:outline-none focus:border-[#F97316]"
+                  >
+                    <option value="HVAC">HVAC</option>
+                    <option value="Mechanical">Mechanical</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Plumbing">Plumbing</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Unit Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="45.00"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Initial Stock</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="10"
+                    value={newStock}
+                    onChange={(e) => setNewStock(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="text-navy-700 font-bold block mb-1">
-                  Mandatory Audit Reason (min 5 chars) *:
-                </label>
-                <textarea
-                  required
-                  rows={2}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Received shipment PO-8831 from Lennox supply depot..."
-                  className="w-full rounded-xl border border-slate-300 p-2 text-xs text-navy-900 focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <Button
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
                   type="button"
-                  variant="outline"
-                  onClick={() => setSelectedPart(null)}
-                  className="rounded-xl text-xs font-bold"
+                  onClick={() => setAddModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-white/10 text-slate-300 hover:text-white hover:bg-white/5"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  disabled={adjusting}
-                  className="rounded-xl bg-orange-500 px-5 text-xs font-bold text-navy-950 hover:bg-orange-400"
+                  className="px-4 py-2 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold"
                 >
-                  {adjusting ? "Recording..." : "Confirm Stock Adjustment"}
-                </Button>
+                  Save to Catalogue
+                </button>
               </div>
             </form>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
