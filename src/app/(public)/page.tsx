@@ -1066,18 +1066,18 @@ export default function ServiceProLandingPage() {
               </div>
             </div>
 
-            {/* Card 3: David Kim */}
+            {/* Card 3: Service Client H */}
             <div className="bg-[#0F172A] rounded-2xl border border-white/10 p-6 shadow-xl hover:border-orange-500/30 transition-all flex items-start gap-4">
               <img
                 src="/images/testimonial-david.jpg"
-                alt="David Kim portrait"
+                alt="Service Client H portrait"
                 className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-white/20 mt-1"
               />
               <div className="flex-1">
                 <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-3">
                   &ldquo;We went from chaos to control. Everything is in one place — jobs, customers, payments, reports. Highly recommend!&rdquo;
                 </p>
-                <h4 className="text-sm font-bold text-white">David Kim</h4>
+                <h4 className="text-sm font-bold text-white">Service Client H</h4>
                 <p className="text-xs text-slate-400">Owner, Kim Electrical</p>
                 <div className="flex items-center text-[#F97316] gap-0.5 mt-1.5">
                   {[...Array(5)].map((_, i) => (

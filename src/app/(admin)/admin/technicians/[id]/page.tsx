@@ -101,11 +101,11 @@ export default function AdminTechnicianDetailPage() {
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300 mt-2">
               <span className="flex items-center gap-1">
                 <Phone className="w-3.5 h-3.5 text-slate-500" />
-                (555) 010-7842
+                (XXX) XXX-XXXX
               </span>
               <span className="flex items-center gap-1">
                 <Mail className="w-3.5 h-3.5 text-slate-500" />
-                robert@servicepro.com
+                user@domain.com
               </span>
               <span className="flex items-center gap-1 text-slate-400">
                 <MapPin className="w-3.5 h-3.5 text-slate-500" />

@@ -318,13 +318,13 @@ export function AuthShowcase() {
                           </div>
 
                           <div className="p-2 rounded-lg bg-black/60 border border-blue-500/30">
-                            <div className="font-bold text-blue-400">Fleet Beta (Danny Reyes)</div>
+                            <div className="font-bold text-blue-400">Fleet Beta (Diagnostic Specialist)</div>
                             <div className="text-white text-[9px] mt-0.5">Coconut Grove &bull; On Site</div>
                             <div className="text-[7px] text-emerald-400 mt-1 font-mono">Coil Test In Progress</div>
                           </div>
 
                           <div className="p-2 rounded-lg bg-black/60 border border-emerald-500/30">
-                            <div className="font-bold text-emerald-400">Fleet Gamma (Maria Alvarez)</div>
+                            <div className="font-bold text-emerald-400">Fleet Gamma (Senior Field Tech)</div>
                             <div className="text-white text-[9px] mt-0.5">Coral Gables &bull; Dispatched</div>
                             <div className="text-[7px] text-slate-400 mt-1 font-mono">Standby Roster Unit 03</div>
                           </div>
@@ -369,7 +369,7 @@ export function AuthShowcase() {
                             <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[8px] uppercase">
                               En Route (8m)
                             </span>
-                            <span className="text-[8px] text-slate-400 block mt-0.5">Danny Reyes</span>
+                            <span className="text-[8px] text-slate-400 block mt-0.5">Diagnostic Specialist</span>
                           </div>
                         </div>
 
@@ -382,7 +382,7 @@ export function AuthShowcase() {
                             <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold text-[8px] uppercase">
                               Assigned
                             </span>
-                            <span className="text-[8px] text-slate-400 block mt-0.5">Maria Alvarez</span>
+                            <span className="text-[8px] text-slate-400 block mt-0.5">Senior Field Tech</span>
                           </div>
                         </div>
                       </div>
@@ -596,7 +596,7 @@ export function AuthShowcase() {
                     <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 text-[9px] space-y-1.5">
                       <span className="font-bold text-emerald-300 block">Customer Touch Signature</span>
                       <div className="h-12 bg-black/60 rounded-lg border border-white/10 flex items-center justify-center">
-                        <span className="font-serif italic text-base text-amber-200">Sarah Jenkins</span>
+                        <span className="font-serif italic text-base text-amber-200">Service Client</span>
                       </div>
                       <span className="text-[7px] text-slate-400 block">GPS Verified: 1421 Brickell Ave &bull; Oct 25, 2026</span>
                     </div>
@@ -723,7 +723,7 @@ export function AuthShowcase() {
                         ✓ Digital Signature Captured
                       </div>
                       <div className="font-mono text-[10px] text-slate-300 mt-0.5 italic">
-                        Signed by Sarah Jenkins
+                        Signed by Service Client
                       </div>
                     </div>
                   </div>

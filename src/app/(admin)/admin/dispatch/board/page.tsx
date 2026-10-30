@@ -104,8 +104,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-maria",
-    name: "Maria Alvarez",
+    id: "tech-002",
+    name: "Senior Field Tech",
     avatarColor: "bg-purple-500",
     zone: "Zone B",
     status: "On Job",
@@ -116,8 +116,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-danny",
-    name: "Danny Reyes",
+    id: "tech-003",
+    name: "Diagnostic Specialist",
     avatarColor: "bg-teal-500",
     zone: "Zone C",
     status: "Available",
@@ -128,8 +128,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-tony",
-    name: "Tony Brooks",
+    id: "tech-004",
+    name: "HVAC Systems Lead",
     avatarColor: "bg-pink-500",
     zone: "Zone A",
     status: "En Route",
@@ -140,8 +140,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-robert",
-    name: "Robert Johnson",
+    id: "tech-005",
+    name: "Field Service Tech",
     avatarColor: "bg-indigo-500",
     zone: "Zone B",
     status: "On Break",
@@ -152,8 +152,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-lisa",
-    name: "Lisa Carter",
+    id: "tech-006",
+    name: "Maintenance Specialist",
     avatarColor: "bg-emerald-500",
     zone: "Zone C",
     status: "Available",
@@ -164,8 +164,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-james",
-    name: "James Wilson",
+    id: "tech-007",
+    name: "Commercial Tech",
     avatarColor: "bg-slate-500",
     zone: "Zone A",
     status: "Unavailable",
@@ -176,8 +176,8 @@ const TECH_ROSTER: GridTech[] = [
     maxJobs: 8,
   },
   {
-    id: "tech-patricia",
-    name: "Patricia Garcia",
+    id: "tech-008",
+    name: "Service Technician",
     avatarColor: "bg-rose-500",
     zone: "Zone B",
     status: "On Job",
@@ -236,7 +236,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "duct",
     address: "2000 NE 8th St",
     cityZip: "Miami, FL 33138",
-    customerName: "Elena Rodriguez",
+    customerName: "Service Client D",
     customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-001",
     startHour: 13.5,
@@ -264,7 +264,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 9900,
   },
 
-  // Maria Alvarez
+  // Senior Field Tech
   {
     id: "job-1040",
     jobNumber: 1040,
@@ -272,9 +272,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "plumbing",
     address: "2415 NE 163rd St",
     cityZip: "North Miami, FL 33160",
-    customerName: "Sara Mitchell",
+    customerName: "Service Client E",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-maria",
+    techId: "tech-002",
     startHour: 9.0,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -289,9 +289,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "duct",
     address: "305 Lincoln Rd",
     cityZip: "Miami Beach, FL 33139",
-    customerName: "Michael Johnson",
+    customerName: "Service Client F",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-maria",
+    techId: "tech-002",
     startHour: 12.5,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -306,9 +306,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "cooling",
     address: "1234 Collins Ave",
     cityZip: "Miami Beach, FL 33139",
-    customerName: "Jessica Lee",
+    customerName: "Service Client G",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-maria",
+    techId: "tech-002",
     startHour: 15.5,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -317,7 +317,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 21900,
   },
 
-  // Danny Reyes
+  // Diagnostic Specialist
   {
     id: "job-1043",
     jobNumber: 1043,
@@ -325,9 +325,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "cooling",
     address: "1400 NE 2nd Ave",
     cityZip: "Miami, FL 33132",
-    customerName: "Carlos Santana",
+    customerName: "Service Client H",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-danny",
+    techId: "tech-003",
     startHour: 9.5,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -344,9 +344,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "water_heater",
     address: "7800 Collins Ave",
     cityZip: "Miami Beach, FL 33141",
-    customerName: "Amanda Clark",
+    customerName: "Service Client I",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-danny",
+    techId: "tech-003",
     startHour: 12.5,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -361,9 +361,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "plumbing",
     address: "600 Brickell Ave",
     cityZip: "Miami, FL 33131",
-    customerName: "Brian Miller",
+    customerName: "Service Client J",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-danny",
+    techId: "tech-003",
     startHour: 15.0,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -372,7 +372,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 15900,
   },
 
-  // Tony Brooks
+  // HVAC Systems Lead
   {
     id: "job-1044",
     jobNumber: 1044,
@@ -380,9 +380,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "duct",
     address: "1130 Washington Ave",
     cityZip: "Miami Beach, FL 33139",
-    customerName: "Rachel Adams",
+    customerName: "Service Client K",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-tony",
+    techId: "tech-004",
     startHour: 9.0,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -397,9 +397,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "thermostat",
     address: "2100 NE 1st Ct",
     cityZip: "Miami, FL 33137",
-    customerName: "Kevin White",
+    customerName: "Service Client L",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-tony",
+    techId: "tech-004",
     startHour: 13.5,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -414,9 +414,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "cooling",
     address: "3401 NE 5th Ave",
     cityZip: "Miami, FL 33137",
-    customerName: "Diana Ross",
+    customerName: "Service Client M",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-tony",
+    techId: "tech-004",
     startHour: 16.0,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -425,7 +425,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 19900,
   },
 
-  // Robert Johnson
+  // Field Service Tech
   {
     id: "job-1046",
     jobNumber: 1046,
@@ -435,7 +435,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     cityZip: "Miami, FL",
     customerName: "Staff Break",
     customerPhone: "-",
-    techId: "tech-robert",
+    techId: "tech-005",
     startHour: 12.0,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -450,9 +450,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "plumbing",
     address: "420 Lincoln Rd",
     cityZip: "Miami Beach, FL 33139",
-    customerName: "George King",
+    customerName: "Service Client N",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-robert",
+    techId: "tech-005",
     startHour: 15.0,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -461,7 +461,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 14900,
   },
 
-  // Lisa Carter
+  // Maintenance Specialist
   {
     id: "job-1049",
     jobNumber: 1049,
@@ -469,9 +469,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "cooling",
     address: "1500 Brickell Ave",
     cityZip: "Miami, FL 33129",
-    customerName: "Sandra Bullock",
+    customerName: "Service Client O",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-lisa",
+    techId: "tech-006",
     startHour: 9.5,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -486,9 +486,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "thermostat",
     address: "901 Biscayne Blvd",
     cityZip: "Miami, FL 33132",
-    customerName: "Edward Norton",
+    customerName: "Service Client P",
     customerPhone: "(XXX) XXX-XXXX",
-    techId: "tech-lisa",
+    techId: "tech-006",
     startHour: 14.0,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -497,7 +497,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     estimateCents: 16900,
   },
 
-  // James Wilson (On Leave)
+  // Commercial Tech (On Leave)
   {
     id: "job-leave",
     jobNumber: 0,
@@ -507,7 +507,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     cityZip: "-",
     customerName: "Roster Leave",
     customerPhone: "-",
-    techId: "tech-james",
+    techId: "tech-007",
     startHour: 8.0,
     durationHours: 9.0,
     durationLabel: "8:00 AM - 5:00 PM",
@@ -531,7 +531,7 @@ export default function AdminDispatchDedicatedGridPage() {
   const [selectedJobIds, setSelectedJobIds] = React.useState<string[]>(["job-1038", "job-1041", "job-1045"]);
   const [inspectorOpen, setInspectorOpen] = React.useState<boolean>(true);
   const [reassignModalOpen, setReassignModalOpen] = React.useState<boolean>(false);
-  const [selectedTargetTech, setSelectedTargetTech] = React.useState<string>("tech-maria");
+  const [selectedTargetTech, setSelectedTargetTech] = React.useState<string>("tech-002");
 
   // Filtered Tech Roster
   const filteredTechs = TECH_ROSTER.filter((t) => {
@@ -1312,10 +1312,10 @@ export default function AdminDispatchDedicatedGridPage() {
               className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-xs text-white"
             >
               <option value="tech-001">Lead Field Technician (Zone A · Available)</option>
-              <option value="tech-maria">Maria Alvarez (Zone B · Available)</option>
-              <option value="tech-danny">Danny Reyes (Zone C · Available)</option>
-              <option value="tech-tony">Tony Brooks (Zone A · En Route)</option>
-              <option value="tech-lisa">Lisa Carter (Zone C · Working)</option>
+              <option value="tech-002">Senior Field Tech (Zone B · Available)</option>
+              <option value="tech-003">Diagnostic Specialist (Zone C · Available)</option>
+              <option value="tech-004">HVAC Systems Lead (Zone A · En Route)</option>
+              <option value="tech-006">Maintenance Specialist (Zone C · Working)</option>
             </select>
             <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
               <button

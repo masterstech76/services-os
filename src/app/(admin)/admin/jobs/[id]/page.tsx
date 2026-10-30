@@ -493,9 +493,9 @@ export default function AdminJobDetailPage() {
             <div className="space-y-2">
               {[
                 { name: "Lead Field Technician", role: "Master HVAC Tech · Truck #04", eta: "On Site / 8 mins", match: "98% Match" },
-                { name: "Tony Brooks", role: "Senior Diagnostic Tech · Truck #02", eta: "14 mins away", match: "95% Match" },
-                { name: "Maria Alvarez", role: "Airflow & Duct Specialist · Truck #06", eta: "19 mins away", match: "91% Match" },
-                { name: "Danny Reyes", role: "Heating & Furnace Specialist · Truck #09", eta: "24 mins away", match: "89% Match" },
+                { name: "HVAC Systems Lead", role: "Senior Diagnostic Tech · Truck #02", eta: "14 mins away", match: "95% Match" },
+                { name: "Senior Field Tech", role: "Airflow & Duct Specialist · Truck #06", eta: "19 mins away", match: "91% Match" },
+                { name: "Diagnostic Specialist", role: "Heating & Furnace Specialist · Truck #09", eta: "24 mins away", match: "89% Match" },
               ].map((tech) => (
                 <button
                   key={tech.name}

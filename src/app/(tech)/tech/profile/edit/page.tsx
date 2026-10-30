@@ -269,7 +269,7 @@ export default function TechEditProfilePage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-medium focus:outline-none focus:border-[#F97316] transition-colors"
-                      placeholder="carlos@servicepro.com"
+                      placeholder="user@domain.com"
                     />
                   </div>
                 </div>

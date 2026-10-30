@@ -47,7 +47,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-2",
-    customerName: "Maria Alvarez",
+    customerName: "Senior Field Tech",
     avatarInitials: "MA",
     avatarUrl: "/images/avatar-sarah.jpg",
     rating: 4,
@@ -57,7 +57,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-3",
-    customerName: "Danny Reyes",
+    customerName: "Diagnostic Specialist",
     avatarInitials: "DR",
     avatarUrl: "/images/avatar-mike.jpg",
     rating: 5,
@@ -67,7 +67,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-4",
-    customerName: "Sarah Mitchell",
+    customerName: "Service Client E",
     avatarInitials: "SM",
     avatarUrl: "/images/avatar-2.jpg",
     rating: 4,
@@ -77,7 +77,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-5",
-    customerName: "Michael Johnson",
+    customerName: "Service Client F",
     avatarInitials: "MJ",
     avatarUrl: "/images/avatar-1.jpg",
     rating: 5,
@@ -87,7 +87,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-6",
-    customerName: "Jessica Lee",
+    customerName: "Service Client G",
     avatarInitials: "JL",
     avatarUrl: "/images/avatar-sarah.jpg",
     rating: 3,
@@ -97,7 +97,7 @@ const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   },
   {
     id: "rev-7",
-    customerName: "David Kim",
+    customerName: "Service Client H",
     avatarInitials: "DK",
     avatarUrl: "/images/avatar-david.jpg",
     rating: 5,

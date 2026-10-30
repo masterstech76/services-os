@@ -55,7 +55,7 @@ const DEFAULT_PAYOUTS: PayoutItem[] = [
   },
   {
     id: "pay-ma",
-    technicianName: "Maria Alvarez",
+    technicianName: "Senior Field Tech",
     role: "Plumbing Expert",
     avatarInitials: "MA",
     avatarUrl: "/images/avatar-sarah.jpg",
@@ -65,7 +65,7 @@ const DEFAULT_PAYOUTS: PayoutItem[] = [
   },
   {
     id: "pay-dr",
-    technicianName: "Danny Reyes",
+    technicianName: "Diagnostic Specialist",
     role: "AC Specialist",
     avatarInitials: "DR",
     avatarUrl: "/images/avatar-mike.jpg",
@@ -75,7 +75,7 @@ const DEFAULT_PAYOUTS: PayoutItem[] = [
   },
   {
     id: "pay-tb",
-    technicianName: "Tony Brooks",
+    technicianName: "HVAC Systems Lead",
     role: "Installation Expert",
     avatarInitials: "TB",
     avatarUrl: "/images/avatar-1.jpg",
@@ -85,7 +85,7 @@ const DEFAULT_PAYOUTS: PayoutItem[] = [
   },
   {
     id: "pay-lc",
-    technicianName: "Lisa Carter",
+    technicianName: "Maintenance Specialist",
     role: "Electrical Specialist",
     avatarInitials: "LC",
     avatarUrl: "/images/avatar-2.jpg",
@@ -95,7 +95,7 @@ const DEFAULT_PAYOUTS: PayoutItem[] = [
   },
   {
     id: "pay-jw",
-    technicianName: "James Wilson",
+    technicianName: "Commercial Tech",
     role: "General Maintenance",
     avatarInitials: "JW",
     avatarUrl: "/images/avatar-david.jpg",

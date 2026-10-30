@@ -27,9 +27,9 @@ import type { EnrichedJob } from "@/lib/server/operations";
 
 const DEMO_TECH_OPTIONS = [
   { id: "", name: "" },
-  { id: "tech-002", name: "Danny Reyes" },
-  { id: "tech-003", name: "Maria Alvarez" },
-  { id: "tech-004", name: "Tony Brooks" },
+  { id: "tech-002", name: "Diagnostic Specialist" },
+  { id: "tech-003", name: "Senior Field Tech" },
+  { id: "tech-004", name: "HVAC Systems Lead" },
 ];
 
 const WEEK_DAYS = [

@@ -57,7 +57,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1046",
     invoiceNumber: "INV-1046",
-    customerName: "Maria Alvarez",
+    customerName: "Senior Field Tech",
     customerEmail: "m.alvarez@example.com",
     customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8426",
@@ -79,7 +79,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1044",
     invoiceNumber: "INV-1044",
-    customerName: "Jennifer White",
+    customerName: "Service Client",
     customerEmail: "jennifer.w@example.com",
     customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8424",
@@ -90,7 +90,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1043",
     invoiceNumber: "INV-1043",
-    customerName: "Daniel Kim",
+    customerName: "Service Client H",
     customerEmail: "daniel.kim@example.com",
     customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8423",
@@ -101,7 +101,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1042",
     invoiceNumber: "INV-1042",
-    customerName: "Lisa Carter",
+    customerName: "Maintenance Specialist",
     customerEmail: "l.carter@example.com",
     customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8422",
@@ -112,7 +112,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1041",
     invoiceNumber: "INV-1041",
-    customerName: "James Wilson",
+    customerName: "Commercial Tech",
     customerEmail: "j.wilson@example.com",
     customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8421",

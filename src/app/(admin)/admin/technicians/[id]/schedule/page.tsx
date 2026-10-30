@@ -476,7 +476,7 @@ export default function AdminTechnicianSchedulePage() {
                     <img src="/images/avatar-sarah.jpg" alt="Sarah" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">Sarah Mitchell</div>
+                    <div className="font-bold text-white">Service Client E</div>
                     <div className="text-[10px] text-slate-400">May 14 - 18</div>
                   </div>
                 </div>
@@ -491,7 +491,7 @@ export default function AdminTechnicianSchedulePage() {
                     <img src="/images/avatar-2.jpg" alt="Jessica" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">Jessica Lee</div>
+                    <div className="font-bold text-white">Service Client G</div>
                     <div className="text-[10px] text-slate-400">May 19</div>
                   </div>
                 </div>
@@ -506,7 +506,7 @@ export default function AdminTechnicianSchedulePage() {
                     <img src="/images/avatar-3.jpg" alt="David" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">David Kim</div>
+                    <div className="font-bold text-white">Service Client H</div>
                     <div className="text-[10px] text-slate-400">May 22 - 25</div>
                   </div>
                 </div>
@@ -562,9 +562,9 @@ export default function AdminTechnicianSchedulePage() {
                 <label className="text-slate-300">Technician</label>
                 <select className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1">
                   <option>Service Client A</option>
-                  <option>Maria Alvarez</option>
-                  <option>Danny Reyes</option>
-                  <option>Sarah Mitchell</option>
+                  <option>Senior Field Tech</option>
+                  <option>Diagnostic Specialist</option>
+                  <option>Service Client E</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -627,8 +627,8 @@ export default function AdminTechnicianSchedulePage() {
                 <label className="text-slate-300">Technician</label>
                 <select className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1">
                   <option>Service Client A</option>
-                  <option>Maria Alvarez</option>
-                  <option>Danny Reyes</option>
+                  <option>Senior Field Tech</option>
+                  <option>Diagnostic Specialist</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

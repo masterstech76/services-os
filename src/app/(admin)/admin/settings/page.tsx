@@ -61,7 +61,7 @@ export default function AdminSettingsPage() {
 
   // Email Settings State
   const [smtpHost, setSmtpHost] = React.useState("smtp.sendgrid.net");
-  const [emailSender, setEmailSender] = React.useState("dispatch@servicepro.com");
+  const [emailSender, setEmailSender] = React.useState("user@domain.com");
   const [emailReceipts, setEmailReceipts] = React.useState(true);
 
   function handleSave(categoryName: string) {

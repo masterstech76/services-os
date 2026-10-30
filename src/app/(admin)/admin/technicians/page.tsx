@@ -56,8 +56,8 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     empId: "#T1047",
     avatar: "/images/avatar-david.jpg",
     specialization: "HVAC",
-    phone: "(555) 010-7842",
-    email: "robert@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Miami, FL · 123 Ocean Dr.",
     availability: "On Job",
     availabilityColor: "bg-emerald-400",
@@ -70,13 +70,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["HVAC", "Electrical", "Plumbing", "EPA Certified"],
   },
   {
-    id: "tech-maria",
-    name: "Maria Alvarez",
+    id: "tech-002",
+    name: "Senior Field Tech",
     empId: "#T1048",
     avatar: "/images/avatar-sarah.jpg",
     specialization: "Plumbing",
-    phone: "(555) 010-6723",
-    email: "maria@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Miami Beach, FL · 450 Collins Ave.",
     availability: "Available",
     availabilityColor: "bg-teal-400",
@@ -89,13 +89,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["Plumbing", "Water Heaters", "Pipe Fitting"],
   },
   {
-    id: "tech-danny",
-    name: "Danny Reyes",
+    id: "tech-003",
+    name: "Diagnostic Specialist",
     empId: "#T1049",
     avatar: "/images/avatar-mike.jpg",
     specialization: "Electrical",
-    phone: "(555) 010-5567",
-    email: "danny@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Coral Gables, FL · 800 Ponce de Leon",
     availability: "En Route",
     availabilityColor: "bg-blue-400",
@@ -108,13 +108,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["Electrical", "Panel Upgrades", "Safety"],
   },
   {
-    id: "tech-sarah",
-    name: "Sarah Mitchell",
+    id: "tech-009",
+    name: "Service Client E",
     empId: "#T1050",
     avatar: "/images/avatar-sarah.jpg",
     specialization: "HVAC",
-    phone: "(555) 010-4433",
-    email: "sarah@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Brickell, FL · 1000 Brickell Ave.",
     availability: "On Leave",
     availabilityColor: "bg-purple-400",
@@ -127,13 +127,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["HVAC", "Heat Pumps", "Diagnostics"],
   },
   {
-    id: "tech-michael",
-    name: "Michael Johnson",
+    id: "tech-010",
+    name: "Service Client F",
     empId: "#T1051",
     avatar: "/images/avatar-1.jpg",
     specialization: "Appliances",
-    phone: "(555) 010-2211",
-    email: "michael@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Hialeah, FL · 400 W 49th St.",
     availability: "Available",
     availabilityColor: "bg-teal-400",
@@ -146,13 +146,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["Appliances", "Refrigeration", "Motors"],
   },
   {
-    id: "tech-jessica",
-    name: "Jessica Lee",
+    id: "tech-011",
+    name: "Service Client G",
     empId: "#T1052",
     avatar: "/images/avatar-2.jpg",
     specialization: "Cleaning",
-    phone: "(555) 010-1188",
-    email: "jessica@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Downtown Miami, FL · 200 Biscayne Blvd.",
     availability: "Off Duty",
     availabilityColor: "bg-slate-500",
@@ -165,13 +165,13 @@ const TECHNICIANS_DATA: TechDirectoryItem[] = [
     skills: ["Cleaning", "Sanitization", "Air Quality"],
   },
   {
-    id: "tech-david",
-    name: "David Kim",
+    id: "tech-012",
+    name: "Service Client H",
     empId: "#T1053",
     avatar: "/images/avatar-3.jpg",
     specialization: "General",
-    phone: "(555) 010-6677",
-    email: "david@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     address: "Weston, FL · 1500 Weston Rd.",
     availability: "On Job",
     availabilityColor: "bg-emerald-400",
@@ -284,7 +284,7 @@ export default function AdminTechniciansPage() {
       empId: `#T${1050 + technicians.length}`,
       avatar: "/images/avatar-david.jpg",
       specialization: newSpecialization,
-      phone: newPhone || "(555) 010-9900",
+      phone: newPhone || "(XXX) XXX-XXXX",
       email: newEmail || `${newName.toLowerCase().replace(/\s+/g, ".")}@servicepro.com`,
       address: "Miami, FL",
       availability: "Available",
@@ -827,7 +827,7 @@ export default function AdminTechniciansPage() {
                   type="text"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  placeholder="(555) 010-8822"
+                  placeholder="(XXX) XXX-XXXX"
                   className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1"
                 />
               </div>
@@ -838,7 +838,7 @@ export default function AdminTechniciansPage() {
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="jason@servicepro.com"
+                  placeholder="user@domain.com"
                   className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1"
                 />
               </div>

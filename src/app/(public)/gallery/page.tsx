@@ -146,7 +146,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     categoryLabel: "Refrigerant & Coil Diagnostics",
     image: "/images/svc-refrigerant-recharge.jpg",
     neighborhood: "Pinecrest, FL",
-    leadTechnician: "Danny Reyes",
+    leadTechnician: "Diagnostic Specialist",
     credentials: "EPA Section 608 Universal Specialist",
     completionDate: "October 05, 2026",
     equipment: "Lennox Elite 4-Ton R-410A High-Efficiency Condenser",

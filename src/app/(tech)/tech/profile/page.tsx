@@ -694,7 +694,7 @@ export default function TechProfilePage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="flex-1 rounded-xl border border-white/10 bg-[#080D16] px-3 py-2 text-xs text-white focus:border-orange-500 focus:outline-none"
-            placeholder="(555) 000-0000"
+            placeholder="(XXX) XXX-XXXX"
           />
           <Button
             type="submit"

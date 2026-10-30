@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         title: data.title,
         description: data.description,
         requestedBy: {
-          name: auth.actor.userId === "user_owner" ? "Sarah Jenkins" : "System Administrator",
+          name: auth.actor.userId === "user_owner" ? "Service Client" : "System Administrator",
           email: "sarah.jenkins@servicepro.demo",
           role: "super_admin",
         },

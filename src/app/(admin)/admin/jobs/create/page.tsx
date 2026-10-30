@@ -56,7 +56,7 @@ const CUSTOMERS: CustomerOption[] = [
   },
   {
     id: "cust-2",
-    name: "Elena Rostova",
+    name: "IAQ & Systems Specialist",
     phone: "+1 (XXX) XXX-XXXX",
     address: "1220 SW 8th St, Miami, FL 33130",
     type: "Residential",
@@ -70,7 +70,7 @@ const CUSTOMERS: CustomerOption[] = [
   },
   {
     id: "cust-4",
-    name: "Sophia Lorenzi",
+    name: "Service Client S",
     phone: "+1 (XXX) XXX-XXXX",
     address: "305 Lincoln Rd, Miami Beach, FL 33139",
     type: "Residential",
@@ -125,22 +125,22 @@ const TECHNICIANS: TechOption[] = [
     available: true,
   },
   {
-    id: "tech-maria",
-    name: "Maria Alvarez",
+    id: "tech-002",
+    name: "Senior Field Tech",
     role: "Heat Pump & Controls Specialist",
     avatar: "/images/avatar-sarah.jpg",
     available: true,
   },
   {
-    id: "tech-danny",
-    name: "Danny Reyes",
+    id: "tech-003",
+    name: "Diagnostic Specialist",
     role: "Plumbing & IAQ Lead",
     avatar: "/images/avatar-mike.jpg",
     available: true,
   },
   {
-    id: "tech-tony",
-    name: "Tony Brooks",
+    id: "tech-004",
+    name: "HVAC Systems Lead",
     role: "Master Commercial HVAC",
     avatar: "/images/avatar-1.jpg",
     available: false,
@@ -568,7 +568,7 @@ export default function AdminCreateJobPage() {
                   type="text"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  placeholder="Jane Doe"
+                  placeholder="Client Name"
                   className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1"
                 />
               </div>

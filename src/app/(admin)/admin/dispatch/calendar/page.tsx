@@ -99,7 +99,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     customerName: "Senior HVAC Specialist",
     customerPhone: "(XXX) XXX-XXXX",
     address: "1900 Coral Way, Miami",
-    techName: "Tony Brooks",
+    techName: "HVAC Systems Lead",
     techColor: "#EC4899",
     status: "scheduled",
     priority: "Medium",
@@ -113,10 +113,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "Whole-Home Air Duct Clean",
     category: "duct",
-    customerName: "Elena Rodriguez",
+    customerName: "Service Client D",
     customerPhone: "(XXX) XXX-XXXX",
     address: "450 Alton Rd, Miami Beach",
-    techName: "Maria Alvarez",
+    techName: "Senior Field Tech",
     techColor: "#A855F7",
     status: "scheduled",
     priority: "Medium",
@@ -147,10 +147,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "21-Point Seasonal Tune-Up",
     category: "cooling",
-    customerName: "Sara Mitchell",
+    customerName: "Service Client E",
     customerPhone: "(XXX) XXX-XXXX",
     address: "1201 Brickell Ave, Miami",
-    techName: "Danny Reyes",
+    techName: "Diagnostic Specialist",
     techColor: "#14B8A6",
     status: "scheduled",
     priority: "Medium",
@@ -164,10 +164,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "R-410A Refrigerant Recharge",
     category: "cooling",
-    customerName: "Michael Johnson",
+    customerName: "Service Client F",
     customerPhone: "(XXX) XXX-XXXX",
     address: "9100 SW 72nd St, Miami",
-    techName: "Tony Brooks",
+    techName: "HVAC Systems Lead",
     techColor: "#EC4899",
     status: "scheduled",
     priority: "High",
@@ -181,10 +181,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "Air Duct Sanitation",
     category: "duct",
-    customerName: "Jessica Lee",
+    customerName: "Service Client G",
     customerPhone: "(XXX) XXX-XXXX",
     address: "600 5th St, Miami",
-    techName: "Maria Alvarez",
+    techName: "Senior Field Tech",
     techColor: "#A855F7",
     status: "scheduled",
     priority: "Low",
@@ -198,10 +198,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "1h 30m",
     serviceName: "Thermostat Replacement",
     category: "thermostat",
-    customerName: "Amanda Clark",
+    customerName: "Service Client I",
     customerPhone: "(XXX) XXX-XXXX",
     address: "7800 Collins Ave, Miami Beach",
-    techName: "Danny Reyes",
+    techName: "Diagnostic Specialist",
     techColor: "#14B8A6",
     status: "pending",
     priority: "Medium",
@@ -215,7 +215,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "Commercial Rooftop Inspection",
     category: "cooling",
-    customerName: "Brian Miller",
+    customerName: "Service Client J",
     customerPhone: "(XXX) XXX-XXXX",
     address: "600 Brickell Ave, Miami",
     techName: "Lead Field Technician",
@@ -232,10 +232,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "1h 30m",
     serviceName: "Capacitor & Contactor Fix",
     category: "cooling",
-    customerName: "Rachel Adams",
+    customerName: "Service Client K",
     customerPhone: "(XXX) XXX-XXXX",
     address: "1130 Washington Ave, Miami Beach",
-    techName: "Tony Brooks",
+    techName: "HVAC Systems Lead",
     techColor: "#EC4899",
     status: "scheduled",
     priority: "High",
@@ -249,7 +249,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "HVAC Compressor Tune-Up",
     category: "cooling",
-    customerName: "Kevin White",
+    customerName: "Service Client L",
     customerPhone: "(XXX) XXX-XXXX",
     address: "2100 NE 1st Ct, Miami",
     techName: "Lead Field Technician",
@@ -266,10 +266,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "Air Duct Microbial Fogging",
     category: "duct",
-    customerName: "Diana Ross",
+    customerName: "Service Client M",
     customerPhone: "(XXX) XXX-XXXX",
     address: "3401 NE 5th Ave, Miami",
-    techName: "Maria Alvarez",
+    techName: "Senior Field Tech",
     techColor: "#A855F7",
     status: "scheduled",
     priority: "Low",
@@ -561,9 +561,9 @@ export default function AdminDispatchMonthlyCalendarPage() {
           >
             <option value="all">All Technicians</option>
             <option value="Lead Field Technician">Lead Field Technician</option>
-            <option value="Tony Brooks">Tony Brooks</option>
-            <option value="Maria Alvarez">Maria Alvarez</option>
-            <option value="Danny Reyes">Danny Reyes</option>
+            <option value="HVAC Systems Lead">HVAC Systems Lead</option>
+            <option value="Senior Field Tech">Senior Field Tech</option>
+            <option value="Diagnostic Specialist">Diagnostic Specialist</option>
           </select>
 
           <select
@@ -920,9 +920,9 @@ export default function AdminDispatchMonthlyCalendarPage() {
                     className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-white"
                   >
                     <option value="Lead Field Technician">Lead Field Technician (Zone A)</option>
-                    <option value="Tony Brooks">Tony Brooks (Zone A)</option>
-                    <option value="Maria Alvarez">Maria Alvarez (Zone B)</option>
-                    <option value="Danny Reyes">Danny Reyes (Zone C)</option>
+                    <option value="HVAC Systems Lead">HVAC Systems Lead (Zone A)</option>
+                    <option value="Senior Field Tech">Senior Field Tech (Zone B)</option>
+                    <option value="Diagnostic Specialist">Diagnostic Specialist (Zone C)</option>
                   </select>
                 </div>
               </div>

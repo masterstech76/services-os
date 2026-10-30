@@ -48,7 +48,7 @@ const DEMO_JOBS: TechJobItem[] = [
     jobNumber: 1001,
     stopSequence: 1,
     status: "completed",
-    customerName: "Anthony Vega",
+    customerName: "Service Client Q",
     phone: "(XXX) XXX-XXXX",
     serviceTitle: "Smart Ecobee Thermostat Install & C-Wire Setup",
     address: "8800 NW 36th St, Doral FL 33178",

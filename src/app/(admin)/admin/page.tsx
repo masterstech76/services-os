@@ -126,7 +126,7 @@ export default function AdminOverviewPage() {
       iconColor: "text-amber-400 bg-amber-500/15 border-amber-500/30",
       title: (
         <span>
-          <strong className="text-white font-semibold">Maria Alvarez</strong> marked job{" "}
+          <strong className="text-white font-semibold">Senior Field Tech</strong> marked job{" "}
           <strong className="text-white font-semibold">#1031</strong> as In Progress
         </span>
       ),
@@ -140,7 +140,7 @@ export default function AdminOverviewPage() {
       title: (
         <span>
           <strong className="text-white font-semibold">Job #1035</strong> completed by{" "}
-          <strong className="text-white font-semibold">Danny Reyes</strong>
+          <strong className="text-white font-semibold">Diagnostic Specialist</strong>
         </span>
       ),
       meta: "AC Tune-Up • 450 Alton Rd",
@@ -177,36 +177,36 @@ export default function AdminOverviewPage() {
       timeEnd: "11:00 AM",
       service: "Thermostat Install",
       address: "1540 Ferdinand St, Miami, FL 33134",
-      techName: "Tony Brooks",
+      techName: "HVAC Systems Lead",
       dotColor: "bg-amber-500",
-      techId: "tech-tony",
+      techId: "tech-004",
     },
     {
       timeStart: "11:30 AM",
       timeEnd: "12:30 PM",
       service: "Duct Cleaning",
       address: "1900 Coral Way, Miami, FL 33145",
-      techName: "Maria Alvarez",
+      techName: "Senior Field Tech",
       dotColor: "bg-emerald-500",
-      techId: "tech-maria",
+      techId: "tech-002",
     },
     {
       timeStart: "2:00 PM",
       timeEnd: "3:00 PM",
       service: "AC Tune-Up",
       address: "450 Alton Rd, Miami Beach, FL 33139",
-      techName: "Danny Reyes",
+      techName: "Diagnostic Specialist",
       dotColor: "bg-purple-500",
-      techId: "tech-danny",
+      techId: "tech-003",
     },
     {
       timeStart: "3:30 PM",
       timeEnd: "4:30 PM",
       service: "Refrigerant Recharge",
       address: "2840 SW 27th Ave, Miami, FL 33133",
-      techName: "Tony Brooks",
+      techName: "HVAC Systems Lead",
       dotColor: "bg-[#F97316]",
-      techId: "tech-tony",
+      techId: "tech-004",
     },
   ];
 
@@ -221,28 +221,28 @@ export default function AdminOverviewPage() {
       id: "tech-001",
     },
     {
-      name: "Maria Alvarez",
+      name: "Senior Field Tech",
       role: "Duct Cleaning Expert",
       completedJobs: 3,
       revenue: "$1,280",
       avatar: "/images/avatar-sarah.jpg",
-      id: "tech-maria",
+      id: "tech-002",
     },
     {
-      name: "Danny Reyes",
+      name: "Diagnostic Specialist",
       role: "AC Specialist",
       completedJobs: 3,
       revenue: "$980",
       avatar: "/images/avatar-mike.jpg",
-      id: "tech-danny",
+      id: "tech-003",
     },
     {
-      name: "Tony Brooks",
+      name: "HVAC Systems Lead",
       role: "Installation Expert",
       completedJobs: 2,
       revenue: "$760",
       avatar: "/images/testimonial-david.jpg",
-      id: "tech-tony",
+      id: "tech-004",
     },
   ];
 

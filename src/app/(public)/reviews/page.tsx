@@ -73,7 +73,7 @@ const REVIEWS_DATA: GoogleReviewItem[] = [
   },
   {
     id: "rev-2",
-    author: "Elena Santos",
+    author: "Service Client U",
     avatarLetter: "E",
     avatarColor: "bg-rose-600",
     isLocalGuide: true,
@@ -97,7 +97,7 @@ const REVIEWS_DATA: GoogleReviewItem[] = [
   },
   {
     id: "rev-3",
-    author: "Marcus Kowalski",
+    author: "Service Client V",
     avatarLetter: "M",
     avatarColor: "bg-emerald-600",
     isLocalGuide: false,
@@ -121,7 +121,7 @@ const REVIEWS_DATA: GoogleReviewItem[] = [
   },
   {
     id: "rev-4",
-    author: "Sophia Ramirez",
+    author: "Service Client S",
     avatarLetter: "S",
     avatarColor: "bg-amber-600",
     isLocalGuide: true,
@@ -145,7 +145,7 @@ const REVIEWS_DATA: GoogleReviewItem[] = [
   },
   {
     id: "rev-5",
-    author: "Anthony Vargas",
+    author: "Service Client Q",
     avatarLetter: "A",
     avatarColor: "bg-purple-600",
     isLocalGuide: false,
@@ -169,7 +169,7 @@ const REVIEWS_DATA: GoogleReviewItem[] = [
   },
   {
     id: "rev-6",
-    author: "Jessica Chen",
+    author: "Service Client W",
     avatarLetter: "J",
     avatarColor: "bg-teal-600",
     isLocalGuide: true,
@@ -382,7 +382,7 @@ export default function ReviewsPage() {
                 { slug: "carlos-mendez", name: "Lead Field Specialist", title: "Lead Diagnostic Master", van: "Fleet Unit Alpha", rating: "4.96", count: 148, spec: "Electrical & Inverter Diagnostics" },
                 { slug: "marcus-vance", name: "Senior HVAC Specialist", title: "Senior Maintenance Spec", van: "Fleet Unit Beta", rating: "4.94", count: 112, spec: "Tune-Ups & IAQ Balancing" },
                 { slug: "elena-rivera", name: "Commercial Systems Specialist", title: "Commercial Lead Mechanic", van: "Fleet Unit Gamma", rating: "4.98", count: 94, spec: "Commercial Rooftop RTUs" },
-                { slug: "david-kim", name: "David Kim", title: "Heat Pump & Inverter Tech", van: "Fleet Unit Delta", rating: "4.92", count: 78, spec: "Mini-Split Heat Pumps" },
+                { slug: "david-kim", name: "Service Client H", title: "Heat Pump & Inverter Tech", van: "Fleet Unit Delta", rating: "4.92", count: 78, spec: "Mini-Split Heat Pumps" },
               ].map((w) => (
                 <Link
                   key={w.slug}

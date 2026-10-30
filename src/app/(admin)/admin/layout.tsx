@@ -293,9 +293,9 @@ export default function AdminLayout({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Prevent background scrolling when sidebar drawer is open (matches customer account layout)
+  // Prevent background scrolling when sidebar drawer or command palette is open
   React.useEffect(() => {
-    if (sidebarOpen) {
+    if (sidebarOpen || commandPaletteOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -303,7 +303,7 @@ export default function AdminLayout({
     return () => {
       document.body.style.overflow = "";
     };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, commandPaletteOpen]);
 
   // Fetch live SLA alerts
   React.useEffect(() => {

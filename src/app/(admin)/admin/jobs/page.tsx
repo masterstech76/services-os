@@ -102,7 +102,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     cityZip: "Miami, FL 33145",
     serviceCategory: "thermostat",
     serviceName: "Thermostat Install",
-    techName: "Tony Brooks",
+    techName: "HVAC Systems Lead",
     techRole: "HVAC Tech",
     techColor: "#EC4899", // Pink
     scheduleDay: "Today",
@@ -120,13 +120,13 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1049",
     jobNumber: 1049,
     createdDateText: "May 14",
-    customerName: "Elena Rodriguez",
+    customerName: "Service Client D",
     customerPhone: "(XXX) XXX-XXXX",
     addressLine: "450 Alton Rd",
     cityZip: "Miami Beach, FL 33139",
     serviceCategory: "duct",
     serviceName: "Duct Cleaning",
-    techName: "Maria Alvarez",
+    techName: "Senior Field Tech",
     techRole: "Duct Specialist",
     techColor: "#A855F7", // Purple
     scheduleDay: "Tomorrow",
@@ -150,7 +150,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     cityZip: "Miami, FL 33133",
     serviceCategory: "maintenance",
     serviceName: "AC Tune-Up",
-    techName: "Danny Reyes",
+    techName: "Diagnostic Specialist",
     techRole: "HVAC Tech",
     techColor: "#14B8A6", // Teal
     scheduleDay: "May 16",
@@ -168,7 +168,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1051",
     jobNumber: 1051,
     createdDateText: "May 13",
-    customerName: "Sara Mitchell",
+    customerName: "Service Client E",
     customerPhone: "(XXX) XXX-XXXX",
     addressLine: "1201 Brickell Ave",
     cityZip: "Miami, FL 33131",
@@ -192,7 +192,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1052",
     jobNumber: 1052,
     createdDateText: "May 12",
-    customerName: "Michael Johnson",
+    customerName: "Service Client F",
     customerPhone: "(XXX) XXX-XXXX",
     addressLine: "9100 SW 72nd St",
     cityZip: "Miami, FL 33173",
@@ -216,13 +216,13 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1053",
     jobNumber: 1053,
     createdDateText: "May 12",
-    customerName: "Jessica Lee",
+    customerName: "Service Client G",
     customerPhone: "(XXX) XXX-XXXX",
     addressLine: "600 5th St",
     cityZip: "Miami, FL 33131",
     serviceCategory: "thermostat",
     serviceName: "Thermostat Install",
-    techName: "Tony Brooks",
+    techName: "HVAC Systems Lead",
     techRole: "HVAC Tech",
     techColor: "#EC4899", // Pink
     scheduleDay: "May 17",
@@ -926,9 +926,9 @@ export default function AdminJobsListPage() {
             >
               <option value="all">All Technicians</option>
               <option value="Lead Field Technician">Lead Field Technician</option>
-              <option value="Tony Brooks">Tony Brooks</option>
-              <option value="Maria Alvarez">Maria Alvarez</option>
-              <option value="Danny Reyes">Danny Reyes</option>
+              <option value="HVAC Systems Lead">HVAC Systems Lead</option>
+              <option value="Senior Field Tech">Senior Field Tech</option>
+              <option value="Diagnostic Specialist">Diagnostic Specialist</option>
               <option value="unassigned">Unassigned</option>
             </select>
           </div>
@@ -1560,19 +1560,19 @@ export default function AdminJobsListPage() {
                     score: "98% Match",
                   },
                   {
-                    name: "Tony Brooks",
+                    name: "HVAC Systems Lead",
                     role: "Senior Diagnostic Tech · Truck #02",
                     eta: "19 mins away",
                     score: "94% Match",
                   },
                   {
-                    name: "Maria Alvarez",
+                    name: "Senior Field Tech",
                     role: "Airflow & Duct Specialist · Truck #06",
                     eta: "24 mins away",
                     score: "91% Match",
                   },
                   {
-                    name: "Danny Reyes",
+                    name: "Diagnostic Specialist",
                     role: "Heating & Furnace Specialist · Truck #09",
                     eta: "28 mins away",
                     score: "88% Match",
@@ -1644,9 +1644,9 @@ export default function AdminJobsListPage() {
             </p>
             <select className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-xs text-white">
               <option value="tech-001">Lead Field Technician (Master HVAC)</option>
-              <option value="tech-tony">Tony Brooks (HVAC Tech)</option>
-              <option value="tech-maria">Maria Alvarez (Duct Specialist)</option>
-              <option value="tech-danny">Danny Reyes (Furnaces &amp; IAQ)</option>
+              <option value="tech-004">HVAC Systems Lead (HVAC Tech)</option>
+              <option value="tech-002">Senior Field Tech (Duct Specialist)</option>
+              <option value="tech-003">Diagnostic Specialist (Furnaces &amp; IAQ)</option>
             </select>
             <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
               <button

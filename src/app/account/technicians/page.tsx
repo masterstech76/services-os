@@ -55,7 +55,7 @@ const FLEET_TECHNICIANS = [
   },
   {
     id: "tech-003",
-    name: "Elena Rostova",
+    name: "IAQ & Systems Specialist",
     title: "IAQ & Smart Thermostat Specialist",
     rating: 4.99,
     reviewsCount: 115,

@@ -41,68 +41,68 @@ const DEFAULT_CUSTOMERS: CustomerDirectoryItem[] = [
     id: "C10047",
     name: "Service Client A",
     avatarInitials: "RC",
-    phone: "(555) 310-7842",
-    email: "robert@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Miami, FL",
     status: "Active",
     jobsCount: 12,
   },
   {
     id: "C10046",
-    name: "Maria Alvarez",
+    name: "Senior Field Tech",
     avatarInitials: "MA",
-    phone: "(555) 310-6723",
-    email: "maria@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Miami, FL",
     status: "Active",
     jobsCount: 8,
   },
   {
     id: "C10045",
-    name: "Danny Reyes",
+    name: "Diagnostic Specialist",
     avatarInitials: "DR",
-    phone: "(555) 310-3657",
-    email: "danny@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Orlando, FL",
     status: "Active",
     jobsCount: 15,
   },
   {
     id: "C10044",
-    name: "Sarah Mitchell",
+    name: "Service Client E",
     avatarInitials: "SM",
-    phone: "(555) 310-4433",
-    email: "sarah@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Tampa, FL",
     status: "Active",
     jobsCount: 7,
   },
   {
     id: "C10043",
-    name: "Michael Johnson",
+    name: "Service Client F",
     avatarInitials: "MJ",
-    phone: "(555) 310-2211",
-    email: "michael@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Jacksonville, FL",
     status: "Active",
     jobsCount: 10,
   },
   {
     id: "C10042",
-    name: "Jessica Lee",
+    name: "Service Client G",
     avatarInitials: "JL",
-    phone: "(555) 310-1168",
-    email: "jessica@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Tallahassee, FL",
     status: "Active",
     jobsCount: 6,
   },
   {
     id: "C10041",
-    name: "David Kim",
+    name: "Service Client H",
     avatarInitials: "DK",
-    phone: "(555) 310-6677",
-    email: "david@servicepro.com",
+    phone: "(XXX) XXX-XXXX",
+    email: "user@domain.com",
     location: "Miami, FL",
     status: "Active",
     jobsCount: 14,
@@ -606,7 +606,7 @@ export default function AdminCustomersDirectoryPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Eleanor Vance"
+                  placeholder="e.g. Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
@@ -619,7 +619,7 @@ export default function AdminCustomersDirectoryPage() {
                   <input
                     type="tel"
                     required
-                    placeholder="(555) 019-2831"
+                    placeholder="(XXX) XXX-XXXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"

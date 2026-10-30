@@ -98,7 +98,7 @@ const WORKERS: Record<string, WorkerProfile> = {
       },
       {
         id: "rev-3",
-        author: "Marcus Kowalski",
+        author: "Service Client V",
         neighborhood: "Coral Gables, FL",
         service: "Smart Thermostat Installation & 24V Bridge",
         workOrder: "#WO-1001",
@@ -114,7 +114,7 @@ const WORKERS: Record<string, WorkerProfile> = {
       },
       {
         id: "rev-5",
-        author: "Anthony Vargas",
+        author: "Service Client Q",
         neighborhood: "Doral, FL",
         service: "Emergency Condenser Fan Motor Replacement",
         workOrder: "#WO-0988",
@@ -149,7 +149,7 @@ const WORKERS: Record<string, WorkerProfile> = {
     reviews: [
       {
         id: "rev-2",
-        author: "Elena Santos",
+        author: "Service Client U",
         neighborhood: "Downtown Miami, FL",
         service: "Seasonal AC Tune-Up & Precision Inspection",
         workOrder: "#WO-1002",
@@ -165,7 +165,7 @@ const WORKERS: Record<string, WorkerProfile> = {
       },
       {
         id: "rev-4",
-        author: "Sophia Ramirez",
+        author: "Service Client S",
         neighborhood: "Coconut Grove, FL",
         service: "Refrigerant Schrader Valve Repair & Precision Recharge",
         workOrder: "#WO-0994",
@@ -200,7 +200,7 @@ const WORKERS: Record<string, WorkerProfile> = {
     reviews: [
       {
         id: "rev-6",
-        author: "Robert Chen",
+        author: "Service Client W",
         neighborhood: "Miami Beach, FL",
         service: "Commercial Rooftop RTU Emergency Blower Repair",
         workOrder: "#WO-0972",
@@ -219,7 +219,7 @@ const WORKERS: Record<string, WorkerProfile> = {
   "david-kim": {
     id: "tech-4",
     slug: "david-kim",
-    name: "David Kim",
+    name: "Service Client H",
     title: "Master Heat Pump & Inverter Systems Specialist",
     roleType: "Senior Installation Mechanic",
     rating: 4.92,
@@ -235,7 +235,7 @@ const WORKERS: Record<string, WorkerProfile> = {
     reviews: [
       {
         id: "rev-7",
-        author: "Jessica Taylor",
+        author: "Service Client W",
         neighborhood: "Kendall, FL",
         service: "Ductless Mini-Split Installation & Commissioning",
         workOrder: "#WO-0965",
