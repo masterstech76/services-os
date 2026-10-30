@@ -610,7 +610,8 @@ export default function AdminLayout({
         <>
           {/* Backdrop Click to Close */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] animate-in fade-in duration-200"
+            className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-sm animate-in fade-in duration-200"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
@@ -618,7 +619,8 @@ export default function AdminLayout({
           {/* Left Slide-out Sidebar Drawer (Identical to Customer Account Layout) */}
           <aside
             id="admin-all-menu-sidebar"
-            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[100] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
+            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[1000] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
+            style={{ backgroundColor: "#0B132B", opacity: 1 }}
             aria-label="Admin All Menu Navigation"
           >
             {/* Sidebar Top Header */}

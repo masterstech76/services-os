@@ -445,7 +445,7 @@ export default function AccountLayout({
         <>
           {/* Backdrop Click to Close */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] animate-in fade-in" style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }} aria-label="backdrop duration-200"
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
@@ -453,7 +453,7 @@ export default function AccountLayout({
           {/* Left Slide-out Sidebar Drawer */}
           <aside
             id="client-all-menu-sidebar"
-            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[100] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
+            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[1000] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250" style={{ backgroundColor: "#0B132B", opacity: 1 }}
             aria-label="Client All Menu Navigation"
           >
             {/* Sidebar Top Header */}

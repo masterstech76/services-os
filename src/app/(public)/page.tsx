@@ -225,15 +225,17 @@ export default function ServiceProLandingPage() {
         <>
           {/* Full Screen Dim Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] md:hidden animate-in fade-in duration-200"
+            className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
 
-          {/* Right-Side Drawer Panel: Solid Background, Full Screen Height, Top Z-Index */}
+          {/* Right-Side Drawer Panel: 100% Solid Opaque Background, Full Screen Height */}
           <nav
             id="mobile-nav"
-            className="fixed inset-y-0 right-0 w-[300px] max-w-[85vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[100] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
+            className="fixed inset-y-0 right-0 w-[320px] max-w-[90vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[1000] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
+            style={{ backgroundColor: "#0C1523", opacity: 1 }}
             aria-label="Mobile navigation"
           >
             <div>
