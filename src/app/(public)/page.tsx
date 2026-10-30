@@ -1127,7 +1127,7 @@ export default function ServiceProLandingPage() {
       ───────────────────────────────────────────────────────────── */}
       <footer
         id="site-footer"
-        className="relative bg-[#0B111E] overflow-hidden border-t border-b border-white/10 text-white select-none md:h-[300px] flex flex-col justify-center"
+        className="hidden md:flex relative bg-[#0B111E] overflow-hidden border-t border-b border-white/10 text-white select-none md:h-[300px] flex-col justify-center"
       >
         {/* Residential Home Photograph Background with Restrained Navy Gradient Overlay */}
         <div className="absolute right-0 top-0 bottom-0 w-full sm:w-7/12 opacity-30 sm:opacity-50 pointer-events-none">

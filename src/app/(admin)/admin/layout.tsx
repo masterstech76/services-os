@@ -843,7 +843,7 @@ export default function AdminLayout({
 
       {/* Thin Enterprise System Status Footer (Hidden on Fullscreen /admin/dispatch Board) */}
       {pathname !== "/admin/dispatch" && (
-        <footer className="border-t border-white/10 bg-[#070C16] px-4 sm:px-6 lg:px-8 py-3 text-[11px] text-slate-400">
+        <footer className="hidden md:block border-t border-white/10 bg-[#070C16] px-4 sm:px-6 lg:px-8 py-3 text-[11px] text-slate-400">
           <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-3">
               <Link

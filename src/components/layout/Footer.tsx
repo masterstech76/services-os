@@ -27,16 +27,13 @@ export function Footer() {
   }
 
   // Internal portals & Auth pages manage their own specialized footers (or no footer) inside their layouts.
-  // /subscribe is a pure conversion checkout (like Stripe/ChatGPT Plus) and intentionally has NO footer.
-  const isInternalPortalOrAuthOrSubscribe =
+  const isInternalPortalOrAuth =
     pathname === "/admin" ||
     pathname?.startsWith("/admin/") ||
     pathname === "/tech" ||
     pathname?.startsWith("/tech/") ||
     pathname === "/account" ||
     pathname?.startsWith("/account/") ||
-    pathname?.startsWith("/subscribe") ||
-    pathname === "/subscription" ||
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
@@ -49,7 +46,7 @@ export function Footer() {
     pathname === "/verification-required" ||
     pathname?.startsWith("/auth");
 
-  if (isInternalPortalOrAuthOrSubscribe) {
+  if (isInternalPortalOrAuth) {
     return (
       <footer id="site-footer" className="hidden" aria-hidden="true">
         <span>ServicePro OS Internal Enterprise System</span>
@@ -57,79 +54,44 @@ export function Footer() {
     );
   }
 
-  // Compact Context-Specific Trust Footers for Checkout, Tracking & System Utility Pages
-  if (
+  // ALL Payments, Pricing, Checkout, Booking & Tracking pages get a TINY compact footer
+  // and is completely HIDDEN on mobile screens (hidden md:block)
+  const isPaymentOrCheckoutOrBooking =
+    pathname === "/pricing" ||
+    pathname === "/subscribe" ||
+    pathname?.startsWith("/subscribe") ||
+    pathname === "/subscription" ||
+    pathname === "/pay" ||
+    pathname?.startsWith("/pay") ||
+    pathname === "/payment-success" ||
+    pathname === "/payment-failed" ||
     pathname === "/book" ||
-    pathname === "/book/confirmation" ||
+    pathname?.startsWith("/book") ||
     pathname === "/booking-success" ||
-    pathname === "/booking-failed"
-  ) {
+    pathname === "/booking-failed";
+
+  if (isPaymentOrCheckoutOrBooking) {
     return (
       <footer
         id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
+        className="hidden md:block bg-[#070D18] border-t border-white/10 text-slate-400 text-xs py-3 px-4 sm:px-6 lg:px-8"
       >
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Secure Booking
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-emerald-400 font-semibold inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              256-Bit SSL Encrypted
             </span>
             <span className="text-slate-600">·</span>
-            <span>256-Bit SSL Encrypted</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <a href={phoneHref} className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
-              24/7 Support: {businessConfig.phone}
-            </a>
-          </div>
-        </div>
-      </footer>
-    );
-  }
-
-  if (pathname === "/book/track") {
-    return (
-      <footer
-        id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
-      >
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="text-slate-300 font-medium">Need Help?</span>
-          <a href={phoneHref} className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
-            Call Dispatch: {businessConfig.phone}
-          </a>
-        </div>
-      </footer>
-    );
-  }
-
-  if (
-    pathname === "/pay" ||
-    pathname?.startsWith("/pay/") ||
-    pathname === "/payment-success" ||
-    pathname === "/payment-failed"
-  ) {
-    return (
-      <footer
-        id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
-      >
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-emerald-400 font-semibold">SSL Secure</span>
+            <span className="text-slate-300">PCI-DSS Compliant</span>
             <span className="text-slate-600">·</span>
-            <span className="text-slate-300 font-medium">PCI Protected</span>
+            <span>© {new Date().getFullYear()} {businessConfig.businessName}. All rights reserved.</span>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 text-slate-400">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link>
-            <a href={phoneHref} className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
-              Support: {businessConfig.phone}
-            </a>
+            <Link href="/refund-policy" className="hover:text-white transition-colors">Refunds</Link>
+            <Link href="/security" className="hover:text-white transition-colors">Security</Link>
           </div>
         </div>
       </footer>
@@ -140,7 +102,7 @@ export function Footer() {
     return (
       <footer
         id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
+        className="hidden md:block bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-3">
@@ -160,7 +122,7 @@ export function Footer() {
     return (
       <footer
         id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
+        className="hidden md:block bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-amber-400 font-semibold">System Status: Scheduled Maintenance</span>
@@ -176,7 +138,7 @@ export function Footer() {
     return (
       <footer
         id="site-footer"
-        className="bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
+        className="hidden md:block bg-[#080E1A] border-t border-white/10 text-slate-400 text-xs py-4 px-4 sm:px-6 lg:px-8"
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -201,7 +163,7 @@ export function Footer() {
   return (
     <footer
       id="site-footer"
-      className="relative bg-[#0B111E] overflow-hidden border-t border-b border-white/10 text-white select-none md:h-[300px] flex flex-col justify-center"
+      className="hidden md:flex relative bg-[#0B111E] overflow-hidden border-t border-b border-white/10 text-white select-none md:h-[300px] flex-col justify-center"
     >
       {/* Residential Home Photograph Background with Restrained Navy Gradient Overlay */}
       <div className="absolute right-0 top-0 bottom-0 w-full sm:w-7/12 opacity-30 sm:opacity-50 pointer-events-none">

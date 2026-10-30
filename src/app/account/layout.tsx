@@ -577,7 +577,7 @@ export default function AccountLayout({
 
       {/* Compact Customer Support Footer (Hidden on Live GPS Tracking Workspace) */}
       {!pathname?.endsWith("/track") && (
-        <footer className="border-t border-white/10 bg-[#080E1A] px-4 sm:px-6 lg:px-8 py-4 text-xs text-slate-400">
+        <footer className="hidden md:block border-t border-white/10 bg-[#080E1A] px-4 sm:px-6 lg:px-8 py-4 text-xs text-slate-400">
           <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-4">
               <span className="text-slate-300 font-medium">Need Support?</span>

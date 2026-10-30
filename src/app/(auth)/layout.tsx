@@ -64,7 +64,7 @@ export default function AuthLayout({
 
       {/* Context-Specific Tiny Footer for Auth & Security Boundary Screens */}
       {pathname === "/unauthorized" ? (
-        <footer id="site-footer" className="w-full py-4 text-center text-xs text-slate-400 relative z-10 border-t border-white/10 bg-[#080E1A]">
+        <footer id="site-footer" className="hidden md:block w-full py-4 text-center text-xs text-slate-400 relative z-10 border-t border-white/10 bg-[#080E1A]">
           <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <a href="/login" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
               ← Back to Login
@@ -77,7 +77,7 @@ export default function AuthLayout({
           </div>
         </footer>
       ) : (
-        <footer id="site-footer" className="w-full py-4 text-center text-xs text-slate-500 relative z-10">
+        <footer id="site-footer" className="hidden md:block w-full py-4 text-center text-xs text-slate-500 relative z-10">
           <div className="inline-flex items-center gap-4">
             <a href="/privacy" className="hover:text-slate-300 transition-colors">Privacy</a>
             <span className="text-slate-700">·</span>
