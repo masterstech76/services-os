@@ -60,7 +60,7 @@ interface CustomerDossier {
 
 const DEFAULT_DOSSIER: CustomerDossier = {
   id: "C10047",
-  name: "Robert Caldwell",
+  name: "Service Client A",
   avatarInitials: "RC",
   status: "Active",
   customerIdTag: "#C10047",
@@ -451,7 +451,7 @@ export default function AdminCustomer360Page() {
               <div key={j.id} className="p-3 rounded-xl bg-[#0F172A] border border-white/5 flex items-center justify-between">
                 <div>
                   <div className="font-bold text-white">{j.service}</div>
-                  <div className="text-slate-400 text-[11px]">{j.date} · Serviced by Carlos Mendez</div>
+                  <div className="text-slate-400 text-[11px]">{j.date} · Serviced by Lead Field Technician</div>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   {j.status}

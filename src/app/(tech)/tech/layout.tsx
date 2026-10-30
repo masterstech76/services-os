@@ -224,7 +224,7 @@ export default function TechLayout({
                 </div>
                 <div className="hidden sm:flex flex-col text-left">
                   <span className="text-xs font-bold leading-tight text-white group-hover:text-orange-400 transition-colors">
-                    Carlos Mendez
+                    Technician
                   </span>
                   <span className="text-[10px] text-slate-400 leading-tight">
                     Senior Field Tech
@@ -238,10 +238,10 @@ export default function TechLayout({
                 <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-white/10 bg-[#0F172A] p-4 shadow-2xl z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center gap-3 pb-3 border-b border-white/10">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#F97316] to-amber-400 font-black text-sm text-slate-950">
-                      CM
+                      T
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">Carlos Mendez</div>
+                      <div className="text-xs font-bold text-white">Technician</div>
                       <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 mt-0.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Active On-Duty &bull; #TECH-101

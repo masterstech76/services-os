@@ -244,7 +244,7 @@ export function seedStoreFromConfigAndDemo(store: LocalDbStore): void {
   });
 
   // 4 Demo Technicians per PHASES.md Phase 2:
-  // 1. Carlos Mendez (skills hvac; covers 33125–33135; Mon–Fri 7–16)
+  // 1. Assigned Technician (skills hvac; covers 33125–33135; Mon–Fri 7–16)
   // 2. Danny Reyes (hvac; 33136–33146,33149; Mon–Fri 9–18)
   // 3. Maria Alvarez (hvac; all areas; Tue–Sat 8–17)
   // 4. Tony Brooks (hvac; 33125–33146; Mon–Fri 10–19) + 1 time-off next Wednesday
@@ -260,9 +260,9 @@ export function seedStoreFromConfigAndDemo(store: LocalDbStore): void {
 
   const demoTechs = [
     {
-      id: "tech-carlos",
-      name: "Carlos Mendez",
-      phone: "(305) 555-0101",
+      id: "tech-001",
+      name: "Assigned Technician",
+      phone: "(XXX) XXX-XXXX",
       email: "carlos@coolairmiami.com",
       skills: ["hvac"],
       zip_codes: zips33125_33135,
@@ -275,7 +275,7 @@ export function seedStoreFromConfigAndDemo(store: LocalDbStore): void {
     {
       id: "tech-danny",
       name: "Danny Reyes",
-      phone: "(305) 555-0102",
+      phone: "(XXX) XXX-XXXX",
       email: "danny@coolairmiami.com",
       skills: ["hvac"],
       zip_codes: zips33136_33146_33149,
@@ -288,7 +288,7 @@ export function seedStoreFromConfigAndDemo(store: LocalDbStore): void {
     {
       id: "tech-maria",
       name: "Maria Alvarez",
-      phone: "(305) 555-0103",
+      phone: "(XXX) XXX-XXXX",
       email: "maria@coolairmiami.com",
       skills: ["hvac"],
       zip_codes: [], // all areas
@@ -301,7 +301,7 @@ export function seedStoreFromConfigAndDemo(store: LocalDbStore): void {
     {
       id: "tech-tony",
       name: "Tony Brooks",
-      phone: "(305) 555-0104",
+      phone: "(XXX) XXX-XXXX",
       email: "tony@coolairmiami.com",
       skills: ["hvac"],
       zip_codes: zips33125_33146,

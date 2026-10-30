@@ -41,7 +41,7 @@ interface LeaveRecord {
 const INITIAL_RECORDS: LeaveRecord[] = [
   {
     id: "LEV-1042",
-    workerName: "Carlos Mendez (Van #104)",
+    workerName: "",
     startDate: "2026-11-04",
     endDate: "2026-11-06",
     timeRange: "All Day",
@@ -54,7 +54,7 @@ const INITIAL_RECORDS: LeaveRecord[] = [
   },
   {
     id: "LEV-1039",
-    workerName: "Carlos Mendez (Van #104)",
+    workerName: "",
     startDate: "2026-10-12",
     endDate: "2026-10-12",
     timeRange: "01:00 PM - 05:00 PM",
@@ -85,7 +85,7 @@ const DURATION_PRESETS = [
 ];
 
 export default function TechLeavePage() {
-  const [workerName, setWorkerName] = React.useState("Carlos Mendez (Van #104)");
+  const [workerName, setWorkerName] = React.useState("");
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
   const [isAllDay, setIsAllDay] = React.useState(true);
@@ -111,13 +111,13 @@ export default function TechLeavePage() {
   const handleVanBreakdownAlert = () => {
     const newRecord: LeaveRecord = {
       id: `EMG-${Math.floor(1000 + Math.random() * 9000)}`,
-      workerName: "Carlos Mendez (Van #104)",
+      workerName: workerName || "Assigned Technician",
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
       timeRange: "Immediate",
       duration: "Immediate Roadside",
       reason: "Van Breakdown / Roadside Towing",
-      notes: "Van #104 experiencing mechanical breakdown. GPS ping sent to dispatch. Tow truck requested.",
+      notes: "Fleet vehicle experiencing mechanical breakdown. GPS ping sent to dispatch. Tow truck requested.",
       isEmergency: true,
       status: "emergency_dispatched",
       submittedAt: new Date().toLocaleString(),

@@ -46,7 +46,7 @@ const DEFAULT_VAN_STOCK: VanPartItem[] = [
 const DEFAULT_MOVEMENTS: InventoryMovement[] = [
   {
     id: "mov_demo_1",
-    technicianId: "tech-carlos",
+    technicianId: "tech-001",
     jobId: "job-1004",
     partId: "van_part_1",
     partName: "Dual Run Capacitor 45/5 MFD 440V",
@@ -173,7 +173,7 @@ export default function JobPartsPage() {
         );
         const newMov: InventoryMovement = {
           id: `mov_${Date.now()}`,
-          technicianId: "tech-carlos",
+          technicianId: "tech-001",
           jobId,
           partId: selectedPart.id,
           partName: selectedPart.name,

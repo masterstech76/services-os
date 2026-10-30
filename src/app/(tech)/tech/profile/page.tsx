@@ -68,11 +68,11 @@ const AVAILABLE_CERTS = [
 ];
 
 const DEFAULT_TECH_PROFILE: TechProfileData = {
-  id: "tech-carlos",
-  name: "Carlos Mendez",
-  email: "carlos@servicepro-os.com",
-  phone: "(305) 555-0188",
-  emergencyPhone: "(305) 555-0199",
+  id: "",
+  name: "",
+  email: "",
+  phone: "",
+  emergencyPhone: "",
   bio: "Master HVAC Specialist with over 12 years of hands-on diagnostic and mechanical troubleshooting experience in South Florida. Expert in high-efficiency variable-speed inverters, emergency heat pumps, and duct balancing.",
   territory: "Miami-Dade & Brickell / Downtown Corridor",
   role: "Lead Master HVAC Technician",
@@ -182,7 +182,7 @@ export default function TechProfilePage() {
     setEditName(data.name);
     setEditEmail(data.email || "carlos@servicepro-os.com");
     setEditPhone(data.phone);
-    setEditEmergencyPhone(data.emergencyPhone || "(305) 555-0199");
+    setEditEmergencyPhone(data.emergencyPhone || "(XXX) XXX-XXXX");
     setEditBio(data.bio || "");
     setEditVehicleModel(data.vehicle.model);
     setEditVehiclePlate(data.vehicle.plate);

@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, ArrowLeft, PhoneCall } from "lucide-react";
+import { Menu, X, ArrowLeft, PhoneCall, ChevronRight } from "lucide-react";
 import { BrandTagline } from "@/components/brand/BrandTagline";
 import { businessConfig } from "@config/business.config";
 
@@ -78,7 +78,8 @@ export function Navbar() {
   const isEmergency = pathname?.includes("emergency");
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0C1523]/90 backdrop-blur-md border-b border-white/10 transition-colors">
+    <>
+      <header className="sticky top-0 z-50 bg-[#0C1523]/90 backdrop-blur-md border-b border-white/10 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
         {/* Brand Logo: Clean Transparent Brand Icon + ServicePro OS + Tagline Underneath */}
@@ -119,145 +120,156 @@ export function Navbar() {
         {/* Accessible Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-[#F97316]"
+          className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-[#F97316] cursor-pointer"
           aria-label="Toggle mobile menu"
           aria-expanded={mobileMenuOpen}
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
+    </header>
 
-      {/* Mobile Right-Side Hamburger Slide-Out Drawer & Backdrop */}
-      {mobileMenuOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden animate-in fade-in duration-200"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
+    {/* Mobile Right-Side Hamburger Slide-Out Drawer & Backdrop (Rendered outside <header> so backdrop-filter does NOT trap it) */}
+    {mobileMenuOpen && (
+      <>
+        {/* Full-Screen Dim Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] md:hidden animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
 
-          {/* Right-Side Drawer Panel */}
-          <nav
-            id="mobile-nav"
-            className="fixed inset-y-0 right-0 w-[290px] sm:w-[320px] bg-[#0C1523]/95 backdrop-blur-2xl border-l border-white/10 z-50 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden"
-            aria-label="Mobile navigation"
-          >
-            <div>
-              {/* Drawer Header: Brand + Tagline + Close Button */}
-              <div className="flex items-center justify-between pb-5 border-b border-white/10">
-                <Link
-                  href="/"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5"
-                >
-                  <img
-                    src="/images/servicepro-icon-transparent.png?v=green"
-                    alt="ServicePro OS"
-                    className="h-8 w-auto object-contain"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-base font-bold text-white leading-tight">
-                      ServicePro <span className="text-[#F97316]">OS</span>
-                    </span>
-                    <BrandTagline size="sm" className="mt-0.5" />
-                  </div>
-                </Link>
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-                  aria-label="Close menu"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Core Quick Navigation (Non-Footer Action & Discovery Pages Only — Zero Duplicates) */}
-              <div className="py-5 space-y-1.5 overflow-y-auto max-h-[65vh]">
-                <Link
-                  href="/book"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-semibold text-[#F97316] hover:bg-white/5 transition-colors"
-                >
-                  Book Service
-                </Link>
-                <Link
-                  href="/book/track"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Track Booking
-                </Link>
-                <Link
-                  href="/services"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Services
-                </Link>
-                <Link
-                  href="/technicians"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Technicians
-                </Link>
-                <Link
-                  href="/pricing"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/gallery"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Gallery
-                </Link>
-                <Link
-                  href="/service-areas"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Service Areas
-                </Link>
-                <Link
-                  href="/pages"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                >
-                  Pages Directory
-                </Link>
-              </div>
-            </div>
-
-            {/* Bottom Actions Inside Mobile Right Drawer */}
-            <div className="pt-5 border-t border-white/10 flex flex-col gap-3">
-              {isEmergency && (
-                <a
-                  href={`tel:${businessConfig.phone.replace(/[^0-9]/g, "")}`}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full bg-red-600 text-white font-semibold text-sm shadow-md"
-                >
-                  <PhoneCall className="w-4 h-4" />
-                  <span>Call 24/7 Emergency Dispatch</span>
-                </a>
-              )}
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleGoBack();
-                }}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full border border-white/20 bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-all shadow-sm"
+        {/* Right-Side Drawer Panel: Solid Background, Full Screen Height, Top Z-Index */}
+        <nav
+          id="mobile-nav"
+          className="fixed inset-y-0 right-0 w-[300px] max-w-[85vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[100] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
+          aria-label="Mobile navigation"
+        >
+          <div>
+            {/* Drawer Header: Brand + Tagline + Close Button */}
+            <div className="flex items-center justify-between pb-5 border-b border-white/10">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5"
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Go Back</span>
+                <img
+                  src="/images/servicepro-icon-transparent.png?v=green"
+                  alt="ServicePro OS"
+                  className="h-8 w-auto object-contain"
+                />
+                <div className="flex flex-col">
+                  <span className="text-base font-bold text-white leading-tight">
+                    ServicePro <span className="text-[#F97316]">OS</span>
+                  </span>
+                  <BrandTagline size="sm" className="mt-0.5" />
+                </div>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316] cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </nav>
-        </>
-      )}
-    </header>
+
+            {/* Core Quick Navigation */}
+            <div className="py-5 space-y-1.5 overflow-y-auto max-h-[65vh]">
+              <Link
+                href="/book"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-[#F97316] hover:bg-white/5 transition-colors"
+              >
+                <span>Book Service</span>
+                <ChevronRight className="w-4 h-4 text-[#F97316]" />
+              </Link>
+              <Link
+                href="/book/track"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Track Booking</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/services"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Services</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/technicians"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Technicians</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Pricing</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/gallery"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Gallery</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/service-areas"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Service Areas</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+              <Link
+                href="/pages"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <span>Pages Directory</span>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Bottom Actions Inside Mobile Right Drawer */}
+          <div className="pt-5 border-t border-white/10 flex flex-col gap-3 shrink-0">
+            {isEmergency && (
+              <a
+                href={`tel:${businessConfig.phone.replace(/[^0-9]/g, "")}`}
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full bg-red-600 text-white font-semibold text-sm shadow-md"
+              >
+                <PhoneCall className="w-4 h-4" />
+                <span>Call 24/7 Emergency Dispatch</span>
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleGoBack();
+              }}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-full border border-white/20 bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-all shadow-sm cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Go Back</span>
+            </button>
+          </div>
+        </nav>
+      </>
+    )}
+  </>
   );
 }

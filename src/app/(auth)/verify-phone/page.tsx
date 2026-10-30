@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 function VerifyPhoneContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const phoneParam = searchParams.get("phone") || "(305) 555-0144";
+  const phoneParam = searchParams.get("phone") || "";
 
   const [otp, setOtp] = React.useState<string[]>(["", "", "", "", "", ""]);
   const [timer, setTimer] = React.useState(45);

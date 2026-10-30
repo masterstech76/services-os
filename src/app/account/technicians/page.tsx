@@ -22,8 +22,8 @@ import { businessConfig } from "@config/business.config";
 import { BookingMiniWindowModal } from "@/components/booking/BookingMiniWindowModal";
 
 const ASSIGNED_TECHNICIAN = {
-  id: "tech-carlos",
-  name: "Carlos Mendez",
+  id: "tech-001",
+  name: "Lead Field Specialist",
   title: "Lead Master HVAC Specialist",
   rating: 4.98,
   reviewsCount: 142,
@@ -33,7 +33,7 @@ const ASSIGNED_TECHNICIAN = {
   status: "En Route to Property",
   etaMinutes: 18,
   vehicle: "ServicePro Mobile Tech Van #04 (Equipped)",
-  phone: "(305) 555-0188",
+  phone: "",
   jobId: "job-1004",
   serviceName: "Emergency HVAC Diagnostic & Coil Restoration",
   avatarUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80",
@@ -43,25 +43,25 @@ const ASSIGNED_TECHNICIAN = {
 
 const FLEET_TECHNICIANS = [
   {
-    id: "tech-marcus",
-    name: "Marcus Vance",
+    id: "tech-002",
+    name: "Senior HVAC Specialist",
     title: "Senior Heat Pump & Inverter Technician",
     rating: 4.95,
     reviewsCount: 98,
     yearsExperience: 11,
     status: "On-Call / Standby",
-    phone: "(305) 555-0192",
+    phone: "(XXX) XXX-XXXX",
     badges: ["Inverter Systems", "Heat Pump Pro", "EPA Certified"],
   },
   {
-    id: "tech-elena",
+    id: "tech-003",
     name: "Elena Rostova",
     title: "IAQ & Smart Thermostat Specialist",
     rating: 4.99,
     reviewsCount: 115,
     yearsExperience: 8,
     status: "Available for Next Dispatch",
-    phone: "(305) 555-0147",
+    phone: "(XXX) XXX-XXXX",
     badges: ["IAQ Master", "Ecobee/Nest Pro", "Ductwork Specialist"],
   },
 ];
@@ -265,3 +265,4 @@ export default function AccountTechniciansPage() {
     </div>
   );
 }
+

@@ -49,29 +49,29 @@ interface TechOption {
 const CUSTOMERS: CustomerOption[] = [
   {
     id: "cust-1",
-    name: "Robert Caldwell",
-    phone: "+1 (305) 555-0180",
+    name: "Service Client A",
+    phone: "+1 (XXX) XXX-XXXX",
     address: "Miami, FL 33145",
     type: "Residential",
   },
   {
     id: "cust-2",
     name: "Elena Rostova",
-    phone: "+1 (305) 555-0199",
+    phone: "+1 (XXX) XXX-XXXX",
     address: "1220 SW 8th St, Miami, FL 33130",
     type: "Residential",
   },
   {
     id: "cust-3",
-    name: "Marcus Vance",
-    phone: "+1 (305) 555-0182",
+    name: "Senior HVAC Specialist",
+    phone: "+1 (XXX) XXX-XXXX",
     address: "2100 Biscayne Blvd, Miami, FL 33137",
     type: "Commercial",
   },
   {
     id: "cust-4",
     name: "Sophia Lorenzi",
-    phone: "+1 (305) 555-0144",
+    phone: "+1 (XXX) XXX-XXXX",
     address: "305 Lincoln Rd, Miami Beach, FL 33139",
     type: "Residential",
   },
@@ -118,8 +118,8 @@ const SERVICES: ServiceOption[] = [
 
 const TECHNICIANS: TechOption[] = [
   {
-    id: "tech-carlos",
-    name: "Carlos Mendez",
+    id: "tech-001",
+    name: "Lead Field Technician",
     role: "HVAC Specialist",
     avatar: "/images/avatar-david.jpg",
     available: true,
@@ -161,7 +161,7 @@ export default function AdminCreateJobPage() {
 
   const [preferredDate, setPreferredDate] = React.useState("May 14, 2025");
   const [timeSlot, setTimeSlot] = React.useState("9:00 AM - 11:00 AM");
-  const [selectedTechId, setSelectedTechId] = React.useState("tech-carlos");
+  const [selectedTechId, setSelectedTechId] = React.useState("tech-001");
 
   const [servicePrice, setServicePrice] = React.useState("120.00");
   const [partsCost, setPartsCost] = React.useState("35.00");
@@ -578,7 +578,7 @@ export default function AdminCreateJobPage() {
                   type="text"
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
-                  placeholder="+1 (305) 555-0100"
+                  placeholder="+1 (XXX) XXX-XXXX"
                   className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1"
                 />
               </div>

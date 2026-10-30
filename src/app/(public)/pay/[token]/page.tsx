@@ -39,9 +39,9 @@ const FALLBACK_INVOICE_JOB: EnrichedJob = {
   zip: "33131",
   customer: {
     id: "cust-1004",
-    name: "David Miller",
-    phone: "(305) 555-0144",
-    email: "david.miller@brickell.com",
+    name: "Customer",
+    phone: businessConfig.phone,
+    email: "customer@domain.com",
     cardBrand: "Visa",
     cardLast4: "4242",
     smsOptOut: false,
@@ -57,10 +57,10 @@ const FALLBACK_INVOICE_JOB: EnrichedJob = {
     minBillableMinutes: 60,
   },
   technician: {
-    id: "tech-carlos",
-    name: "Carlos Mendez",
-    phone: "(305) 555-0188",
-    email: "carlos@servicepro-os.com",
+    id: "tech-lead",
+    name: "Assigned Lead Specialist",
+    phone: businessConfig.phone,
+    email: "dispatch@servicepro-os.com",
     color: "#F97316",
     commissionPct: 20,
   },
@@ -112,7 +112,7 @@ export default function CustomerPayInvoicePage() {
   const [lastTxId, setLastTxId] = React.useState<string | null>(null);
 
   const [payMethod, setPayMethod] = React.useState<"card_on_file" | "new_card" | "check">("card_on_file");
-  const [cardName, setCardName] = React.useState("David Miller");
+  const [cardName, setCardName] = React.useState("Service Client");
   const [cardNumber, setCardNumber] = React.useState("");
   const [cardExpiry, setCardExpiry] = React.useState("");
   const [cardCvc, setCardCvc] = React.useState("");

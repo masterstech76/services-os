@@ -119,7 +119,7 @@ const INITIAL_CREDENTIALS: EnvMap = {
   INITIAL_OWNER_EMAIL: "owner@servicepro-os.com",
   INITIAL_OWNER_PASSWORD: "",
   BUSINESS_NAME: "ServicePro OS Miami",
-  DISPATCH_PHONE: "(305) 555-0100",
+  DISPATCH_PHONE: "(XXX) XXX-XXXX",
 };
 
 export default function AdminInfrastructureLockerPage() {

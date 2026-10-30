@@ -39,7 +39,7 @@ export interface CustomerDirectoryItem {
 const DEFAULT_CUSTOMERS: CustomerDirectoryItem[] = [
   {
     id: "C10047",
-    name: "Robert Caldwell",
+    name: "Service Client A",
     avatarInitials: "RC",
     phone: "(555) 310-7842",
     email: "robert@servicepro.com",

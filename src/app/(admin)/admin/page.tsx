@@ -114,7 +114,7 @@ export default function AdminOverviewPage() {
       title: (
         <span>
           <strong className="text-white font-semibold">Job #1037</strong> assigned to{" "}
-          <strong className="text-white font-semibold">Carlos Mendez</strong>
+          <strong className="text-white font-semibold">Lead Field Technician</strong>
         </span>
       ),
       meta: "AC Repair • 3100 NW 7th St",
@@ -153,7 +153,7 @@ export default function AdminOverviewPage() {
       title: (
         <span>
           <strong className="text-white font-semibold">Invoice #INV-1007</strong> paid by{" "}
-          <strong className="text-white font-semibold">Robert Caldwell</strong>
+          <strong className="text-white font-semibold">Service Client</strong>
         </span>
       ),
       meta: "$227.40 • AC Repair",
@@ -168,9 +168,9 @@ export default function AdminOverviewPage() {
       timeEnd: "9:30 AM",
       service: "AC Repair",
       address: "3100 NW 7th St, Miami, FL 33125",
-      techName: "Carlos Mendez",
+      techName: "Lead Field Technician",
       dotColor: "bg-blue-500",
-      techId: "tech-carlos",
+      techId: "tech-001",
     },
     {
       timeStart: "10:00 AM",
@@ -213,12 +213,12 @@ export default function AdminOverviewPage() {
   // Top technicians today
   const topTechs = [
     {
-      name: "Carlos Mendez",
+      name: "Lead Field Technician",
       role: "HVAC Specialist",
       completedJobs: 4,
       revenue: "$1,820",
       avatar: "/images/avatar-david.jpg",
-      id: "tech-carlos",
+      id: "tech-001",
     },
     {
       name: "Maria Alvarez",

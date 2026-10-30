@@ -152,7 +152,7 @@ export function WorkerProfileModal({
                 )}
               </div>
               <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F97316] text-[#0C1523] uppercase tracking-wider shadow">
-                {worker.vanNumber || "Van #104"}
+                {worker.vanNumber || "Fleet Unit"}
               </span>
             </div>
 
@@ -205,7 +205,7 @@ export function WorkerProfileModal({
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Service Van</span>
-              <span className="text-sm font-black text-white mt-0.5 block">{worker.vanNumber || "Van #104"}</span>
+              <span className="text-sm font-black text-white mt-0.5 block">{worker.vanNumber || "Fleet Unit"}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 text-center">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">5-Star Ratio</span>

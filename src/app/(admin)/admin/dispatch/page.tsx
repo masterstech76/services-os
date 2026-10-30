@@ -93,12 +93,12 @@ export default function AdminDispatchBoardPage() {
     title: "Thermostat Install",
     timeWindow: "Today, 10:00 AM - 11:30 AM (1h 30m)",
     address: "3100 NW 7th St, Miami, FL 33125",
-    customerName: "Robert Caldwell",
-    customerPhone: "(305) 555-0123",
+    customerName: "Service Client A",
+    customerPhone: "(XXX) XXX-XXXX",
     service: "Thermostat Installation - Smart Thermostat",
     priority: "Medium",
     assignedTech: {
-      name: "Carlos Mendez",
+      name: "Lead Field Technician",
       avatar: "/images/avatar-david.jpg",
       status: "On Job",
     },
@@ -185,7 +185,7 @@ export default function AdminDispatchBoardPage() {
       estimate: "$189.00",
       serviceCategory: "HVAC Emergency Cooling",
       customerName: "Elena Rostova",
-      customerPhone: "(305) 555-0199",
+      customerPhone: "(XXX) XXX-XXXX",
       notes: ["Compressor humming, no cold air.", "Gate code #4412."],
     },
     {
@@ -197,8 +197,8 @@ export default function AdminDispatchBoardPage() {
       timeWindow: "Today, 11:30 AM - 1:30 PM",
       estimate: "$249.00",
       serviceCategory: "Controls & Smart Home",
-      customerName: "Marcus Vance",
-      customerPhone: "(305) 555-0182",
+      customerName: "Senior HVAC Specialist",
+      customerPhone: "(XXX) XXX-XXXX",
       notes: ["Ecobee SmartThermostat with Sensor.", "Customer will be home at 11:15 AM."],
     },
     {
@@ -211,7 +211,7 @@ export default function AdminDispatchBoardPage() {
       estimate: "$129.00",
       serviceCategory: "Air Quality & Ventilation",
       customerName: "Sophia Lorenzi",
-      customerPhone: "(305) 555-0144",
+      customerPhone: "(XXX) XXX-XXXX",
       notes: ["Bi-annual allergen sanitization.", "Street parking voucher provided."],
     },
     {
@@ -223,8 +223,8 @@ export default function AdminDispatchBoardPage() {
       timeWindow: "Today, 2:30 PM - 5:00 PM",
       estimate: "$199.00",
       serviceCategory: "Plumbing & Hot Water",
-      customerName: "David Miller",
-      customerPhone: "(305) 555-0167",
+      customerName: "Service Client C",
+      customerPhone: "(XXX) XXX-XXXX",
       notes: ["Pilot light intermittent.", "Water heater located in garage utility closet."],
     },
   ];
@@ -234,7 +234,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "dispatch-1038",
       jobNumber: "#1038",
-      techName: "Carlos Mendez",
+      techName: "Lead Field Technician",
       techAvatar: "/images/avatar-david.jpg",
       techStatus: "On Job",
       techStatusColor: "bg-emerald-400",
@@ -243,8 +243,8 @@ export default function AdminDispatchBoardPage() {
       eta: "ETA 12 min",
       scheduledTime: "10:30 AM",
       estimate: "$249.00",
-      customerName: "Robert Caldwell",
-      customerPhone: "(305) 555-0123",
+      customerName: "Service Client A",
+      customerPhone: "(XXX) XXX-XXXX",
       priority: "Medium",
       serviceDetail: "Thermostat Installation - Smart Thermostat",
       notes: ["Customer requested Nest thermostat.", "Be on time (10:00 AM)."],
@@ -262,7 +262,7 @@ export default function AdminDispatchBoardPage() {
       scheduledTime: "11:00 AM",
       estimate: "$249.00",
       customerName: "Samantha Reed",
-      customerPhone: "(305) 555-0188",
+      customerPhone: "(XXX) XXX-XXXX",
       priority: "Medium",
       serviceDetail: "Smart Thermostat Integration & Wiring",
       notes: ["Old Honeywell unit replacement.", "Check C-wire voltage."],
@@ -280,7 +280,7 @@ export default function AdminDispatchBoardPage() {
       scheduledTime: "12:30 PM",
       estimate: "$179.00",
       customerName: "Anthony Ramos",
-      customerPhone: "(305) 555-0155",
+      customerPhone: "(XXX) XXX-XXXX",
       priority: "High",
       serviceDetail: "Full Ductwork Sanitization & HEPA filtration",
       notes: ["Commercial suite on 4th floor.", "Loading bay access code #9021."],
@@ -298,7 +298,7 @@ export default function AdminDispatchBoardPage() {
       scheduledTime: "1:30 PM",
       estimate: "$210.00",
       customerName: "Valerie Gomez",
-      customerPhone: "(305) 555-0131",
+      customerPhone: "(XXX) XXX-XXXX",
       priority: "High",
       serviceDetail: "Condenser Fan Motor Replacement",
       notes: ["Requires 1/3 HP motor from truck inventory."],
@@ -316,7 +316,7 @@ export default function AdminDispatchBoardPage() {
       scheduledTime: "2:00 PM",
       estimate: "$199.00",
       customerName: "Benjamin Clark",
-      customerPhone: "(305) 555-0190",
+      customerPhone: "(XXX) XXX-XXXX",
       priority: "Low",
       serviceDetail: "50-Gallon Gas Water Heater Diagnostic",
       notes: ["Customer requested afternoon arrival window."],
@@ -488,7 +488,7 @@ export default function AdminDispatchBoardPage() {
   // Quick call tech
   const handleCallTech = () => {
     toast.info(`Calling ${selectedJob.assignedTech.name}...`, {
-      description: `Dialing field unit direct line: (305) 555-0149`,
+      description: `Dialing field unit direct line: (XXX) XXX-XXXX`,
     });
   };
 

@@ -240,7 +240,7 @@ export default function AccountLayout({
                       <Wrench className="h-3.5 w-3.5 text-orange-400 shrink-0 mt-0.5" />
                       <div>
                         <div className="font-semibold text-white">Technician Assigned</div>
-                        <div className="text-[11px] text-slate-300">Carlos Mendez is scheduled for your AC diagnostic.</div>
+                        <div className="text-[11px] text-slate-300">Your technician is scheduled for your upcoming service.</div>
                       </div>
                     </Link>
 
@@ -285,7 +285,7 @@ export default function AccountLayout({
                 </div>
                 <div className="hidden sm:flex flex-col text-left">
                   <span className="text-xs font-bold leading-tight text-white group-hover:text-orange-400 transition-colors">
-                    Maria Rivera
+                    My Account
                   </span>
                   <span className="text-[10px] text-slate-400 leading-tight">
                     Homeowner Client
@@ -302,10 +302,10 @@ export default function AccountLayout({
                       MR
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-white">Maria Rivera</div>
+                      <div className="text-xs font-bold text-white">My Account</div>
                       <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 mt-0.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Verified Account &bull; Client #CL-90210
+                        Verified Account &bull; Verified Account
                       </div>
                     </div>
                   </div>
@@ -445,7 +445,7 @@ export default function AccountLayout({
         <>
           {/* Backdrop Click to Close */}
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] animate-in fade-in duration-200"
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
@@ -453,7 +453,7 @@ export default function AccountLayout({
           {/* Left Slide-out Sidebar Drawer */}
           <aside
             id="client-all-menu-sidebar"
-            className="fixed inset-y-0 left-0 w-80 sm:w-96 bg-[#0B132B]/95 backdrop-blur-2xl border-r border-white/10 z-50 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
+            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[100] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
             aria-label="Client All Menu Navigation"
           >
             {/* Sidebar Top Header */}

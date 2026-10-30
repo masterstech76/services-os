@@ -49,7 +49,7 @@ export default function AdminJobDetailPage() {
 
   // Dynamic status state
   const [status, setStatus] = React.useState<"In Progress" | "Completed" | "On Hold" | "Scheduled">("In Progress");
-  const [assignedTech, setAssignedTech] = React.useState("Carlos Mendez");
+  const [assignedTech, setAssignedTech] = React.useState("Lead Field Technician");
   const [reassignOpen, setReassignOpen] = React.useState(false);
 
   const timelineEvents: TimelineEvent[] = [
@@ -65,7 +65,7 @@ export default function AdminJobDetailPage() {
       id: "ev-2",
       title: "Technician Assigned",
       time: "May 14, 2025 · 08:45 AM",
-      subtext: "Carlos Mendez",
+      subtext: "Lead Field Technician",
       dotColor: "bg-blue-400",
       completed: true,
     },
@@ -164,7 +164,7 @@ export default function AdminJobDetailPage() {
           <div className="relative w-11 h-11 rounded-full overflow-hidden border border-white/20 shrink-0 bg-slate-800">
             <img
               src="/images/avatar-1.jpg"
-              alt="Robert Caldwell"
+              alt="Service Client A"
               className="w-full h-full object-cover"
             />
           </div>
@@ -172,8 +172,8 @@ export default function AdminJobDetailPage() {
             <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
               Customer
             </div>
-            <div className="text-xs font-bold text-white truncate mt-0.5">Robert Caldwell</div>
-            <div className="text-[11px] text-slate-400 truncate mt-0.5">+1 (305) 555-0180</div>
+            <div className="text-xs font-bold text-white truncate mt-0.5">Service Client A</div>
+            <div className="text-[11px] text-slate-400 truncate mt-0.5">+1 (XXX) XXX-XXXX</div>
             <div className="text-[11px] text-slate-400 truncate">Miami, FL 33145</div>
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function AdminJobDetailPage() {
           <div className="relative w-11 h-11 rounded-full overflow-hidden border border-white/20 shrink-0 bg-slate-800">
             <img
               src="/images/avatar-david.jpg"
-              alt="Carlos Mendez"
+              alt="Lead Field Technician"
               className="w-full h-full object-cover"
             />
           </div>
@@ -279,7 +279,7 @@ export default function AdminJobDetailPage() {
                     <User className="w-3.5 h-3.5 text-slate-500" />
                     <span>Technician</span>
                   </span>
-                  <span className="text-white font-medium">Carlos Mendez</span>
+                  <span className="text-white font-medium">Lead Field Technician</span>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 border-t border-white/5">
@@ -405,8 +405,8 @@ export default function AdminJobDetailPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-2">
-              <div className="text-slate-400">Full Name: <span className="text-white font-bold">Robert Caldwell</span></div>
-              <div className="text-slate-400">Phone: <span className="text-white font-bold">+1 (305) 555-0180</span></div>
+              <div className="text-slate-400">Full Name: <span className="text-white font-bold">Service Client A</span></div>
+              <div className="text-slate-400">Phone: <span className="text-white font-bold">+1 (XXX) XXX-XXXX</span></div>
               <div className="text-slate-400">Email: <span className="text-white font-bold">r.caldwell@gmail.com</span></div>
             </div>
             <div className="space-y-2">
@@ -427,11 +427,11 @@ export default function AdminJobDetailPage() {
           <div className="flex items-center gap-4">
             <img
               src="/images/avatar-david.jpg"
-              alt="Carlos Mendez"
+              alt="Lead Field Technician"
               className="w-14 h-14 rounded-full object-cover border border-white/20"
             />
             <div>
-              <div className="text-base font-bold text-white">Carlos Mendez</div>
+              <div className="text-base font-bold text-white">Lead Field Technician</div>
               <div className="text-xs text-slate-400">HVAC Specialist · EPA Certified Section 608 Universal</div>
               <div className="text-xs text-emerald-400 mt-1">★ 4.8 Rating (24 reviews) · Zone A Master Tech</div>
             </div>
@@ -492,7 +492,7 @@ export default function AdminJobDetailPage() {
 
             <div className="space-y-2">
               {[
-                { name: "Carlos Mendez", role: "Master HVAC Tech · Truck #04", eta: "On Site / 8 mins", match: "98% Match" },
+                { name: "Lead Field Technician", role: "Master HVAC Tech · Truck #04", eta: "On Site / 8 mins", match: "98% Match" },
                 { name: "Tony Brooks", role: "Senior Diagnostic Tech · Truck #02", eta: "14 mins away", match: "95% Match" },
                 { name: "Maria Alvarez", role: "Airflow & Duct Specialist · Truck #06", eta: "19 mins away", match: "91% Match" },
                 { name: "Danny Reyes", role: "Heating & Furnace Specialist · Truck #09", eta: "24 mins away", match: "89% Match" },

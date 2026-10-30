@@ -30,9 +30,9 @@ import { toast } from "sonner";
 export default function AdminTechnicianDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const techId = params?.id ?? "tech-carlos";
+  const techId = params?.id ?? "tech-001";
   const isCarlos = !techId || techId.includes("carlos") || techId.includes("1038") || techId.includes("1047");
-  const techName = isCarlos ? "Carlos Mendez" : "Robert Caldwell";
+  const techName = isCarlos ? "Lead Field Technician" : "Service Client A";
   const techTag = isCarlos ? "#T1038 · HVAC Specialist" : "#T1047 · HVAC Specialist";
 
   const [activeTab, setActiveTab] = React.useState<

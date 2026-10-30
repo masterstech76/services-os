@@ -49,7 +49,7 @@ interface GoogleReviewItem {
 const REVIEWS_DATA: GoogleReviewItem[] = [
   {
     id: "rev-1",
-    author: "David Miller",
+    author: "Verified Customer",
     avatarLetter: "D",
     avatarColor: "bg-blue-600",
     isLocalGuide: true,
@@ -379,9 +379,9 @@ export default function ReviewsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { slug: "carlos-mendez", name: "Carlos Mendez", title: "Lead Diagnostic Master", van: "Fleet Unit Alpha", rating: "4.96", count: 148, spec: "Electrical & Inverter Diagnostics" },
-                { slug: "marcus-vance", name: "Marcus Vance", title: "Senior Maintenance Spec", van: "Fleet Unit Beta", rating: "4.94", count: 112, spec: "Tune-Ups & IAQ Balancing" },
-                { slug: "elena-rivera", name: "Elena Rivera", title: "Commercial Lead Mechanic", van: "Fleet Unit Gamma", rating: "4.98", count: 94, spec: "Commercial Rooftop RTUs" },
+                { slug: "carlos-mendez", name: "Lead Field Specialist", title: "Lead Diagnostic Master", van: "Fleet Unit Alpha", rating: "4.96", count: 148, spec: "Electrical & Inverter Diagnostics" },
+                { slug: "marcus-vance", name: "Senior HVAC Specialist", title: "Senior Maintenance Spec", van: "Fleet Unit Beta", rating: "4.94", count: 112, spec: "Tune-Ups & IAQ Balancing" },
+                { slug: "elena-rivera", name: "Commercial Systems Specialist", title: "Commercial Lead Mechanic", van: "Fleet Unit Gamma", rating: "4.98", count: 94, spec: "Commercial Rooftop RTUs" },
                 { slug: "david-kim", name: "David Kim", title: "Heat Pump & Inverter Tech", van: "Fleet Unit Delta", rating: "4.92", count: 78, spec: "Mini-Split Heat Pumps" },
               ].map((w) => (
                 <Link

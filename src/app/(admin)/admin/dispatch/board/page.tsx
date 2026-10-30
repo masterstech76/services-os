@@ -92,8 +92,8 @@ export interface GridTech {
 
 const TECH_ROSTER: GridTech[] = [
   {
-    id: "tech-carlos",
-    name: "Carlos Mendez",
+    id: "tech-001",
+    name: "Lead Field Technician",
     avatarColor: "bg-blue-500",
     zone: "Zone A",
     status: "Available",
@@ -191,7 +191,7 @@ const TECH_ROSTER: GridTech[] = [
 
 // Jobs matching Image 1 & Image 2
 const INITIAL_GRID_JOBS: GridJob[] = [
-  // Carlos Mendez
+  // Lead Field Technician
   {
     id: "job-1038",
     jobNumber: 1038,
@@ -199,9 +199,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "cooling",
     address: "800 NW 7th St",
     cityZip: "Miami, FL 33136",
-    customerName: "Robert Caldwell",
-    customerPhone: "(305) 555-0123",
-    techId: "tech-carlos",
+    customerName: "Service Client A",
+    customerPhone: "(XXX) XXX-XXXX",
+    techId: "tech-001",
     startHour: 8.0,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -218,9 +218,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "thermostat",
     address: "3100 NW 7th Ave",
     cityZip: "Miami, FL 33127",
-    customerName: "Marcus Vance",
-    customerPhone: "(305) 555-0188",
-    techId: "tech-carlos",
+    customerName: "Senior HVAC Specialist",
+    customerPhone: "(XXX) XXX-XXXX",
+    techId: "tech-001",
     startHour: 11.0,
     durationHours: 1.5,
     durationLabel: "1h 30m",
@@ -237,8 +237,8 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "2000 NE 8th St",
     cityZip: "Miami, FL 33138",
     customerName: "Elena Rodriguez",
-    customerPhone: "(305) 555-0145",
-    techId: "tech-carlos",
+    customerPhone: "(XXX) XXX-XXXX",
+    techId: "tech-001",
     startHour: 13.5,
     durationHours: 2.0,
     durationLabel: "2h",
@@ -253,9 +253,9 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     category: "water_heater",
     address: "1200 Biscayne Blvd",
     cityZip: "Miami, FL 33132",
-    customerName: "David Chen",
-    customerPhone: "(305) 555-0166",
-    techId: "tech-carlos",
+    customerName: "Service Client B",
+    customerPhone: "(XXX) XXX-XXXX",
+    techId: "tech-001",
     startHour: 16.0,
     durationHours: 1.0,
     durationLabel: "1h",
@@ -273,7 +273,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "2415 NE 163rd St",
     cityZip: "North Miami, FL 33160",
     customerName: "Sara Mitchell",
-    customerPhone: "(305) 555-0180",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-maria",
     startHour: 9.0,
     durationHours: 2.0,
@@ -290,7 +290,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "305 Lincoln Rd",
     cityZip: "Miami Beach, FL 33139",
     customerName: "Michael Johnson",
-    customerPhone: "(305) 555-0177",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-maria",
     startHour: 12.5,
     durationHours: 1.5,
@@ -307,7 +307,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "1234 Collins Ave",
     cityZip: "Miami Beach, FL 33139",
     customerName: "Jessica Lee",
-    customerPhone: "(305) 555-0119",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-maria",
     startHour: 15.5,
     durationHours: 2.0,
@@ -326,7 +326,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "1400 NE 2nd Ave",
     cityZip: "Miami, FL 33132",
     customerName: "Carlos Santana",
-    customerPhone: "(305) 555-0199",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-danny",
     startHour: 9.5,
     durationHours: 2.0,
@@ -345,7 +345,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "7800 Collins Ave",
     cityZip: "Miami Beach, FL 33141",
     customerName: "Amanda Clark",
-    customerPhone: "(305) 555-0133",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-danny",
     startHour: 12.5,
     durationHours: 1.5,
@@ -362,7 +362,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "600 Brickell Ave",
     cityZip: "Miami, FL 33131",
     customerName: "Brian Miller",
-    customerPhone: "(305) 555-0155",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-danny",
     startHour: 15.0,
     durationHours: 2.0,
@@ -381,7 +381,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "1130 Washington Ave",
     cityZip: "Miami Beach, FL 33139",
     customerName: "Rachel Adams",
-    customerPhone: "(305) 555-0167",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-tony",
     startHour: 9.0,
     durationHours: 1.5,
@@ -398,7 +398,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "2100 NE 1st Ct",
     cityZip: "Miami, FL 33137",
     customerName: "Kevin White",
-    customerPhone: "(305) 555-0182",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-tony",
     startHour: 13.5,
     durationHours: 2.0,
@@ -415,7 +415,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "3401 NE 5th Ave",
     cityZip: "Miami, FL 33137",
     customerName: "Diana Ross",
-    customerPhone: "(305) 555-0191",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-tony",
     startHour: 16.0,
     durationHours: 2.0,
@@ -451,7 +451,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "420 Lincoln Rd",
     cityZip: "Miami Beach, FL 33139",
     customerName: "George King",
-    customerPhone: "(305) 555-0122",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-robert",
     startHour: 15.0,
     durationHours: 1.5,
@@ -470,7 +470,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "1500 Brickell Ave",
     cityZip: "Miami, FL 33129",
     customerName: "Sandra Bullock",
-    customerPhone: "(305) 555-0144",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-lisa",
     startHour: 9.5,
     durationHours: 2.0,
@@ -487,7 +487,7 @@ const INITIAL_GRID_JOBS: GridJob[] = [
     address: "901 Biscayne Blvd",
     cityZip: "Miami, FL 33132",
     customerName: "Edward Norton",
-    customerPhone: "(305) 555-0176",
+    customerPhone: "(XXX) XXX-XXXX",
     techId: "tech-lisa",
     startHour: 14.0,
     durationHours: 1.5,
@@ -1210,7 +1210,7 @@ export default function AdminDispatchDedicatedGridPage() {
                   CM
                 </div>
                 <div>
-                  <span className="font-bold text-xs text-white block">Carlos Mendez</span>
+                  <span className="font-bold text-xs text-white block">Lead Field Technician</span>
                   <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 mt-0.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     <span>Available</span>
@@ -1311,7 +1311,7 @@ export default function AdminDispatchDedicatedGridPage() {
               onChange={(e) => setSelectedTargetTech(e.target.value)}
               className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-xs text-white"
             >
-              <option value="tech-carlos">Carlos Mendez (Zone A · Available)</option>
+              <option value="tech-001">Lead Field Technician (Zone A · Available)</option>
               <option value="tech-maria">Maria Alvarez (Zone B · Available)</option>
               <option value="tech-danny">Danny Reyes (Zone C · Available)</option>
               <option value="tech-tony">Tony Brooks (Zone A · En Route)</option>

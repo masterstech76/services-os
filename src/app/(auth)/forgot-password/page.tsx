@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
                     id="rec-phone"
                     type="tel"
                     required
-                    placeholder="(305) 555-0100"
+                    placeholder=""
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="mt-1 bg-[#0B111E]/80 border-white/15 text-white"

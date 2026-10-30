@@ -12,9 +12,11 @@ import {
   Github,
 } from "lucide-react";
 import { BrandTagline } from "@/components/brand/BrandTagline";
+import { businessConfig } from "@config/business.config";
 
 export function Footer() {
   const pathname = usePathname();
+  const phoneHref = `tel:${businessConfig.phone.replace(/[^0-9]/g, "")}`;
 
   // Landing page keeps its own dedicated footer as it is;
   // This exact footer is rendered on ALL other pages.
@@ -79,8 +81,8 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <a href="tel:3055550100" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
-              24/7 Support: (305) 555-0100
+            <a href={phoneHref} className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
+              24/7 Support: {businessConfig.phone}
             </a>
           </div>
         </div>
@@ -96,8 +98,8 @@ export function Footer() {
       >
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-slate-300 font-medium">Need Help?</span>
-          <a href="tel:3055550100" className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
-            Call Dispatch: (305) 555-0100
+          <a href={phoneHref} className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
+            Call Dispatch: {businessConfig.phone}
           </a>
         </div>
       </footer>
@@ -125,8 +127,8 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <Link href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link>
-            <a href="tel:3055550100" className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
-              Support: (305) 555-0100
+            <a href={phoneHref} className="text-orange-400 font-semibold hover:text-orange-300 transition-colors">
+              Support: {businessConfig.phone}
             </a>
           </div>
         </div>
@@ -146,8 +148,8 @@ export function Footer() {
             <span className="text-slate-600">·</span>
             <Link href="/status" className="hover:text-white transition-colors">System Status</Link>
           </div>
-          <a href="tel:3055550100" className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
-            Emergency Dispatch: (305) 555-0100
+          <a href={phoneHref} className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
+            Emergency Dispatch: {businessConfig.phone}
           </a>
         </div>
       </footer>
@@ -162,8 +164,8 @@ export function Footer() {
       >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="text-amber-400 font-semibold">System Status: Scheduled Maintenance</span>
-          <a href="tel:3055550100" className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
-            Emergency Dispatch: (305) 555-0100
+          <a href={phoneHref} className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
+            Emergency Dispatch: {businessConfig.phone}
           </a>
         </div>
       </footer>
@@ -188,8 +190,8 @@ export function Footer() {
               Retry Connection
             </button>
           </div>
-          <a href="tel:3055550100" className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
-            Support: (305) 555-0100
+          <a href={phoneHref} className="text-orange-400 font-bold hover:text-orange-300 transition-colors">
+            Support: {businessConfig.phone}
           </a>
         </div>
       </footer>

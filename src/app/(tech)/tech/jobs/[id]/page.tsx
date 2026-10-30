@@ -61,7 +61,7 @@ const DEFAULT_FALLBACK_JOB: EnrichedJob = {
   customer: {
     id: "cust-2",
     name: "Sofia Martinez",
-    phone: "(305) 555-0192",
+    phone: "(XXX) XXX-XXXX",
     email: "sofia.m@brickell.com",
   },
   service: {

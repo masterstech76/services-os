@@ -310,7 +310,7 @@ export function AuthShowcase() {
                         {/* Live moving vans */}
                         <div className="grid grid-cols-3 gap-2 text-[8px]">
                           <div className="p-2 rounded-lg bg-black/60 border border-orange-500/40 relative overflow-hidden">
-                            <div className="font-bold text-orange-400">Fleet Alpha (Carlos Mendez)</div>
+                            <div className="font-bold text-orange-400">Fleet Alpha (Lead Field Specialist)</div>
                             <div className="text-white text-[9px] mt-0.5 font-semibold">Brickell Ave &bull; 6m ETA</div>
                             <div className="w-full bg-white/10 h-1 rounded-full mt-1.5 overflow-hidden">
                               <div className="bg-[#F97316] h-full w-[80%] animate-pulse" />
@@ -349,20 +349,20 @@ export function AuthShowcase() {
                       <div className="space-y-1.5">
                         <div className="p-2.5 rounded-xl bg-orange-500/15 border border-orange-500/40 flex justify-between items-center shadow-lg">
                           <div>
-                            <span className="font-bold text-white block text-[10px]">#WO-1004 &bull; David Miller</span>
+                            <span className="font-bold text-white block text-[10px]">#WO-1004 &bull; Verified Customer</span>
                             <span className="text-[8px] text-slate-300">1421 Brickell Ave &bull; Emergency AC Dual Capacitor Replacement</span>
                           </div>
                           <div className="text-right">
                             <span className="px-2 py-0.5 rounded bg-orange-500/25 text-orange-300 font-bold text-[8px] uppercase">
                               In Progress
                             </span>
-                            <span className="text-[8px] text-slate-400 block mt-0.5">Carlos Mendez</span>
+                            <span className="text-[8px] text-slate-400 block mt-0.5">Lead Field Specialist</span>
                           </div>
                         </div>
 
                         <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between items-center">
                           <div>
-                            <span className="font-bold text-white block text-[10px]">#WO-1002 &bull; Marcus Vance</span>
+                            <span className="font-bold text-white block text-[10px]">#WO-1002 &bull; Senior HVAC Specialist</span>
                             <span className="text-[8px] text-slate-300">3200 Grand Ave, Coconut Grove &bull; Comprehensive AC Tune-Up</span>
                           </div>
                           <div className="text-right">
@@ -375,7 +375,7 @@ export function AuthShowcase() {
 
                         <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between items-center">
                           <div>
-                            <span className="font-bold text-white block text-[10px]">#WO-1005 &bull; Elena Rivera</span>
+                            <span className="font-bold text-white block text-[10px]">#WO-1005 &bull; Commercial Systems Specialist</span>
                             <span className="text-[8px] text-slate-300">540 Biltmore Way, Coral Gables &bull; R-410A Refrigerant Recharge</span>
                           </div>
                           <div className="text-right">
@@ -409,15 +409,15 @@ export function AuthShowcase() {
 
                       <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-[9px] space-y-1.5">
                         <div className="flex justify-between text-slate-300">
-                          <span>INV-2024-88 &bull; David Miller (Apple Pay Tap-to-Pay)</span>
+                          <span>INV-2024-88 &bull; Verified Customer (Apple Pay Tap-to-Pay)</span>
                           <span className="font-mono text-emerald-400 font-bold">$199.00 Settled</span>
                         </div>
                         <div className="flex justify-between text-slate-300">
-                          <span>INV-2024-87 &bull; Marcus Vance (Visa •••• 4242)</span>
+                          <span>INV-2024-87 &bull; Senior HVAC Specialist (Visa •••• 4242)</span>
                           <span className="font-mono text-emerald-400 font-bold">$349.00 Settled</span>
                         </div>
                         <div className="flex justify-between text-slate-300">
-                          <span>INV-2024-86 &bull; Elena Rivera (Stripe Terminal)</span>
+                          <span>INV-2024-86 &bull; Commercial Systems Specialist (Stripe Terminal)</span>
                           <span className="font-mono text-emerald-400 font-bold">$280.00 Settled</span>
                         </div>
                       </div>
@@ -519,7 +519,7 @@ export function AuthShowcase() {
                   <div className="space-y-2 animate-in fade-in duration-500">
                     <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center text-[9px]">
                       <div>
-                        <span className="text-white font-bold block text-[10px]">Carlos Mendez (#TECH-101)</span>
+                        <span className="text-white font-bold block text-[10px]">Lead Field Specialist (#TECH-101)</span>
                         <span className="text-emerald-400 font-mono">● Active Shift &bull; Miami Brickell Corridor</span>
                       </div>
                       <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[8px]">
@@ -541,7 +541,7 @@ export function AuthShowcase() {
                     {/* Spotlight Work Order */}
                     <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-[9px] space-y-1.5">
                       <div className="flex justify-between font-bold text-white">
-                        <span>#WO-1004 &bull; David Miller</span>
+                        <span>#WO-1004 &bull; Verified Customer</span>
                         <span className="text-orange-400 uppercase animate-pulse">In Progress</span>
                       </div>
                       <div className="text-[8px] text-slate-300">1421 Brickell Ave &bull; Emergency AC Diagnostic</div>
@@ -675,7 +675,7 @@ export function AuthShowcase() {
                         <span className="text-emerald-400 font-mono font-bold">6 mins away</span>
                       </div>
                       <div className="text-sm font-black text-white">Approaching Brickell Ave</div>
-                      <p className="text-[9px] text-slate-300 mt-0.5">Technician Carlos Mendez &bull; Lead Specialist</p>
+                      <p className="text-[9px] text-slate-300 mt-0.5">Technician Lead Field Specialist &bull; Lead Specialist</p>
                       <div className="mt-2.5 w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                         <div className="bg-[#F97316] h-full w-[82%] animate-pulse" />
                       </div>

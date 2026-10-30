@@ -32,8 +32,8 @@ const DEFAULT_ESTIMATE_JOB: EnrichedJob = {
   zip: "33131",
   customer: {
     id: "cust_demo_1",
-    name: "David Miller",
-    phone: "(305) 555-0144",
+    name: "Service Client",
+    phone: "(XXX) XXX-XXXX",
     email: "david.miller@brickell.com",
   },
   service: {
@@ -46,7 +46,7 @@ const DEFAULT_INITIAL_ESTIMATES: JobEstimate[] = [
   {
     id: "est_demo_1004_1",
     jobId: "job-1004",
-    technicianId: "tech-carlos",
+    technicianId: "tech-001",
     title: "Option 2: Recommended Electrical Protection Package",
     description:
       "Replace out-of-spec 45/5 MFD dual run capacitor, pitted 30A contactor, and clean terminal spades to prevent compressor thermal overload.",
@@ -130,7 +130,7 @@ export default function JobEstimatePage() {
   ]);
 
   // Customer Approval Input State
-  const [customerName, setCustomerName] = React.useState("David Miller");
+  const [customerName, setCustomerName] = React.useState("Service Client");
   const [hasSigned, setHasSigned] = React.useState(false);
 
   const loadData = React.useCallback(async () => {
@@ -313,7 +313,7 @@ export default function JobEstimatePage() {
         const localEst: JobEstimate = {
           id: `est_local_${Date.now()}`,
           jobId,
-          technicianId: "tech-carlos",
+          technicianId: "tech-001",
           title,
           description,
           items: itemsPayload,
@@ -361,7 +361,7 @@ export default function JobEstimatePage() {
               ? {
                   ...est,
                   status,
-                  customerSignatureName: customerName.trim() || "David Miller",
+                  customerSignatureName: customerName.trim() || "Service Client",
                 }
               : est
           )
@@ -398,7 +398,7 @@ export default function JobEstimatePage() {
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             Present Good / Better / Best repair options and capture on-glass customer authorization for{" "}
-            <strong className="text-white">{job?.customer?.name || "David Miller"}</strong>.
+            <strong className="text-white">{job?.customer?.name || "Service Client"}</strong>.
           </p>
         </div>
         <span className="font-mono text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-xl self-start sm:self-center">
@@ -755,7 +755,7 @@ export default function JobEstimatePage() {
                         {hasSigned ? (
                           <div className="text-center">
                             <span className="font-serif italic text-lg text-emerald-300 tracking-wide">
-                              {customerName || "David Miller"}
+                              {customerName || "Service Client"}
                             </span>
                             <span className="block text-[10px] text-emerald-400 font-mono mt-0.5">
                               ✓ Digital Fingerprint Verified
@@ -798,7 +798,7 @@ export default function JobEstimatePage() {
                   <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 text-xs text-emerald-300 font-semibold">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                     <span>
-                      Authorized by {est.customerSignatureName || "David Miller"}. Parts logged to invoice.
+                      Authorized by {est.customerSignatureName || "Service Client"}. Parts logged to invoice.
                     </span>
                   </div>
                 ) : null}

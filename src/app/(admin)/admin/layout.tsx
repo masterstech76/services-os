@@ -170,7 +170,7 @@ export default function AdminLayout({
         id: "job-1009",
         category: "jobs" as const,
         title: "Job #1009 — Smart Thermostat Calibration & Zoning",
-        subtitle: "David Chen · Coral Gables · Scheduled Today 2:00 PM",
+        subtitle: "Admin User · Coral Gables · Scheduled Today 2:00 PM",
         href: "/admin/jobs",
         badge: "SCHEDULED",
       },
@@ -186,15 +186,15 @@ export default function AdminLayout({
         id: "cust-maria",
         category: "customers" as const,
         title: "Maria Rodriguez (VIP Comfort Club)",
-        subtitle: "(305) 555-0194 · 1420 Brickell Bay Dr, Miami, FL 33131",
+        subtitle: "(XXX) XXX-XXXX · 1420 Brickell Bay Dr, Miami, FL 33131",
         href: "/admin/customers/cust-1",
         badge: "CRM",
       },
       {
         id: "cust-david",
         category: "customers" as const,
-        title: "David Chen (Commercial Account)",
-        subtitle: "(305) 555-0148 · 380 Miracle Mile, Coral Gables, FL 33134",
+        title: "Admin User (Commercial Account)",
+        subtitle: "(XXX) XXX-XXXX · 380 Miracle Mile, Coral Gables, FL 33134",
         href: "/admin/customers",
         badge: "CRM",
       },
@@ -215,17 +215,17 @@ export default function AdminLayout({
         badge: "LEDGER",
       },
       {
-        id: "tech-carlos",
+        id: "tech-001",
         category: "technicians" as const,
-        title: "Carlos Mendez — Senior Master HVAC Tech",
+        title: "Lead Field Technician — Senior Master HVAC Tech",
         subtitle: "Truck #04 · EPA Universal · 4.98★ Rating · En Route",
         href: "/admin/technicians/tech-carlos",
         badge: "ON SHIFT",
       },
       {
-        id: "tech-marcus",
+        id: "tech-002",
         category: "technicians" as const,
-        title: "Marcus Vance — Commercial Chiller Specialist",
+        title: "Senior HVAC Specialist — Commercial Chiller Specialist",
         subtitle: "Truck #07 · NATE Certified · 4.95★ Rating · Available",
         href: "/admin/technicians",
         badge: "AVAILABLE",
@@ -335,7 +335,7 @@ export default function AdminLayout({
     await fetch("/api/auth/demo-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: "technician", technicianId: "tech-carlos" }),
+      body: JSON.stringify({ role: "technician", technicianId: "tech-001" }),
     });
     router.push("/tech");
   }
@@ -610,7 +610,7 @@ export default function AdminLayout({
         <>
           {/* Backdrop Click to Close */}
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] animate-in fade-in duration-200"
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
@@ -618,7 +618,7 @@ export default function AdminLayout({
           {/* Left Slide-out Sidebar Drawer (Identical to Customer Account Layout) */}
           <aside
             id="admin-all-menu-sidebar"
-            className="fixed inset-y-0 left-0 w-80 sm:w-96 bg-[#0B132B]/95 backdrop-blur-2xl border-r border-white/10 z-50 flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
+            className="fixed inset-y-0 left-0 w-80 sm:w-96 h-full h-[100dvh] bg-[#0B132B] border-r border-white/10 z-[100] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-250"
             aria-label="Admin All Menu Navigation"
           >
             {/* Sidebar Top Header */}

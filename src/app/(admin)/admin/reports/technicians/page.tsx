@@ -28,7 +28,7 @@ interface TechMetricRow {
 const SAMPLE_TECH_METRICS: TechMetricRow[] = [
   {
     id: "tech-1",
-    name: "Robert Caldwell",
+    name: "Service Client A",
     avatar: "/images/avatar-david.jpg",
     jobsCompleted: 62,
     revenue: "$12,480",
@@ -130,7 +130,7 @@ export default function AdminTechniciansReportPage() {
               className="appearance-none bg-[#0F172A] border border-white/10 text-slate-300 text-xs rounded-xl px-3.5 py-1.5 pr-8 focus:outline-none focus:border-[#F97316] cursor-pointer"
             >
               <option value="All Technicians">All Technicians</option>
-              <option value="Robert Caldwell">Robert Caldwell</option>
+              <option value="Service Client A">Service Client A</option>
               <option value="Mike Johnson">Mike Johnson</option>
               <option value="Sarah Wilson">Sarah Wilson</option>
               <option value="David Lee">David Lee</option>

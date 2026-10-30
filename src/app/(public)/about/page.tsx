@@ -55,7 +55,7 @@ export default function AboutPage() {
 
   const teamMembers = [
     {
-      name: "Carlos Mendez",
+      name: "Lead Field Specialist",
       role: "Lead Master HVAC Technician",
       exp: "12 Yrs Exp • NATE & EPA Universal",
       initial: "C",

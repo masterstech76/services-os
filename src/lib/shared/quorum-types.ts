@@ -79,7 +79,7 @@ export const SUPER_ADMIN_COUNCIL: SuperAdminMember[] = [
   },
   {
     id: "sa-2",
-    name: "David Chen",
+    name: "Admin User",
     email: "david.chen@servicepro.demo",
     role: "super_admin",
     title: "Chief Technology Officer",

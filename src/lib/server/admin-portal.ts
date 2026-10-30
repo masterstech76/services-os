@@ -1246,8 +1246,8 @@ export function getAdminNotificationsList(params?: {
       {
         id: "sms_seed_1",
         channel: "sms",
-        recipient: "+1 (305) 555-0144",
-        recipientName: "David Miller",
+        recipient: "+1 (XXX) XXX-XXXX",
+        recipientName: "Service Client",
         type: "booking_confirmation",
         body: "ServicePro OS: Your AC Repair diagnostic appointment is confirmed for today between 11:00 AM - 1:00 PM. Tech: Carlos.",
         status: "delivered",
@@ -1256,7 +1256,7 @@ export function getAdminNotificationsList(params?: {
       {
         id: "sms_seed_2",
         channel: "sms",
-        recipient: "+1 (305) 555-0182",
+        recipient: "+1 (XXX) XXX-XXXX",
         recipientName: "Elena Sanchez",
         type: "tech_en_route",
         body: "ServicePro OS Dispatch: Technician Carlos is on the way to your address. Track arrival live: /book/track?id=job_1001",
@@ -1266,8 +1266,8 @@ export function getAdminNotificationsList(params?: {
       {
         id: "sms_seed_3",
         channel: "sms",
-        recipient: "+1 (305) 555-0199",
-        recipientName: "Marcus Vance",
+        recipient: "+1 (XXX) XXX-XXXX",
+        recipientName: "Senior HVAC Specialist",
         type: "invoice_ready",
         body: "ServicePro OS: Invoice #INV-1004 ($149.00) is ready for review and online payment: /pay/tok_demo",
         status: "delivered",

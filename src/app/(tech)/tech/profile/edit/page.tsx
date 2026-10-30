@@ -33,12 +33,12 @@ export default function TechEditProfilePage() {
   const [saving, setSaving] = React.useState(false);
 
   // Form Fields — Pre-hydrated so page renders immediately without skeleton flash
-  const [name, setName] = React.useState("Carlos Mendez");
+  const [name, setName] = React.useState("");
   const [role, setRole] = React.useState("Senior Field Diagnostic Specialist");
-  const [email, setEmail] = React.useState("carlos@servicepro.com");
-  const [phone, setPhone] = React.useState("(305) 555-0199");
-  const [emergencyPhone, setEmergencyPhone] = React.useState("(305) 555-9911");
-  const [territory, setTerritory] = React.useState("Brickell & Downtown Miami Corridor");
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [emergencyPhone, setEmergencyPhone] = React.useState("");
+  const [territory, setTerritory] = React.useState("");
   const [bio, setBio] = React.useState(
     "Master HVAC diagnostic specialist with 12+ years field experience in South Florida. Specializing in high-SEER inverter systems, commercial VRF, and emergency capacitor & compressor recovery."
   );
@@ -93,19 +93,19 @@ export default function TechEditProfilePage() {
     setTimeout(() => {
       try {
         const updatedProfile = {
-          id: "tech-carlos",
-          name: name.trim() || "Carlos Mendez",
+          id: "",
+          name: name.trim(),
           role: role.trim() || "Senior Field Diagnostic Specialist",
           email: email.trim(),
-          phone: phone.trim() || "(305) 555-0199",
+          phone: phone.trim(),
           emergencyPhone: emergencyPhone.trim(),
-          territory: territory.trim() || "Brickell & Downtown Miami Corridor",
+          territory: territory.trim(),
           bio: bio.trim(),
           certifications: certs,
           vehicle: {
-            model: vehicleModel.trim() || "2024 Ford Transit 250 High Roof",
-            plate: vehiclePlate.trim() || "FL-HVAC104",
-            status: "Van #104 · Pre-Trip Passed",
+            model: vehicleModel.trim(),
+            plate: vehiclePlate.trim(),
+            status: "Pre-Trip Passed",
           },
           shift: {
             currentRoster: "07:00 AM – 04:30 PM (Brickell Corridor)",
@@ -203,7 +203,7 @@ export default function TechEditProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-medium focus:outline-none focus:border-[#F97316] transition-colors"
-                    placeholder="Carlos Mendez"
+                    placeholder="Full Name"
                   />
                 </div>
 
@@ -235,7 +235,7 @@ export default function TechEditProfilePage() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-medium focus:outline-none focus:border-[#F97316] transition-colors"
-                      placeholder="(305) 555-0199"
+                      placeholder=""
                     />
                   </div>
                 </div>
@@ -252,7 +252,7 @@ export default function TechEditProfilePage() {
                       value={emergencyPhone}
                       onChange={(e) => setEmergencyPhone(e.target.value)}
                       className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white font-medium focus:outline-none focus:border-[#F97316] transition-colors"
-                      placeholder="(305) 555-9911"
+                      placeholder=""
                     />
                   </div>
                 </div>
@@ -329,7 +329,7 @@ export default function TechEditProfilePage() {
                   </h2>
                 </div>
                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300">
-                  Van #104 · Pre-Trip Passed
+                  Fleet Unit · Pre-Trip Passed
                 </span>
               </div>
 

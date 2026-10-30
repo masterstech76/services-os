@@ -336,7 +336,7 @@ function RegisterForm() {
               id="reg-phone"
               type="tel"
               autoComplete="tel"
-              placeholder="(305) 555-0123"
+              placeholder=""
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"

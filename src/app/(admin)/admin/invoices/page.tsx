@@ -46,9 +46,9 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1047",
     invoiceNumber: "INV-1047",
-    customerName: "Robert Caldwell",
+    customerName: "Service Client A",
     customerEmail: "rcaldwell@example.com",
-    customerPhone: "+1 (305) 555-0198",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8427",
     amountCents: 32000,
     status: "paid",
@@ -59,7 +59,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
     invoiceNumber: "INV-1046",
     customerName: "Maria Alvarez",
     customerEmail: "m.alvarez@example.com",
-    customerPhone: "+1 (305) 555-0144",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8426",
     amountCents: 85000,
     status: "pending",
@@ -68,9 +68,9 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
   {
     id: "inv-1045",
     invoiceNumber: "INV-1045",
-    customerName: "Carlos Mendez",
+    customerName: "Lead Field Technician",
     customerEmail: "carlos.m@example.com",
-    customerPhone: "+1 (305) 555-0177",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8425",
     amountCents: 125000,
     status: "overdue",
@@ -81,7 +81,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
     invoiceNumber: "INV-1044",
     customerName: "Jennifer White",
     customerEmail: "jennifer.w@example.com",
-    customerPhone: "+1 (305) 555-0182",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8424",
     amountCents: 7500,
     status: "paid",
@@ -92,7 +92,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
     invoiceNumber: "INV-1043",
     customerName: "Daniel Kim",
     customerEmail: "daniel.kim@example.com",
-    customerPhone: "+1 (305) 555-0129",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8423",
     amountCents: 54000,
     status: "paid",
@@ -103,7 +103,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
     invoiceNumber: "INV-1042",
     customerName: "Lisa Carter",
     customerEmail: "l.carter@example.com",
-    customerPhone: "+1 (305) 555-0163",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8422",
     amountCents: 98000,
     status: "pending",
@@ -114,7 +114,7 @@ const DEFAULT_INVOICES: InvoiceItem[] = [
     invoiceNumber: "INV-1041",
     customerName: "James Wilson",
     customerEmail: "j.wilson@example.com",
-    customerPhone: "+1 (305) 555-0138",
+    customerPhone: "+1 (XXX) XXX-XXXX",
     jobNumber: "WO-8421",
     amountCents: 62000,
     status: "paid",
@@ -626,7 +626,7 @@ export default function AdminInvoicesPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Robert Caldwell"
+                  placeholder="e.g. Service Client A"
                   value={newCustomer}
                   onChange={(e) => setNewCustomer(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0F172A] border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"

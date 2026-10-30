@@ -113,7 +113,7 @@ export default function TechEarningsPage() {
 
   const handleDownloadPaystub = () => {
     toast.success("Pay Stub PDF Generated", {
-      description: "Direct Deposit statement for Carlos Mendez downloaded to device.",
+      description: "Direct Deposit statement downloaded to device.",
     });
     window.print();
   };

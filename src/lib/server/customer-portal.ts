@@ -209,7 +209,7 @@ export async function resolveCustomerSession(request?: Request): Promise<{
       }
     }
 
-    // Default demo customer: cust_demo_1 (Maria Rivera - has active & completed appointments)
+    // Default demo customer: cust_demo_1 (Account Holder - has active & completed appointments)
     const demoCust =
       store.customers.get("cust_demo_1") ||
       Array.from(store.customers.values())[0];
@@ -225,7 +225,7 @@ export async function resolveCustomerSession(request?: Request): Promise<{
     }
   }
 
-  // 4. Preview Mode Fallback: When auth lock is paused, always resolve to Maria Rivera demo customer
+  // 4. Preview Mode Fallback: When auth lock is paused, always resolve to Account Holder demo customer
   if (AUTH_LOCK_PAUSED) {
     const demoCust =
       store.customers.get("cust_demo_1") ||
@@ -480,7 +480,7 @@ export function getCustomerNotifications(customerId: string): CustomerNotificati
         id: `notif_${customerId}_1`,
         customerId,
         title: "Upcoming HVAC Service Window",
-        message: "Your AC diagnostic visit is scheduled with Technician Carlos Mendez.",
+        message: "Your AC diagnostic visit is scheduled with Technician Assigned Technician.",
         type: "booking",
         linkUrl: "/account/appointments",
         read: false,

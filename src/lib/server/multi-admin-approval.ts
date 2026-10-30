@@ -37,7 +37,7 @@ function getQuorumStore(): Map<string, QuorumChangeRequest> {
         title: "Deploy AES-256 Cloud Vault Encryption for Database Locker",
         description: "Re-encrypt master environment secrets with zero-trust key rotation across Supabase & AWS RDS Aurora clusters.",
         requestedBy: {
-          name: "David Chen",
+          name: "Admin User",
           email: "david.chen@servicepro.demo",
           role: "super_admin",
         },
@@ -54,7 +54,7 @@ function getQuorumStore(): Map<string, QuorumChangeRequest> {
           },
           {
             superAdminId: "sa-2",
-            superAdminName: "David Chen",
+            superAdminName: "Admin User",
             vote: "approve",
             comment: "Initiated proposal.",
             stepUpVerified: true,
@@ -73,7 +73,7 @@ function getQuorumStore(): Map<string, QuorumChangeRequest> {
         createdAt: new Date(Date.now() - 3600000).toISOString(),
         updatedAt: new Date(Date.now() - 1800000).toISOString(),
         auditTrail: [
-          { actor: "David Chen", action: "REQUEST_CREATED", timestamp: new Date(Date.now() - 3600000).toISOString() },
+          { actor: "Admin User", action: "REQUEST_CREATED", timestamp: new Date(Date.now() - 3600000).toISOString() },
           { actor: "Sarah Jenkins", action: "VOTE_APPROVED", timestamp: new Date(Date.now() - 3600000).toISOString() },
           { actor: "Elena Rostova", action: "VOTE_APPROVED", timestamp: new Date(Date.now() - 1800000).toISOString() },
         ],

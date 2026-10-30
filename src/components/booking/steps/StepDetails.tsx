@@ -127,7 +127,7 @@ export function StepDetails({
         <Input
           id="customer-name"
           data-testid="customer-name"
-          placeholder="Maria Rivera"
+          placeholder="Full Name"
           value={customerName}
           onChange={(e) => onFieldChange("customerName", e.target.value)}
           aria-invalid={!!fieldErrors.name}
@@ -147,7 +147,7 @@ export function StepDetails({
           id="customer-phone"
           data-testid="customer-phone"
           type="tel"
-          placeholder="(305) 555-0142"
+          placeholder=""
           value={customerPhone}
           onChange={(e) => onFieldChange("customerPhone", e.target.value)}
           aria-invalid={!!fieldErrors.phone}

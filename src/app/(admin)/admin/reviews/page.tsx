@@ -37,7 +37,7 @@ export interface ModerationReviewItem {
 const DEFAULT_REVIEWS: ModerationReviewItem[] = [
   {
     id: "rev-1",
-    customerName: "Robert Caldwell",
+    customerName: "Service Client A",
     avatarInitials: "RC",
     avatarUrl: "/images/avatar-david.jpg",
     rating: 5,

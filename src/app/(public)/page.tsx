@@ -149,6 +149,18 @@ export default function ServiceProLandingPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Lock body scroll when mobile menu, demo modal or trial modal is open
+  useEffect(() => {
+    if (mobileMenuOpen || demoModalOpen || trialModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen, demoModalOpen, trialModalOpen]);
+
 
   return (
     <div className="min-h-screen bg-[#060B14] font-sans text-white antialiased selection:bg-[#F97316] selection:text-white">
@@ -196,113 +208,132 @@ export default function ServiceProLandingPage() {
           {/* Accessible Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-[#F97316]"
+            className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 focus:outline-none focus:ring-2 focus:ring-[#F97316] cursor-pointer"
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
+      </header>
 
-        {/* Mobile Right-Side Hamburger Slide-Out Drawer & Backdrop */}
-        {mobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 md:hidden animate-in fade-in duration-200"
-              onClick={() => setMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
+      {/* ─────────────────────────────────────────────────────────────
+          MOBILE SLIDE-OUT DRAWER & FULL-SCREEN BACKDROP
+          (Rendered outside <header> so backdrop-filter does NOT constrain fixed position)
+      ───────────────────────────────────────────────────────────── */}
+      {mobileMenuOpen && (
+        <>
+          {/* Full Screen Dim Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99] md:hidden animate-in fade-in duration-200"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
 
-            {/* Right-Side Drawer Panel */}
-            <nav
-              id="mobile-nav"
-              className="fixed inset-y-0 right-0 w-[290px] sm:w-[320px] bg-[#0C1523]/95 backdrop-blur-2xl border-l border-white/10 z-50 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden"
-              aria-label="Mobile navigation"
-            >
-              <div>
-                {/* Drawer Header: Brand + Tagline + Close Button */}
-                <div className="flex items-center justify-between pb-5 border-b border-white/10">
-                  <Link
-                    href="/"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5"
-                  >
-                    <img
-                      src="/images/servicepro-icon-transparent.png?v=green"
-                      alt="ServicePro OS"
-                      className="h-8 w-auto object-contain"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-base font-bold text-white leading-tight">
-                        ServicePro <span className="text-[#F97316]">OS</span>
-                      </span>
-                      <BrandTagline size="sm" className="mt-0.5" />
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316]"
-                    aria-label="Close menu"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Navigation Links */}
-                <div className="py-6 space-y-1">
-                  <a
-                    href="#features"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                  >
-                    Features
-                  </a>
-                  <a
-                    href="#industries"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                  >
-                    Industries
-                  </a>
-                  <Link
-                    href="/pricing"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                  >
-                    Pricing
-                  </Link>
-                  <Link
-                    href="/faq"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                  >
-                    Resources
-                  </Link>
-                  <Link
-                    href="/about"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                  >
-                    About
-                  </Link>
-                </div>
+          {/* Right-Side Drawer Panel: Solid Background, Full Screen Height, Top Z-Index */}
+          <nav
+            id="mobile-nav"
+            className="fixed inset-y-0 right-0 w-[300px] max-w-[85vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[100] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
+            aria-label="Mobile navigation"
+          >
+            <div>
+              {/* Drawer Header: Brand + Tagline + Close Button */}
+              <div className="flex items-center justify-between pb-5 border-b border-white/10">
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5"
+                >
+                  <img
+                    src="/images/servicepro-icon-transparent.png?v=green"
+                    alt="ServicePro OS"
+                    className="h-8 w-auto object-contain"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-base font-bold text-white leading-tight">
+                      ServicePro <span className="text-[#F97316]">OS</span>
+                    </span>
+                    <BrandTagline size="sm" className="mt-0.5" />
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 -mr-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#F97316] cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Bottom Action Buttons: All Navbar Buttons Inside Drawer */}
-              <div className="pt-5 border-t border-white/10 flex flex-col gap-3">
-                <Link
-                  href="/login"
+              {/* Navigation Links */}
+              <div className="py-6 space-y-1.5">
+                <a
+                  href="#features"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 rounded-full border border-white/20 bg-white/10 text-white font-semibold text-sm hover:bg-[#F97316] hover:border-[#F97316] transition-all shadow-sm"
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
                 >
-                  Sign In
+                  <span>Features</span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </a>
+                <a
+                  href="#industries"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <span>Industries</span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </a>
+                <Link
+                  href="/pricing"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <span>Pricing</span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </Link>
+                <Link
+                  href="/faq"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <span>Resources</span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </Link>
+                <Link
+                  href="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-base font-medium text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <span>About</span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
                 </Link>
               </div>
-            </nav>
-          </>
-        )}
-      </header>
+            </div>
+
+            {/* Bottom Action Buttons: Primary & Secondary */}
+            <div className="pt-5 border-t border-white/10 flex flex-col gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTrialModalOpen(true);
+                }}
+                className="w-full text-center py-3 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white font-semibold text-sm shadow-lg shadow-[#F97316]/30 transition-all cursor-pointer"
+              >
+                Start Free Trial
+              </button>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 rounded-full border border-white/20 bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-all shadow-sm"
+              >
+                Sign In
+              </Link>
+            </div>
+          </nav>
+        </>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           2. HERO SECTION (100% MATCH WITH HALF-SIDE SHADOW SCREENING)

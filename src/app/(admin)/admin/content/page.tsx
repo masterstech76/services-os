@@ -126,7 +126,7 @@ const INITIAL_CONTENT_ITEMS: ContentItem[] = [
     subtitle: "Call our emergency hotline or send a message for same-day service bookings.",
     seoTitle: "Contact ServicePro OS — 24/7 Hotline & Dispatch",
     seoDescription: "Reach our dispatchers and service team for urgent repairs, quotes, or commercial inquiries.",
-    bodyContent: "Direct telephone dispatch line: (305) 555-0100. Emergency technicians on standby 24/7/365.",
+    bodyContent: "Direct telephone dispatch line: (XXX) XXX-XXXX. Emergency technicians on standby 24/7/365.",
   },
   {
     id: "cnt-9",

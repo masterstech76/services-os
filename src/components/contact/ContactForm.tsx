@@ -99,7 +99,7 @@ export function ContactForm() {
             <Input
               id="contact-name"
               type="text"
-              placeholder="John Doe"
+              placeholder="Your full name"
               required
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -113,7 +113,7 @@ export function ContactForm() {
             <Input
               id="contact-phone"
               type="tel"
-              placeholder="(305) 555-0100"
+              placeholder="(XXX) XXX-XXXX"
               required
               value={formData.phone}
               onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
@@ -130,7 +130,7 @@ export function ContactForm() {
             <Input
               id="contact-email"
               type="email"
-              placeholder="john@example.com"
+              placeholder="you@domain.com"
               value={formData.email}
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
               className="bg-[#0C1523] border-white/10 text-white placeholder:text-slate-500 focus:border-[#F97316]"

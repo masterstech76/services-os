@@ -26,10 +26,10 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { EnrichedJob } from "@/lib/server/operations";
 
 const DEMO_TECH_OPTIONS = [
-  { id: "tech-carlos", name: "Carlos Mendez" },
-  { id: "tech-danny", name: "Danny Reyes" },
-  { id: "tech-maria", name: "Maria Alvarez" },
-  { id: "tech-tony", name: "Tony Brooks" },
+  { id: "", name: "" },
+  { id: "tech-002", name: "Danny Reyes" },
+  { id: "tech-003", name: "Maria Alvarez" },
+  { id: "tech-004", name: "Tony Brooks" },
 ];
 
 const WEEK_DAYS = [
@@ -56,7 +56,7 @@ const DEFAULT_SCHEDULE_JOBS: EnrichedJob[] = [
     customer: {
       id: "cust-2",
       name: "Sofia Martinez",
-      phone: "(305) 555-0192",
+      phone: "(XXX) XXX-XXXX",
       email: "sofia.m@brickell.com",
     },
     service: {
@@ -80,8 +80,8 @@ const DEFAULT_SCHEDULE_JOBS: EnrichedJob[] = [
     zip: "33134",
     customer: {
       id: "cust-3",
-      name: "Marcus Vance",
-      phone: "(305) 555-0148",
+      name: "Field Specialist",
+      phone: "(XXX) XXX-XXXX",
       email: "mvance@gables.io",
     },
     service: {

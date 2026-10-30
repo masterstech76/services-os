@@ -40,10 +40,10 @@ export default function PricingPage() {
   const [activeModalPlan, setActiveModalPlan] = React.useState<PlanItem | null>(null);
 
   // Form State for In-Page 14-Day Trial Activation
-  const [businessName, setBusinessName] = React.useState("Apex Cooling & Heating LLC");
-  const [fullName, setFullName] = React.useState("David Miller");
-  const [email, setEmail] = React.useState("dispatch@apexcooling.com");
-  const [phone, setPhone] = React.useState("(305) 555-0144");
+  const [businessName, setBusinessName] = React.useState("");
+  const [fullName, setFullName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState("");
   const [isActivating, setIsActivating] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
 
@@ -348,7 +348,7 @@ export default function PricingPage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="w-full h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:ring-2 focus:ring-[#F97316] outline-none"
-                        placeholder="David Miller"
+                        placeholder="Full Name"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -361,7 +361,7 @@ export default function PricingPage() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="w-full h-10 px-3 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:ring-2 focus:ring-[#F97316] outline-none"
-                        placeholder="(305) 555-0144"
+                        placeholder="Phone Number"
                       />
                     </div>
                   </div>

@@ -21,8 +21,8 @@ const DEFAULT_CUSTOMER_NOTIFS: CustomerNotification[] = [
     id: "cn-1",
     customerId: "cust-1",
     type: "dispatch",
-    title: "Technician En Route: Carlos Mendez (Lead Specialist)",
-    message: "Lead Master HVAC Specialist Carlos Mendez is on the way to 1421 Brickell Ave. Estimated arrival: 2:15 PM.",
+    title: "Technician En Route: Your Technician (Lead Specialist)",
+    message: "Lead Master HVAC Specialist Your Technician is on the way to 1421 Brickell Ave. Estimated arrival: 2:15 PM.",
     read: false,
     linkUrl: "/account/appointments",
     createdAt: new Date(Date.now() - 1200000).toISOString(),
@@ -260,3 +260,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+

@@ -90,17 +90,17 @@ export default function SubscriptionCheckoutPage() {
   );
 
   // Business Details Form State
-  const [businessName, setBusinessName] = React.useState("Apex Cooling & Heating LLC");
-  const [ownerName, setOwnerName] = React.useState("David Miller");
-  const [email, setEmail] = React.useState("david@apexacfl.com");
-  const [phone, setPhone] = React.useState("(305) 555-0144");
+  const [businessName, setBusinessName] = React.useState("");
+  const [ownerName, setOwnerName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState("");
 
   // Card Details Form State
-  const [cardName, setCardName] = React.useState("David Miller");
-  const [cardNumber, setCardNumber] = React.useState("4242 •••• •••• 4242");
-  const [cardExpiry, setCardExpiry] = React.useState("12/28");
-  const [cardCvc, setCardCvc] = React.useState("382");
-  const [cardZip, setCardZip] = React.useState("33131");
+  const [cardName, setCardName] = React.useState("");
+  const [cardNumber, setCardNumber] = React.useState("");
+  const [cardExpiry, setCardExpiry] = React.useState("");
+  const [cardCvc, setCardCvc] = React.useState("");
+  const [cardZip, setCardZip] = React.useState("");
   const [agreeTerms, setAgreeTerms] = React.useState(true);
 
   // Processing Flow State

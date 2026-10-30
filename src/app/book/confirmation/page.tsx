@@ -36,7 +36,7 @@ const DEMO_CONFIRMED_JOB: ConfirmedJobDTO = {
   state: "FL",
   zip: "33131",
   customerFirstName: "David",
-  customerPhone: "(305) 555-0144",
+  customerPhone: "",
   depositCents: 2000,
 };
 

@@ -25,27 +25,27 @@ function BookPageContent() {
 
   const techDisplayMap: Record<string, { name: string; title: string; avatar: string }> = {
     "carlos-mendez": {
-      name: "Carlos Mendez",
+      name: "Lead Field Specialist",
       title: "Lead Master HVAC Diagnostic Specialist (Senior Field Team)",
       avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80",
     },
-    "tech-carlos": {
-      name: "Carlos Mendez",
+    "tech-001": {
+      name: "Lead Field Specialist",
       title: "Lead Master HVAC Diagnostic Specialist (Senior Field Team)",
       avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80",
     },
     "marcus-vance": {
-      name: "Marcus Vance",
+      name: "Senior HVAC Specialist",
       title: "Senior AC Maintenance Specialist (Lead Team)",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     },
     "tech-marcus": {
-      name: "Marcus Vance",
+      name: "Senior HVAC Specialist",
       title: "Senior AC Maintenance Specialist (Lead Team)",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     },
     "elena-rivera": {
-      name: "Elena Rivera",
+      name: "Commercial Systems Specialist",
       title: "Commercial HVAC Specialist (Senior Team)",
       avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
     },

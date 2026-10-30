@@ -67,8 +67,8 @@ export default function BookTrackPage() {
             <span className="text-[11px] text-slate-400 flex items-center gap-1.5">
               <Wrench className="w-3.5 h-3.5 text-orange-400" /> Assigned Technician
             </span>
-            <div className="text-sm font-bold text-white">Carlos Mendez</div>
-            <div className="text-xs text-emerald-400">EPA Certified · Van #104</div>
+            <div className="text-sm font-bold text-white">Licensed Field Specialist</div>
+            <div className="text-xs text-emerald-400">EPA Certified &amp; Background Checked</div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-1">
             <span className="text-[11px] text-slate-400 flex items-center gap-1.5">

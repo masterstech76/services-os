@@ -29,11 +29,11 @@ export default function ServicePaymentPage() {
   const [lookupError, setLookupError] = React.useState(false);
 
   // Card on file form state
-  const [cardName, setCardName] = React.useState("Maria Rivera");
-  const [cardNumber, setCardNumber] = React.useState("4242 •••• •••• 4242");
-  const [cardExpiry, setCardExpiry] = React.useState("08/28");
-  const [cardCvc, setCardCvc] = React.useState("382");
-  const [cardZip, setCardZip] = React.useState("33131");
+  const [cardName, setCardName] = React.useState("");
+  const [cardNumber, setCardNumber] = React.useState("");
+  const [cardExpiry, setCardExpiry] = React.useState("");
+  const [cardCvc, setCardCvc] = React.useState("");
+  const [cardZip, setCardZip] = React.useState("");
   const [isSavingCard, setIsSavingCard] = React.useState(false);
   const [cardSavedSuccess, setCardSavedSuccess] = React.useState(false);
 
@@ -44,7 +44,7 @@ export default function ServicePaymentPage() {
       service: "AC Diagnostic & Capacitor Replacement",
       amount: "$349.00",
       status: "Ready for Payment",
-      tech: "Carlos Mendez (Van #104)",
+      tech: "Lead Field Specialist",
     },
     {
       id: "WO-1002",
@@ -52,7 +52,7 @@ export default function ServicePaymentPage() {
       service: "Comprehensive Seasonal AC Tune-Up",
       amount: "$189.00",
       status: "Ready for Payment",
-      tech: "Marcus Vance (Van #102)",
+      tech: "HVAC Maintenance Specialist",
     },
     {
       id: "WO-1005",
@@ -60,7 +60,7 @@ export default function ServicePaymentPage() {
       service: "Refrigerant Leak Repair & R-410A Recharge",
       amount: "$749.00",
       status: "Ready for Payment",
-      tech: "Elena Rivera (Van #108)",
+      tech: "Commercial Systems Specialist",
     },
   ];
 

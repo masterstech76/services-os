@@ -561,7 +561,7 @@ export default function AdminTechnicianSchedulePage() {
               <div>
                 <label className="text-slate-300">Technician</label>
                 <select className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1">
-                  <option>Robert Caldwell</option>
+                  <option>Service Client A</option>
                   <option>Maria Alvarez</option>
                   <option>Danny Reyes</option>
                   <option>Sarah Mitchell</option>
@@ -626,7 +626,7 @@ export default function AdminTechnicianSchedulePage() {
               <div>
                 <label className="text-slate-300">Technician</label>
                 <select className="w-full rounded-lg bg-[#080D1A] border border-white/10 p-2 text-xs text-white mt-1">
-                  <option>Robert Caldwell</option>
+                  <option>Service Client A</option>
                   <option>Maria Alvarez</option>
                   <option>Danny Reyes</option>
                 </select>

@@ -173,7 +173,7 @@ export default function ApplyPage() {
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="e.g. Carlos Mendez"
+                        placeholder="e.g. Lead Field Specialist"
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>
@@ -187,7 +187,7 @@ export default function ApplyPage() {
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="(305) 555-0199"
+                        placeholder=""
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>

@@ -53,22 +53,17 @@ const DEFAULT_DEMO_PAYMENTS = [
 
 export default function PaymentsPage() {
   const [payments, setPayments] = React.useState<any[]>(DEFAULT_DEMO_PAYMENTS);
-  const [paymentMethod, setPaymentMethod] = React.useState<any | null>({
-    brand: "visa",
-    last4: "4242",
-    name: "Maria Rivera",
-    expiry: "12/28",
-  });
+  const [paymentMethod, setPaymentMethod] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   // Add / Edit Card Modal State
   const [isAddCardOpen, setIsAddCardOpen] = React.useState(false);
-  const [cardName, setCardName] = React.useState("Maria Rivera");
-  const [cardNumber, setCardNumber] = React.useState("4242 •••• •••• 4242");
-  const [cardExpiry, setCardExpiry] = React.useState("12/28");
-  const [cardCvc, setCardCvc] = React.useState("382");
-  const [cardZip, setCardZip] = React.useState("33131");
+  const [cardName, setCardName] = React.useState("");
+  const [cardNumber, setCardNumber] = React.useState("");
+  const [cardExpiry, setCardExpiry] = React.useState("");
+  const [cardCvc, setCardCvc] = React.useState("");
+  const [cardZip, setCardZip] = React.useState("");
   const [isSavingCard, setIsSavingCard] = React.useState(false);
 
   const fetchPayments = React.useCallback(async () => {
@@ -79,8 +74,6 @@ export default function PaymentsPage() {
       const storedCard = localStorage.getItem("servicepro_saved_card");
       if (storedCard) {
         setPaymentMethod(JSON.parse(storedCard));
-      } else {
-        setPaymentMethod({ brand: "visa", last4: "4242", name: "Maria Rivera", expiry: "12/28" });
       }
 
       const res = await fetch("/api/account/payments");
@@ -294,7 +287,7 @@ export default function PaymentsPage() {
                   value={cardName}
                   onChange={(e) => setCardName(e.target.value)}
                   className="w-full h-10 px-3.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:ring-2 focus:ring-[#F97316] outline-none"
-                  placeholder="e.g. Maria Rivera"
+                  placeholder="e.g. Account Holder"
                 />
               </div>
 

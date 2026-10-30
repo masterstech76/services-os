@@ -72,13 +72,13 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1047",
     jobNumber: 1047,
     createdDateText: "Created May 14",
-    customerName: "Robert Caldwell",
-    customerPhone: "(305) 555-0123",
+    customerName: "Service Client A",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "3100 NW 7th St",
     cityZip: "Miami, FL 33125",
     serviceCategory: "cooling",
     serviceName: "AC Repair",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techRole: "AC Specialist",
     techColor: "#3B82F6", // Blue
     scheduleDay: "Today",
@@ -96,8 +96,8 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1048",
     jobNumber: 1048,
     createdDateText: "May 14",
-    customerName: "Marcus Vance",
-    customerPhone: "(305) 555-0188",
+    customerName: "Senior HVAC Specialist",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "1900 Coral Way",
     cityZip: "Miami, FL 33145",
     serviceCategory: "thermostat",
@@ -121,7 +121,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     jobNumber: 1049,
     createdDateText: "May 14",
     customerName: "Elena Rodriguez",
-    customerPhone: "(305) 555-0145",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "450 Alton Rd",
     cityZip: "Miami Beach, FL 33139",
     serviceCategory: "duct",
@@ -144,8 +144,8 @@ const REFERENCE_JOBS: JobRowItem[] = [
     id: "job-1050",
     jobNumber: 1050,
     createdDateText: "May 13",
-    customerName: "David Chen",
-    customerPhone: "(305) 555-0166",
+    customerName: "Service Client B",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "2840 SW 27th Ave",
     cityZip: "Miami, FL 33133",
     serviceCategory: "maintenance",
@@ -169,12 +169,12 @@ const REFERENCE_JOBS: JobRowItem[] = [
     jobNumber: 1051,
     createdDateText: "May 13",
     customerName: "Sara Mitchell",
-    customerPhone: "(305) 555-0180",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "1201 Brickell Ave",
     cityZip: "Miami, FL 33131",
     serviceCategory: "refrigerant",
     serviceName: "Refrigerant Recharge",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techRole: "AC Specialist",
     techColor: "#3B82F6", // Blue
     scheduleDay: "May 16",
@@ -193,7 +193,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     jobNumber: 1052,
     createdDateText: "May 12",
     customerName: "Michael Johnson",
-    customerPhone: "(305) 555-0177",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "9100 SW 72nd St",
     cityZip: "Miami, FL 33173",
     serviceCategory: "cooling",
@@ -217,7 +217,7 @@ const REFERENCE_JOBS: JobRowItem[] = [
     jobNumber: 1053,
     createdDateText: "May 12",
     customerName: "Jessica Lee",
-    customerPhone: "(305) 555-0119",
+    customerPhone: "(XXX) XXX-XXXX",
     addressLine: "600 5th St",
     cityZip: "Miami, FL 33131",
     serviceCategory: "thermostat",
@@ -265,7 +265,7 @@ export default function AdminJobsListPage() {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = React.useState(false);
   const [showMoreFilters, setShowMoreFilters] = React.useState(false);
   const [reassignModalJob, setReassignModalJob] = React.useState<JobRowItem | null>(null);
-  const [selectedReassignTech, setSelectedReassignTech] = React.useState<string>("Carlos Mendez");
+  const [selectedReassignTech, setSelectedReassignTech] = React.useState<string>("Lead Field Technician");
 
   const tz = businessConfig.timezone;
 
@@ -325,7 +325,7 @@ export default function AdminJobsListPage() {
           jobNumber: lj.jobNumber,
           createdDateText: createdDate,
           customerName: lj.customer?.name || "Customer",
-          customerPhone: lj.customer?.phone || "(305) 555-0100",
+          customerPhone: lj.customer?.phone || "(XXX) XXX-XXXX",
           addressLine: lj.addressLine1 || "3100 NW 7th St",
           cityZip: `${lj.city || "Miami"}, ${lj.state || "FL"} ${lj.zip || "33125"}`,
           serviceCategory: lj.service?.category || "cooling",
@@ -925,7 +925,7 @@ export default function AdminJobsListPage() {
               className="w-full px-3 py-1.5 rounded-xl border border-white/10 bg-[#0B1322] text-xs text-white focus:outline-none focus:border-orange-500/60 cursor-pointer"
             >
               <option value="all">All Technicians</option>
-              <option value="Carlos Mendez">Carlos Mendez</option>
+              <option value="Lead Field Technician">Lead Field Technician</option>
               <option value="Tony Brooks">Tony Brooks</option>
               <option value="Maria Alvarez">Maria Alvarez</option>
               <option value="Danny Reyes">Danny Reyes</option>
@@ -1387,7 +1387,7 @@ export default function AdminJobsListPage() {
                             onClick={() => {
                               setReassignModalJob(job);
                               setSelectedReassignTech(
-                                job.techName !== "Unassigned" ? job.techName : "Carlos Mendez"
+                                job.techName !== "Unassigned" ? job.techName : "Lead Field Technician"
                               );
                               setActiveDropdownJobId(null);
                             }}
@@ -1554,7 +1554,7 @@ export default function AdminJobsListPage() {
               <div className="space-y-2">
                 {[
                   {
-                    name: "Carlos Mendez",
+                    name: "Lead Field Technician",
                     role: "Master HVAC Tech · Truck #04",
                     eta: "12 mins away",
                     score: "98% Match",
@@ -1643,7 +1643,7 @@ export default function AdminJobsListPage() {
               Select a field technician to dispatch for all checked orders.
             </p>
             <select className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-xs text-white">
-              <option value="tech-carlos">Carlos Mendez (Master HVAC)</option>
+              <option value="tech-001">Lead Field Technician (Master HVAC)</option>
               <option value="tech-tony">Tony Brooks (HVAC Tech)</option>
               <option value="tech-maria">Maria Alvarez (Duct Specialist)</option>
               <option value="tech-danny">Danny Reyes (Furnaces &amp; IAQ)</option>

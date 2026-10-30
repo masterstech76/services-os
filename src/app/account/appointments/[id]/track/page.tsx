@@ -75,8 +75,8 @@ const DEFAULT_TRACK_JOB: JobTrackDetail = {
   },
   technician: {
     id: "tech-104",
-    name: "Carlos Mendez",
-    phone: "(305) 555-0192",
+    name: "Assigned Technician",
+    phone: "(XXX) XXX-XXXX",
   },
 };
 

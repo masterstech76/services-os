@@ -64,19 +64,19 @@ interface InvoiceData {
 const DEFAULT_INVOICE_RECORD: InvoiceData = {
   invoiceNumber: "INV-1047",
   status: "paid",
-  customerName: "Robert Caldwell",
+  customerName: "Service Client A",
   issueDate: "May 14, 2025",
   issueTime: "9:30 AM",
   totalAmountCents: 32000,
   paidAmountCents: 32000,
   balanceCents: 0,
   customerEmail: "rcaldwell@example.com",
-  customerPhone: "+1 (305) 555-0198",
+  customerPhone: "+1 (XXX) XXX-XXXX",
   customerAddress: "1234 Ocean Dr, Miami, FL 33145",
   jobId: "WO-8427",
   serviceType: "AC Repair",
   appointmentSchedule: "May 14, 2025 | 9:30 AM - 11:00 AM",
-  technicianName: "Carlos Mendez",
+  technicianName: "Lead Field Technician",
   items: [
     {
       id: "it-1",
@@ -138,21 +138,21 @@ export default function AdminInvoiceInspectorPage() {
             setInvoice({
               invoiceNumber: inv.invoice_number || rawId,
               status: inv.status === "paid" ? "paid" : inv.status === "overdue" ? "overdue" : "pending",
-              customerName: inv.customerName || "Robert Caldwell",
+              customerName: inv.customerName || "Service Client A",
               issueDate: "May 14, 2025",
               issueTime: "9:30 AM",
               totalAmountCents: inv.total_cents || 32000,
               paidAmountCents: inv.amount_paid_cents ?? (inv.status === "paid" ? inv.total_cents : 0),
               balanceCents: inv.amount_due_cents ?? (inv.status === "paid" ? 0 : inv.total_cents),
               customerEmail: inv.customerEmail || "rcaldwell@example.com",
-              customerPhone: inv.customerPhone || "+1 (305) 555-0198",
+              customerPhone: inv.customerPhone || "+1 (XXX) XXX-XXXX",
               customerAddress: inv.addressLine1
                 ? `${inv.addressLine1}, ${inv.city || "Miami"}, ${inv.state || "FL"} ${inv.zip || ""}`
                 : "1234 Ocean Dr, Miami, FL 33145",
               jobId: inv.jobNumber ? (String(inv.jobNumber).startsWith("WO-") ? String(inv.jobNumber) : `WO-${inv.jobNumber}`) : "WO-8427",
               serviceType: inv.serviceName || "AC Repair",
               appointmentSchedule: "May 14, 2025 | 9:30 AM - 11:00 AM",
-              technicianName: "Carlos Mendez",
+              technicianName: "Lead Field Technician",
               items: DEFAULT_INVOICE_RECORD.items,
               subtotalCents: DEFAULT_INVOICE_RECORD.subtotalCents,
               taxCents: DEFAULT_INVOICE_RECORD.taxCents,
@@ -499,7 +499,7 @@ export default function AdminInvoiceInspectorPage() {
               Completed full AC system diagnostic and replaced bad 45/5 MFD dual run capacitor and standard 16x25x1 air filter. Tested amp draws on compressor and blower motor. All pressures stabilized within OEM manufacturer specs. Customer approved work order on tablet.
             </p>
             <div className="pt-2 text-[11px] text-slate-500 border-t border-white/5">
-              Logged by Carlos Mendez on May 14, 2025 at 10:45 AM
+              Logged by Lead Field Technician on May 14, 2025 at 10:45 AM
             </div>
           </div>
         </div>

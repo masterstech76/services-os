@@ -79,10 +79,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "2h",
     serviceName: "AC Repair Diagnostic",
     category: "cooling",
-    customerName: "Robert Caldwell",
-    customerPhone: "(305) 555-0123",
+    customerName: "Service Client A",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "800 NW 7th St, Miami",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techColor: "#3B82F6",
     status: "in_progress",
     priority: "High",
@@ -96,8 +96,8 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "1h 30m",
     serviceName: "Smart Thermostat Install",
     category: "thermostat",
-    customerName: "Marcus Vance",
-    customerPhone: "(305) 555-0188",
+    customerName: "Senior HVAC Specialist",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "1900 Coral Way, Miami",
     techName: "Tony Brooks",
     techColor: "#EC4899",
@@ -114,7 +114,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Whole-Home Air Duct Clean",
     category: "duct",
     customerName: "Elena Rodriguez",
-    customerPhone: "(305) 555-0145",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "450 Alton Rd, Miami Beach",
     techName: "Maria Alvarez",
     techColor: "#A855F7",
@@ -130,10 +130,10 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     duration: "1h",
     serviceName: "Emergency AC Diagnostic",
     category: "cooling",
-    customerName: "David Chen",
-    customerPhone: "(305) 555-0166",
+    customerName: "Service Client B",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "2840 SW 27th Ave, Miami",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techColor: "#3B82F6",
     status: "pending",
     priority: "High",
@@ -148,7 +148,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "21-Point Seasonal Tune-Up",
     category: "cooling",
     customerName: "Sara Mitchell",
-    customerPhone: "(305) 555-0180",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "1201 Brickell Ave, Miami",
     techName: "Danny Reyes",
     techColor: "#14B8A6",
@@ -165,7 +165,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "R-410A Refrigerant Recharge",
     category: "cooling",
     customerName: "Michael Johnson",
-    customerPhone: "(305) 555-0177",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "9100 SW 72nd St, Miami",
     techName: "Tony Brooks",
     techColor: "#EC4899",
@@ -182,7 +182,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Air Duct Sanitation",
     category: "duct",
     customerName: "Jessica Lee",
-    customerPhone: "(305) 555-0119",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "600 5th St, Miami",
     techName: "Maria Alvarez",
     techColor: "#A855F7",
@@ -199,7 +199,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Thermostat Replacement",
     category: "thermostat",
     customerName: "Amanda Clark",
-    customerPhone: "(305) 555-0133",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "7800 Collins Ave, Miami Beach",
     techName: "Danny Reyes",
     techColor: "#14B8A6",
@@ -216,9 +216,9 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Commercial Rooftop Inspection",
     category: "cooling",
     customerName: "Brian Miller",
-    customerPhone: "(305) 555-0155",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "600 Brickell Ave, Miami",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techColor: "#3B82F6",
     status: "scheduled",
     priority: "High",
@@ -233,7 +233,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Capacitor & Contactor Fix",
     category: "cooling",
     customerName: "Rachel Adams",
-    customerPhone: "(305) 555-0167",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "1130 Washington Ave, Miami Beach",
     techName: "Tony Brooks",
     techColor: "#EC4899",
@@ -250,9 +250,9 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "HVAC Compressor Tune-Up",
     category: "cooling",
     customerName: "Kevin White",
-    customerPhone: "(305) 555-0182",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "2100 NE 1st Ct, Miami",
-    techName: "Carlos Mendez",
+    techName: "Lead Field Technician",
     techColor: "#3B82F6",
     status: "scheduled",
     priority: "Medium",
@@ -267,7 +267,7 @@ const SAMPLE_APPOINTMENTS: CalendarAppointment[] = [
     serviceName: "Air Duct Microbial Fogging",
     category: "duct",
     customerName: "Diana Ross",
-    customerPhone: "(305) 555-0191",
+    customerPhone: "(XXX) XXX-XXXX",
     address: "3401 NE 5th Ave, Miami",
     techName: "Maria Alvarez",
     techColor: "#A855F7",
@@ -294,7 +294,7 @@ export default function AdminDispatchMonthlyCalendarPage() {
   const [scheduleModalOpen, setScheduleModalOpen] = React.useState<boolean>(false);
   const [newCustomerName, setNewCustomerName] = React.useState<string>("");
   const [newServiceName, setNewServiceName] = React.useState<string>("AC Repair");
-  const [newTechName, setNewTechName] = React.useState<string>("Carlos Mendez");
+  const [newTechName, setNewTechName] = React.useState<string>("Lead Field Technician");
   const [newTimeStr, setNewTimeStr] = React.useState<string>("09:00 AM");
 
   // Month interval calculation
@@ -352,7 +352,7 @@ export default function AdminDispatchMonthlyCalendarPage() {
       serviceName: newServiceName,
       category: "cooling",
       customerName: newCustomerName,
-      customerPhone: "(305) 555-0199",
+      customerPhone: "(XXX) XXX-XXXX",
       address: "Downtown Miami, FL",
       techName: newTechName,
       techColor: "#3B82F6",
@@ -560,7 +560,7 @@ export default function AdminDispatchMonthlyCalendarPage() {
             className="rounded-xl border border-white/10 bg-[#0B1322] px-3 py-1.5 text-xs text-white focus:outline-none focus:border-orange-500/60"
           >
             <option value="all">All Technicians</option>
-            <option value="Carlos Mendez">Carlos Mendez</option>
+            <option value="Lead Field Technician">Lead Field Technician</option>
             <option value="Tony Brooks">Tony Brooks</option>
             <option value="Maria Alvarez">Maria Alvarez</option>
             <option value="Danny Reyes">Danny Reyes</option>
@@ -919,7 +919,7 @@ export default function AdminDispatchMonthlyCalendarPage() {
                     onChange={(e) => setNewTechName(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-[#080D16] p-2.5 text-white"
                   >
-                    <option value="Carlos Mendez">Carlos Mendez (Zone A)</option>
+                    <option value="Lead Field Technician">Lead Field Technician (Zone A)</option>
                     <option value="Tony Brooks">Tony Brooks (Zone A)</option>
                     <option value="Maria Alvarez">Maria Alvarez (Zone B)</option>
                     <option value="Danny Reyes">Danny Reyes (Zone C)</option>

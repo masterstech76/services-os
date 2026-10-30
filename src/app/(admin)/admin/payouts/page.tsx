@@ -45,7 +45,7 @@ export interface PayoutItem {
 const DEFAULT_PAYOUTS: PayoutItem[] = [
   {
     id: "pay-cm",
-    technicianName: "Carlos Mendez",
+    technicianName: "Lead Field Technician",
     role: "HVAC Specialist",
     avatarInitials: "CM",
     avatarUrl: "/images/avatar-david.jpg",

@@ -26,21 +26,21 @@ const ROLE_PRESETS: Record<
 > = {
   admin: {
     email: "admin@servicepro-os.com",
-    phone: "+1 (305) 555-0100",
+    phone: "+1 ",
     title: "Admin (Owner)",
     subtitle: "5-Factor Protected",
     badge: "5-Factor Protected",
   },
   owner: {
     email: "admin@servicepro-os.com",
-    phone: "+1 (305) 555-0100",
+    phone: "+1 ",
     title: "Admin (Owner)",
     subtitle: "5-Factor Protected",
     badge: "5-Factor Protected",
   },
   technician: {
     email: "technician@servicepro-os.com",
-    phone: "+1 (305) 555-0104",
+    phone: "+1 ",
     techId: "tech-carlos",
     title: "Technician",
     subtitle: "Field Specialist",
@@ -48,7 +48,7 @@ const ROLE_PRESETS: Record<
   },
   customer: {
     email: "client@example.com",
-    phone: "+1 (305) 555-0199",
+    phone: "+1 ",
     title: "Client",
     subtitle: "Customer Portal",
     badge: "Client Hub",
@@ -394,7 +394,7 @@ function LoginForm() {
                   id="login-phone"
                   type="tel"
                   required
-                  placeholder="(305) 555-0100"
+                  placeholder=""
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="mt-1 bg-[#0B111E]/80 border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316] focus:ring-[#F97316]"

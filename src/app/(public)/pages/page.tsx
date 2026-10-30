@@ -587,11 +587,11 @@ const ALL_ROUTES: RouteItem[] = [
     description: "Manage technician crew, track certifications, view live GPS location, and assign service zones.",
   },
   {
-    title: "Technician Profile (Carlos Mendez)",
+    title: "Technician Profile (Lead Field Specialist)",
     path: "/admin/technicians/tech-carlos",
     category: "Admin Ops",
     role: "Owner / Admin",
-    description: "Performance stats, completed jobs, customer ratings, and van inventory allocation for Carlos Mendez.",
+    description: "Performance stats, completed jobs, customer ratings, and van inventory allocation for Lead Field Specialist.",
   },
   {
     title: "Technician Working Hours & Shifts",
@@ -608,11 +608,11 @@ const ALL_ROUTES: RouteItem[] = [
     description: "Complete homeowner & commercial client roster with total spend and job frequency stats.",
   },
   {
-    title: "Customer CRM Dossier (Maria Rivera)",
+    title: "Customer CRM Dossier (Client Account)",
     path: "/admin/customers/cust_demo_1",
     category: "Admin Ops",
     role: "Owner / Admin",
-    description: "Maria Rivera CRM file: property locations, service history, lifetime revenue, and open estimates.",
+    description: "Client Account CRM file: property locations, service history, lifetime revenue, and open estimates.",
   },
   {
     title: "Invoices & Billing Ledger",

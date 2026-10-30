@@ -44,9 +44,9 @@ export default function AccountDashboardPage() {
     const demoDashboard = {
       customer: {
         id: "cust-demo",
-        name: "David Miller",
+        name: "Service Client",
         email: "david@example.com",
-        phone: "(305) 555-0144",
+        phone: "(XXX) XXX-XXXX",
         isDemo: true,
       },
       metrics: {
@@ -89,8 +89,8 @@ export default function AccountDashboardPage() {
         isUnassignedUrgent: false,
         customer: {
           id: "cust-demo",
-          name: "David Miller",
-          phone: "(305) 555-0144",
+          name: "Service Client",
+          phone: "(XXX) XXX-XXXX",
           email: "david@example.com",
           cardBrand: "visa",
           cardLast4: "4242",
@@ -107,10 +107,10 @@ export default function AccountDashboardPage() {
           minBillableMinutes: 60,
         },
         technician: {
-          id: "tech-carlos",
-          name: "Carlos Mendez",
-          phone: "(305) 555-0188",
-          email: "carlos@servicepro-os.com",
+          id: "tech-001",
+          name: "Assigned Technician",
+          phone: "",
+          email: "",
           color: "#F97316",
           commissionPct: 20,
         },
@@ -153,8 +153,8 @@ export default function AccountDashboardPage() {
           isUnassignedUrgent: false,
           customer: {
             id: "cust-demo",
-            name: "David Miller",
-            phone: "(305) 555-0144",
+            name: "Service Client",
+            phone: "(XXX) XXX-XXXX",
             email: "david@example.com",
             cardBrand: "visa",
             cardLast4: "4242",
@@ -172,8 +172,8 @@ export default function AccountDashboardPage() {
           },
           technician: {
             id: "tech-marcus",
-            name: "Marcus Vance",
-            phone: "(305) 555-0192",
+            name: "Senior HVAC Specialist",
+            phone: "(XXX) XXX-XXXX",
             email: "marcus@servicepro-os.com",
             color: "#3B82F6",
             commissionPct: 20,
@@ -581,3 +581,4 @@ export default function AccountDashboardPage() {
     </div>
   );
 }
+

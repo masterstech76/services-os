@@ -49,7 +49,7 @@ const DEMO_JOBS: TechJobItem[] = [
     stopSequence: 1,
     status: "completed",
     customerName: "Anthony Vega",
-    phone: "(305) 555-0177",
+    phone: "(XXX) XXX-XXXX",
     serviceTitle: "Smart Ecobee Thermostat Install & C-Wire Setup",
     address: "8800 NW 36th St, Doral FL 33178",
     scheduledTime: "07:00 AM – 08:15 AM",
@@ -64,8 +64,8 @@ const DEMO_JOBS: TechJobItem[] = [
     jobNumber: 1004,
     stopSequence: 2,
     status: "in_progress",
-    customerName: "David Miller",
-    phone: "(305) 555-0144",
+    customerName: "Service Client",
+    phone: "(XXX) XXX-XXXX",
     serviceTitle: "Emergency AC Diagnostic & Dual Capacitor Replacement",
     address: "1421 Brickell Ave, Apt 18B, Miami FL 33131",
     scheduledTime: "08:30 AM – 10:30 AM",
@@ -80,8 +80,8 @@ const DEMO_JOBS: TechJobItem[] = [
     jobNumber: 1002,
     stopSequence: 3,
     status: "assigned",
-    customerName: "Marcus Vance",
-    phone: "(305) 555-0155",
+    customerName: "Service Client",
+    phone: "(XXX) XXX-XXXX",
     serviceTitle: "Comprehensive Seasonal AC Tune-Up & Coil Sanitization",
     address: "3200 Grand Ave, Coconut Grove FL 33133",
     scheduledTime: "11:00 AM – 01:00 PM",
@@ -96,8 +96,8 @@ const DEMO_JOBS: TechJobItem[] = [
     jobNumber: 1005,
     stopSequence: 4,
     status: "assigned",
-    customerName: "Elena Rivera",
-    phone: "(305) 555-0166",
+    customerName: "Service Client",
+    phone: "(XXX) XXX-XXXX",
     serviceTitle: "Refrigerant Leak Diagnostic & R-410A Recharge",
     address: "540 Biltmore Way, Coral Gables FL 33134",
     scheduledTime: "01:30 PM – 03:30 PM",
@@ -164,7 +164,7 @@ export default function TechJobsPage() {
             Today&apos;s Route Sequence &amp; Stop Ledger
           </h1>
           <p className="text-xs text-slate-300 mt-0.5">
-            4 scheduled field stops for Carlos Mendez &bull; Van #104 &bull; Miami Metro Corridor
+            Scheduled field stops for today&apos;s assigned route &bull; Metro Service Corridor
           </p>
         </div>
 

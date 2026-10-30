@@ -4,10 +4,10 @@ import * as React from "react";
 import { User, Mail, Phone, Lock, Save, CheckCircle2, AlertCircle, ShieldCheck, Bell, Smartphone, MessageSquare, Sparkles } from "lucide-react";
 
 export default function CustomerProfilePage() {
-  const [name, setName] = React.useState("Maria Rivera");
-  const [email, setEmail] = React.useState("maria.rivera@miamihome.com");
-  const [phone, setPhone] = React.useState("(305) 555-0144");
-  const [secondaryPhone, setSecondaryPhone] = React.useState("(305) 555-0188");
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [secondaryPhone, setSecondaryPhone] = React.useState("");
   const [preferredContact, setPreferredContact] = React.useState<"sms" | "call" | "email">("sms");
   const [currentPassword, setCurrentPassword] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
@@ -124,11 +124,11 @@ export default function CustomerProfilePage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-gradient-to-r from-[#0F172A] via-[#0B1325] to-[#0F172A] p-6 shadow-xl">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 text-xl font-bold text-white shadow-lg shadow-orange-500/20">
-            MR
+            {name ? name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <User className="w-8 h-8" />}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-2xl font-bold text-white">{name || "Maria Rivera"}</h1>
+              <h1 className="font-display text-2xl font-bold text-white">{name || "Client Account"}</h1>
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">
                 <Sparkles className="h-3 w-3" /> Comfort Club VIP Member
               </span>
@@ -224,7 +224,7 @@ export default function CustomerProfilePage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   disabled={loading}
-                  placeholder="(305) 555-0199"
+                  placeholder="(XXX) XXX-XXXX"
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                 />
               </div>
@@ -237,7 +237,7 @@ export default function CustomerProfilePage() {
                   type="tel"
                   value={secondaryPhone}
                   onChange={(e) => setSecondaryPhone(e.target.value)}
-                  placeholder="(305) 555-0188"
+                  placeholder="(XXX) XXX-XXXX"
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                 />
               </div>

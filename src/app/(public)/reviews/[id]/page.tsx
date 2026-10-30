@@ -66,7 +66,7 @@ const WORKERS: Record<string, WorkerProfile> = {
   "carlos-mendez": {
     id: "tech-1",
     slug: "carlos-mendez",
-    name: "Carlos Mendez",
+    name: "Lead Field Specialist",
     title: "Lead Master HVAC Diagnostic Specialist",
     roleType: "Master Lead Technician",
     rating: 4.96,
@@ -82,7 +82,7 @@ const WORKERS: Record<string, WorkerProfile> = {
     reviews: [
       {
         id: "rev-1",
-        author: "David Miller",
+        author: "Verified Customer",
         neighborhood: "Brickell, Miami, FL",
         service: "Same-Day AC Diagnostic & Capacitor Overhaul",
         workOrder: "#WO-1004",
@@ -133,7 +133,7 @@ const WORKERS: Record<string, WorkerProfile> = {
   "marcus-vance": {
     id: "tech-2",
     slug: "marcus-vance",
-    name: "Marcus Vance",
+    name: "Senior HVAC Specialist",
     title: "Senior AC Maintenance & IAQ Diagnostic Specialist",
     roleType: "Senior Maintenance Specialist",
     rating: 4.94,
@@ -184,7 +184,7 @@ const WORKERS: Record<string, WorkerProfile> = {
   "elena-rivera": {
     id: "tech-3",
     slug: "elena-rivera",
-    name: "Elena Rivera",
+    name: "Commercial Systems Specialist",
     title: "Commercial HVAC & Clean Room Air Quality Specialist",
     roleType: "Commercial Lead Mechanic",
     rating: 4.98,

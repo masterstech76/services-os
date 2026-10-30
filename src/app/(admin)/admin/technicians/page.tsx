@@ -51,8 +51,8 @@ interface TechDirectoryItem {
 
 const TECHNICIANS_DATA: TechDirectoryItem[] = [
   {
-    id: "tech-carlos",
-    name: "Robert Caldwell",
+    id: "tech-001",
+    name: "Service Client A",
     empId: "#T1047",
     avatar: "/images/avatar-david.jpg",
     specialization: "HVAC",
