@@ -235,14 +235,7 @@ export function Navbar() {
                 <span>Service Areas</span>
                 <ChevronRight className="w-4 h-4 text-slate-500" />
               </Link>
-              <Link
-                href="/pages"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-              >
-                <span>Pages Directory</span>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
-              </Link>
+
             </div>
           </div>
 

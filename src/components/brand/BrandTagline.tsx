@@ -32,7 +32,6 @@ export function getTaglineForPath(pathname: string | null): string {
     pathname === "/pricing" ||
     pathname === "/technicians" ||
     pathname === "/gallery" ||
-    pathname === "/pages" ||
     pathname.startsWith("/reviews");
 
   if (isPublicMarketing) {

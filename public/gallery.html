@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServicePro OS - All Pages Side Inspector</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070D18; }
+    ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #F97316; }
+    .device-shadow { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+  </style>
+</head>
+<body class="bg-[#070D18] text-slate-100 font-sans antialiased h-screen overflow-hidden flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="h-14 border-b border-white/10 bg-[#0C1523] px-4 flex items-center justify-between shrink-0 select-none">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-lg bg-orange-500/20 border border-orange-500/40 flex items-center justify-center font-bold text-orange-400 text-xs">
+        SP
+      </div>
+      <div>
+        <h1 class="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+          ServicePro <span class="text-[#F97316]">OS</span>
+          <span class="text-xs font-normal text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">Side Inspector</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- VIEW MODE CONTROLS -->
+    <div class="flex items-center gap-1.5 bg-[#070D18] p-1 rounded-lg border border-white/10">
+      <button id="btn-desktop" onclick="setViewMode('desktop')" class="px-3 py-1 rounded text-xs font-medium transition-all bg-[#F97316] text-white">
+        🖥️ Desktop
+      </button>
+      <button id="btn-mobile" onclick="setViewMode('mobile')" class="px-3 py-1 rounded text-xs font-medium transition-all text-slate-400 hover:text-white">
+        📱 Mobile
+      </button>
+      <button id="btn-compare" onclick="setViewMode('compare')" class="px-3 py-1 rounded text-xs font-medium transition-all text-slate-400 hover:text-white">
+        ↔️ Side-by-Side
+      </button>
+    </div>
+
+    <!-- QUICK ACTIONS & ZOOM -->
+    <div class="flex items-center gap-3">
+      <button onclick="toggleDrawerTest()" class="text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded transition-colors flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Mobile Drawer Proof
+      </button>
+
+      <div class="flex items-center gap-1 border-l border-white/10 pl-3">
+        <button onclick="changeZoom(-0.1)" class="w-7 h-7 rounded bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold" title="Zoom Out">−</button>
+        <span id="zoom-label" class="text-xs font-mono text-slate-400 w-10 text-center">100%</span>
+        <button onclick="changeZoom(0.1)" class="w-7 h-7 rounded bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold" title="Zoom In">+</button>
+        <button onclick="resetZoom()" class="px-2 h-7 rounded bg-white/5 hover:bg-white/10 text-slate-400 text-xs">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR: PAGE DIRECTORY -->
+    <aside class="w-72 border-r border-white/10 bg-[#0A101D] flex flex-col shrink-0 select-none">
+      <!-- Search Box -->
+      <div class="p-3 border-b border-white/10">
+        <div class="relative">
+          <input
+            type="text"
+            id="search-input"
+            oninput="handleSearch()"
+            placeholder="Filter 125 pages..."
+            class="w-full bg-[#070D18] border border-white/10 rounded-md px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#F97316]"
+          />
+          <span id="page-count-badge" class="absolute right-2.5 top-2 text-[10px] text-slate-400 font-mono">125</span>
+        </div>
+      </div>
+
+      <!-- Categories Navigation -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-4" id="routes-container">
+        <!-- Rendered dynamically by JavaScript -->
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-2.5 border-t border-white/10 bg-[#070D18] flex items-center justify-between text-[11px] text-slate-400">
+        <button onclick="navigatePage(-1)" class="hover:text-white px-2 py-1 bg-white/5 rounded">← Prev</button>
+        <span id="current-index-label" class="font-mono">1 / 125</span>
+        <button onclick="navigatePage(1)" class="hover:text-white px-2 py-1 bg-white/5 rounded">Next →</button>
+      </div>
+    </aside>
+
+    <!-- RIGHT WORKSPACE: PAGE INSPECTION VIEWER -->
+    <main class="flex-1 bg-[#050912] flex flex-col overflow-hidden relative">
+
+      <!-- Route Header Ribbon -->
+      <div class="h-10 border-b border-white/10 bg-[#080E1A]/80 backdrop-blur px-4 flex items-center justify-between text-xs shrink-0 z-10">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">Route:</span>
+          <span id="active-route-name" class="font-mono font-semibold text-white bg-white/5 px-2 py-0.5 rounded border border-white/10">001_home</span>
+          <span id="footer-status-pill" class="text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            Footer: Hidden on Mobile
+          </span>
+        </div>
+        <div class="flex items-center gap-3 text-slate-400 font-mono text-[11px]">
+          <span id="viewport-dim-label">1440 × 900</span>
+          <a id="open-external-link" href="#" target="_blank" class="hover:text-[#F97316] underline">Open Full Image ↗</a>
+        </div>
+      </div>
+
+      <!-- Scrollable Canvas Area -->
+      <div id="canvas-container" class="flex-1 overflow-auto p-6 flex justify-center items-start">
+        
+        <!-- Single Mode Viewer (Desktop or Mobile) -->
+        <div id="single-viewer" class="transition-transform duration-150 origin-top flex flex-col items-center">
+          <img id="main-preview-img" src="http://localhost:3333/desktop/001_home.png" alt="Preview" class="rounded-lg border border-white/15 device-shadow max-w-full" />
+        </div>
+
+        <!-- Side-by-Side Comparison Viewer -->
+        <div id="compare-viewer" class="hidden transition-transform duration-150 origin-top flex gap-8 justify-center w-full">
+          <!-- Desktop Column -->
+          <div class="flex-1 max-w-[950px] flex flex-col items-center">
+            <div class="mb-2 text-xs font-semibold text-slate-400 flex items-center gap-2">
+              <span>🖥️ Desktop (1440px)</span>
+              <span id="desktop-footer-badge" class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px]">Desktop View</span>
+            </div>
+            <img id="compare-desktop-img" src="http://localhost:3333/desktop/001_home.png" alt="Desktop View" class="w-full rounded-lg border border-white/15 device-shadow" />
+          </div>
+
+          <!-- Mobile Column -->
+          <div class="w-[390px] shrink-0 flex flex-col items-center">
+            <div class="mb-2 text-xs font-semibold text-slate-400 flex items-center gap-2">
+              <span>📱 Mobile (390px)</span>
+              <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px]">No Footer</span>
+            </div>
+            <img id="compare-mobile-img" src="http://localhost:3333/mobile/001_home.png" alt="Mobile View" class="w-full rounded-2xl border border-white/15 device-shadow" />
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    let allRoutes = [];
+    let currentIndex = 0;
+    let viewMode = 'desktop'; // 'desktop' | 'mobile' | 'compare'
+    let zoomLevel = 1.0;
+    let isDrawerTestOpen = false;
+
+    // Categories definition
+    const CATEGORIES = [
+      { id: 'public', name: 'Public Marketing', match: r => r.id.match(/^00[1-9]_|01[0-5]_/) },
+      { id: 'services', name: 'HVAC Services', match: r => r.id.includes('services_') },
+      { id: 'areas', name: 'Service Areas', match: r => r.id.includes('service_areas') },
+      { id: 'payments', name: 'Payments & Pricing', match: r => r.id.includes('pricing') || r.id.includes('subscribe') || r.id.includes('pay') },
+      { id: 'booking', name: 'Booking Engine', match: r => r.id.includes('book') },
+      { id: 'account', name: 'Customer Portal', match: r => r.id.startsWith('049_') || r.id.startsWith('05') || r.id.startsWith('060_') },
+      { id: 'tech', name: 'Tech Portal', match: r => r.id.startsWith('06') || r.id.startsWith('070_') || r.id.startsWith('071_') || r.id.startsWith('072_') },
+      { id: 'admin', name: 'Admin Portal', match: r => r.id.includes('admin') },
+      { id: 'auth', name: 'Auth & System', match: r => r.id.startsWith('10') || r.id.startsWith('11') || r.id.startsWith('12') }
+    ];
+
+    async function init() {
+      try {
+        const res = await fetch('http://localhost:3333/api/routes');
+        allRoutes = await res.json();
+        renderSidebar();
+        selectRoute(0);
+      } catch (e) {
+        console.error('Failed to load routes manifest:', e);
+      }
+    }
+
+    function renderSidebar(filteredList = allRoutes) {
+      const container = document.getElementById('routes-container');
+      container.innerHTML = '';
+      document.getElementById('page-count-badge').innerText = filteredList.length;
+
+      // Group routes by category
+      CATEGORIES.forEach(cat => {
+        const items = filteredList.filter(cat.match);
+        if (items.length === 0) return;
+
+        const groupEl = document.createElement('div');
+        groupEl.className = 'space-y-1';
+        groupEl.innerHTML = `
+          <div class="text-[10px] uppercase tracking-wider font-bold text-slate-400 px-2 flex justify-between items-center">
+            <span>${cat.name}</span>
+            <span class="bg-white/5 text-slate-400 px-1.5 py-0.2 rounded font-mono">${items.length}</span>
+          </div>
+          <div class="space-y-0.5">
+            ${items.map(item => {
+              const idx = allRoutes.findIndex(r => r.id === item.id);
+              const displayName = item.id.replace(/^\d+_/, '').replace(/_/g, ' ');
+              return `
+                <button
+                  id="nav-btn-${item.id}"
+                  onclick="selectRoute(${idx})"
+                  class="w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center justify-between text-slate-300 hover:bg-white/5 hover:text-white"
+                >
+                  <span class="truncate font-mono">${displayName}</span>
+                  <span class="text-[10px] text-slate-400 ml-1 shrink-0">#${item.id.split('_')[0]}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+        container.appendChild(groupEl);
+      });
+    }
+
+    function selectRoute(index) {
+      if (index < 0 || index >= allRoutes.length) return;
+      currentIndex = index;
+      isDrawerTestOpen = false;
+      const route = allRoutes[currentIndex];
+
+      // Update active highlight in sidebar
+      document.querySelectorAll('[id^="nav-btn-"]').forEach(el => {
+        el.classList.remove('bg-[#F97316]/20', 'text-[#F97316]', 'font-semibold');
+        el.classList.add('text-slate-300');
+      });
+      const activeBtn = document.getElementById(`nav-btn-${route.id}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-[#F97316]/20', 'text-[#F97316]', 'font-semibold');
+        activeBtn.scrollIntoView({ block: 'nearest' });
+      }
+
+      // Update ribbon labels
+      document.getElementById('active-route-name').innerText = route.id;
+      document.getElementById('current-index-label').innerText = `${currentIndex + 1} / ${allRoutes.length}`;
+
+      // Footer badge logic
+      const footerPill = document.getElementById('footer-status-pill');
+      const isPayment = route.id.includes('pay') || route.id.includes('pricing') || route.id.includes('subscribe');
+      if (isPayment) {
+        footerPill.innerText = 'Payments: Tiny SSL Footer (Hidden on Mobile)';
+        footerPill.className = 'text-[10px] px-2 py-0.5 rounded font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20';
+      } else {
+        footerPill.innerText = 'Footer: Hidden on Mobile';
+        footerPill.className = 'text-[10px] px-2 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      }
+
+      updateImages();
+    }
+
+    function updateImages() {
+      const route = allRoutes[currentIndex];
+      const singleImg = document.getElementById('main-preview-img');
+      const compareDesktop = document.getElementById('compare-desktop-img');
+      const compareMobile = document.getElementById('compare-mobile-img');
+      const externalLink = document.getElementById('open-external-link');
+      const dimLabel = document.getElementById('viewport-dim-label');
+
+      if (viewMode === 'desktop') {
+        singleImg.src = route.desktopUrl;
+        singleImg.style.width = '1440px';
+        externalLink.href = route.desktopUrl;
+        dimLabel.innerText = '1440 × 900';
+      } else if (viewMode === 'mobile') {
+        const url = isDrawerTestOpen ? 'http://localhost:3333/mobile/001_home_drawer_open.png' : route.mobileUrl;
+        singleImg.src = url;
+        singleImg.style.width = '390px';
+        externalLink.href = url;
+        dimLabel.innerText = isDrawerTestOpen ? '390 × 844 (Opaque Drawer Open)' : '390 × 844';
+      } else {
+        compareDesktop.src = route.desktopUrl;
+        compareMobile.src = route.mobileUrl;
+        externalLink.href = route.desktopUrl;
+        dimLabel.innerText = 'Desktop + Mobile Side-by-Side';
+      }
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      const btnD = document.getElementById('btn-desktop');
+      const btnM = document.getElementById('btn-mobile');
+      const btnC = document.getElementById('btn-compare');
+      const singleViewer = document.getElementById('single-viewer');
+      const compareViewer = document.getElementById('compare-viewer');
+
+      [btnD, btnM, btnC].forEach(b => {
+        b.className = 'px-3 py-1 rounded text-xs font-medium transition-all text-slate-400 hover:text-white';
+      });
+
+      if (mode === 'desktop') {
+        btnD.className = 'px-3 py-1 rounded text-xs font-medium transition-all bg-[#F97316] text-white';
+        singleViewer.classList.remove('hidden');
+        compareViewer.classList.add('hidden');
+      } else if (mode === 'mobile') {
+        btnM.className = 'px-3 py-1 rounded text-xs font-medium transition-all bg-[#F97316] text-white';
+        singleViewer.classList.remove('hidden');
+        compareViewer.classList.add('hidden');
+      } else {
+        btnC.className = 'px-3 py-1 rounded text-xs font-medium transition-all bg-[#F97316] text-white';
+        singleViewer.classList.add('hidden');
+        compareViewer.classList.remove('hidden');
+      }
+
+      updateImages();
+    }
+
+    function toggleDrawerTest() {
+      isDrawerTestOpen = !isDrawerTestOpen;
+      setViewMode('mobile');
+      const singleImg = document.getElementById('main-preview-img');
+      if (isDrawerTestOpen) {
+        singleImg.src = 'http://localhost:3333/mobile/001_home_drawer_open.png';
+        document.getElementById('active-route-name').innerText = '001_home_drawer_open (SOLID NON-TRANSPARENT)';
+        document.getElementById('footer-status-pill').innerText = 'Drawer: Solid rgb(12, 21, 35) · Opacity 1.0 · z-index 1000';
+      } else {
+        updateImages();
+      }
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const filtered = allRoutes.filter(r => r.id.toLowerCase().includes(q));
+      renderSidebar(filtered);
+    }
+
+    function navigatePage(dir) {
+      selectRoute(currentIndex + dir);
+    }
+
+    function changeZoom(delta) {
+      zoomLevel = Math.max(0.4, Math.min(2.0, zoomLevel + delta));
+      applyZoom();
+    }
+
+    function resetZoom() {
+      zoomLevel = 1.0;
+      applyZoom();
+    }
+
+    function applyZoom() {
+      document.getElementById('zoom-label').innerText = `${Math.round(zoomLevel * 100)}%`;
+      document.getElementById('single-viewer').style.transform = `scale(${zoomLevel})`;
+      document.getElementById('compare-viewer').style.transform = `scale(${zoomLevel})`;
+    }
+
+    // Keyboard shortcuts: Left/Right arrow keys
+    window.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigatePage(1);
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navigatePage(-1);
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -162,7 +162,7 @@ export default function AccountLayout({
         { href: "/pricing", label: "Pricing", icon: DollarSign },
         { href: "/gallery", label: "Gallery", icon: Camera },
         { href: "/service-areas", label: "Service Areas", icon: MapPin },
-        { href: "/pages", label: "Pages Directory", icon: Globe },
+
       ],
     },
   ];
@@ -425,12 +425,12 @@ export default function AccountLayout({
             {/* Right: Public Storefront Quick Link */}
             <div className="ml-auto flex items-center gap-2 shrink-0">
               <Link
-                href="/pages"
+                href="/"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-slate-300 hover:text-white text-xs font-semibold transition-all shadow-sm cursor-pointer"
-                title="View All Public Pages Directory"
+                title="Return to Home"
               >
                 <Globe className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Public Pages</span>
+                <span className="hidden sm:inline">Home</span>
               </Link>
             </div>
           </nav>

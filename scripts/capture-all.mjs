@@ -17,7 +17,6 @@ const ROUTES = [
   { name: '012_gallery', url: '/gallery' },
   { name: '013_reviews', url: '/reviews' },
   { name: '014_technicians', url: '/technicians' },
-  { name: '015_pages', url: '/pages' },
   { name: '016_services_emergency_hvac', url: '/services/emergency-hvac' },
   { name: '017_services_ac_repair', url: '/services/ac-repair' },
   { name: '018_services_ac_tuneup', url: '/services/ac-tuneup' },

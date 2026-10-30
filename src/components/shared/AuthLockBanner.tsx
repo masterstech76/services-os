@@ -43,11 +43,11 @@ export function AuthLockBanner() {
           </p>
           <div className="mt-3 flex items-center gap-2">
             <Link
-              href="/pages"
+              href="/"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Compass className="w-3.5 h-3.5" />
-              Directory of All 87 Pages
+              Return to Home
             </Link>
           </div>
         </div>
