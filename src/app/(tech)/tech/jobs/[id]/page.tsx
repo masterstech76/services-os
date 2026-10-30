@@ -294,7 +294,7 @@ export default function TechJobDetailPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-28 pb-[calc(7rem+env(safe-area-inset-bottom,0px))]">
       <div className="flex items-center justify-between">
         <Link
           href="/tech"
@@ -498,9 +498,9 @@ export default function TechJobDetailPage() {
         </section>
       ) : null}
 
-      {/* Sticky 56px Bottom ActionBar */}
+      {/* Sticky Bottom ActionBar with Safe Area Padding */}
       {job.status !== "completed" && job.status !== "cancelled" ? (
-        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-white/10 bg-[#0F172A]/90 backdrop-blur-xl p-3 shadow-2xl">
+        <div className="fixed bottom-0 inset-x-0 z-30 border-t border-white/10 bg-[#0F172A]/90 backdrop-blur-xl p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-2xl">
           <div className="mx-auto w-full max-w-[1600px] px-1 sm:px-3 lg:px-5">
             {job.status === "assigned" ? (
               <Button

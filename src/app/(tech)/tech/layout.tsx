@@ -71,7 +71,20 @@ export default function TechLayout({
   React.useEffect(() => {
     setNotificationsOpen(false);
     setProfileMenuOpen(false);
+    setSosModalOpen(false);
   }, [pathname]);
+
+  // Lock body scroll when SOS modal is open
+  React.useEffect(() => {
+    if (sosModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sosModalOpen]);
 
   async function handleSignOut() {
     setLoggingOut(true);
@@ -361,7 +374,7 @@ export default function TechLayout({
       ───────────────────────────────────────────────────────────── */}
       {sosModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
           onClick={() => setSosModalOpen(false)}
         >
           <div
@@ -498,7 +511,7 @@ export default function TechLayout({
           FULL-WIDTH MAIN CONTENT AREA: Direct Below 2-Row Navbar
           (No sidebar occupying side space)
       ───────────────────────────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-[1600px] mx-auto min-w-0 p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto min-w-0 p-4 sm:p-6 lg:p-8 pb-24 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
         {children}
       </main>
 
@@ -528,7 +541,7 @@ export default function TechLayout({
       {!pathname.startsWith("/tech/jobs/") && (
         <nav
           aria-label="Technician bottom navigation"
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0F172A]/90 backdrop-blur-xl shadow-2xl"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#0F172A]/90 backdrop-blur-xl shadow-2xl pb-[env(safe-area-inset-bottom,0px)]"
         >
           <div className="mx-auto flex max-w-md sm:max-w-xl md:max-w-2xl items-center justify-around px-2 py-2">
             <Link

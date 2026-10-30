@@ -1306,7 +1306,7 @@ export default function ServiceProLandingPage() {
           10. WATCH DEMO: MINI WINDOW SCREEN (Interactive Product Tour & Previous Works)
       ───────────────────────────────────────────────────────────── */}
       {demoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in">
           <div className="bg-[#0B111E] border border-white/15 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col text-white relative shadow-2xl overflow-hidden">
             
             {/* Window Title Bar with macOS control dots */}
@@ -1829,7 +1829,7 @@ export default function ServiceProLandingPage() {
           11. FREE TRIAL & BOOKING PROCESS: PROFESSIONAL MINI WINDOW SCREEN
       ───────────────────────────────────────────────────────────── */}
       {trialModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-2xl w-full h-[82vh] max-h-[660px] flex flex-col shadow-2xl relative border border-slate-300/80 overflow-hidden ring-1 ring-black/10">
             {/* Professional Window Title Bar with macOS Control Dots (No Full Screen Link) */}
             <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/10 bg-[#0F172A] text-white shrink-0">
