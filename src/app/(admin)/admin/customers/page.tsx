@@ -36,81 +36,10 @@ export interface CustomerDirectoryItem {
   jobsCount: number;
 }
 
-const DEFAULT_CUSTOMERS: CustomerDirectoryItem[] = [
-  {
-    id: "C10047",
-    name: "Service Client A",
-    avatarInitials: "RC",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Miami, FL",
-    status: "Active",
-    jobsCount: 12,
-  },
-  {
-    id: "C10046",
-    name: "Senior Field Tech",
-    avatarInitials: "MA",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Miami, FL",
-    status: "Active",
-    jobsCount: 8,
-  },
-  {
-    id: "C10045",
-    name: "Diagnostic Specialist",
-    avatarInitials: "DR",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Orlando, FL",
-    status: "Active",
-    jobsCount: 15,
-  },
-  {
-    id: "C10044",
-    name: "Service Client E",
-    avatarInitials: "SM",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Tampa, FL",
-    status: "Active",
-    jobsCount: 7,
-  },
-  {
-    id: "C10043",
-    name: "Service Client F",
-    avatarInitials: "MJ",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Jacksonville, FL",
-    status: "Active",
-    jobsCount: 10,
-  },
-  {
-    id: "C10042",
-    name: "Service Client G",
-    avatarInitials: "JL",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Tallahassee, FL",
-    status: "Active",
-    jobsCount: 6,
-  },
-  {
-    id: "C10041",
-    name: "Service Client H",
-    avatarInitials: "DK",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    location: "Miami, FL",
-    status: "Active",
-    jobsCount: 14,
-  },
-];
+const DEFAULT_CUSTOMERS: CustomerDirectoryItem[] = [];
 
 export default function AdminCustomersDirectoryPage() {
-  const [customers, setCustomers] = React.useState<CustomerDirectoryItem[]>(DEFAULT_CUSTOMERS);
+  const [customers, setCustomers] = React.useState<CustomerDirectoryItem[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [locationFilter, setLocationFilter] = React.useState("all");
   const [statusFilter, setStatusFilter] = React.useState("all");
@@ -173,7 +102,7 @@ export default function AdminCustomersDirectoryPage() {
   }
 
   function handleExportCSV() {
-    toast.success("Exporting complete customer records (1,248 entries)...");
+    toast.success("Exporting customer records...");
   }
 
   return (

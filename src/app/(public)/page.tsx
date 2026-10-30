@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Calendar,
@@ -36,6 +37,7 @@ import {
   TrendingUp,
   ExternalLink,
   ChevronLeft,
+  Edit3,
 } from "lucide-react";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 import { BrandTagline } from "@/components/brand/BrandTagline";
@@ -125,10 +127,15 @@ const appActionSteps = [
 ];
 
 export default function ServiceProLandingPage() {
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [selectedWorkflowService, setSelectedWorkflowService] = useState<"hvac" | "plumbing" | "electrical">("hvac");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Mini Window Interactive Screen State
   const [activeDemoTab, setActiveDemoTab] = useState<"actions" | "video" | "beforeAfter" | "results">("actions");
@@ -195,8 +202,16 @@ export default function ServiceProLandingPage() {
             <Link href="/about" className="hover:text-white transition-colors">About</Link>
           </nav>
 
-          {/* Right Action Button: Sign In Only (Medium Size) */}
+          {/* Right Action Button: Edit Details + Sign In */}
           <div className="hidden sm:flex items-center gap-3">
+            <Link
+              href="/admin/content?edit=cnt-home"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-orange-300 text-xs font-semibold transition-all shadow-sm cursor-pointer"
+              title="Edit Page Details"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Page Details</span>
+            </Link>
             <Link
               href="/login"
               className="px-6 py-2.5 rounded-full border border-white/25 bg-white/10 text-white hover:bg-[#F97316] hover:border-[#F97316] text-sm sm:text-base font-semibold transition-all backdrop-blur-md shadow-sm hover:shadow-[#F97316]/25 hover:scale-[1.02] active:scale-95"
@@ -219,13 +234,13 @@ export default function ServiceProLandingPage() {
 
       {/* ─────────────────────────────────────────────────────────────
           MOBILE SLIDE-OUT DRAWER & FULL-SCREEN BACKDROP
-          (Rendered outside <header> so backdrop-filter does NOT constrain fixed position)
+          (Mounted directly on document.body via createPortal for zero transparency bleed)
       ───────────────────────────────────────────────────────────── */}
-      {mobileMenuOpen && (
+      {mounted && mobileMenuOpen && typeof document !== "undefined" && createPortal(
         <>
           {/* Full Screen Dim Backdrop */}
           <div
-            className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+            className="fixed inset-0 z-[9998] bg-black/85 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
             style={{ backgroundColor: "rgba(0, 0, 0, 0.85)" }}
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
@@ -234,7 +249,7 @@ export default function ServiceProLandingPage() {
           {/* Right-Side Drawer Panel: 100% Solid Opaque Background, Full Screen Height */}
           <nav
             id="mobile-nav"
-            className="fixed inset-y-0 right-0 w-[320px] max-w-[90vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[1000] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
+            className="fixed inset-y-0 right-0 w-[320px] max-w-[90vw] h-full h-[100dvh] bg-[#0C1523] border-l border-white/15 z-[9999] p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-250 md:hidden overflow-y-auto"
             style={{ backgroundColor: "#0C1523", opacity: 1 }}
             aria-label="Mobile navigation"
           >
@@ -310,6 +325,19 @@ export default function ServiceProLandingPage() {
                   <span>About</span>
                   <ChevronRight className="w-4 h-4 text-slate-500" />
                 </Link>
+
+                {/* Admin CMS Shortcut Link */}
+                <Link
+                  href="/admin/content?edit=cnt-home"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between px-3.5 py-2.5 mt-2 rounded-xl text-sm font-semibold text-orange-400 hover:text-orange-300 bg-orange-500/10 border border-orange-500/25 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Edit3 className="w-4 h-4" />
+                    Edit Page Details
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-orange-400" />
+                </Link>
               </div>
             </div>
 
@@ -334,7 +362,8 @@ export default function ServiceProLandingPage() {
               </Link>
             </div>
           </nav>
-        </>
+        </>,
+        document.body
       )}
 
       {/* ─────────────────────────────────────────────────────────────

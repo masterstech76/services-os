@@ -111,6 +111,10 @@ export default function CustomerPayInvoicePage() {
   const [tipCents, setTipCents] = React.useState(0);
   const [lastTxId, setLastTxId] = React.useState<string | null>(null);
 
+  const [paymentChannel, setPaymentChannel] = React.useState<"card" | "upi" | "qr" | "wallets" | "netbanking">("card");
+  const [upiVpa, setUpiVpa] = React.useState("");
+  const [selectedBank, setSelectedBank] = React.useState("HDFC Bank");
+
   const [payMethod, setPayMethod] = React.useState<"card_on_file" | "new_card" | "check">("card_on_file");
   const [cardName, setCardName] = React.useState("Service Client");
   const [cardNumber, setCardNumber] = React.useState("");
@@ -627,171 +631,333 @@ export default function CustomerPayInvoicePage() {
                   </span>
                 </div>
 
-                {/* Method Tabs */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  {job.customer.cardLast4 ? (
+                {/* Multi-Method Channel Tabs */}
+                <div className="flex gap-1 p-1 bg-slate-900/90 border border-white/10 rounded-2xl overflow-x-auto">
+                  {[
+                    { id: "card", label: "Credit / Debit Card" },
+                    { id: "upi", label: "UPI / VPA" },
+                    { id: "qr", label: "Dynamic QR Code" },
+                    { id: "wallets", label: "PhonePe / Wallets" },
+                    { id: "netbanking", label: "Netbanking" },
+                  ].map((tab) => (
                     <button
+                      key={tab.id}
                       type="button"
-                      onClick={() => setPayMethod("card_on_file")}
-                      className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
-                        payMethod === "card_on_file"
-                          ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
-                          : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                      onClick={() => setPaymentChannel(tab.id as any)}
+                      className={`flex-1 min-w-max px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        paymentChannel === tab.id
+                          ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
+                          : "text-slate-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      <span className="block text-[10px] uppercase tracking-wide opacity-80">Saved Card</span>
-                      •••• {job.customer.cardLast4}
+                      {tab.label}
                     </button>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => setPayMethod("new_card")}
-                    className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
-                      payMethod === "new_card"
-                        ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <span className="block text-[10px] uppercase tracking-wide opacity-80">New Card</span>
-                    Credit / Debit
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPayMethod("check")}
-                    className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
-                      payMethod === "check"
-                        ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <span className="block text-[10px] uppercase tracking-wide opacity-80">Offline</span>
-                    Check / Bank
-                  </button>
+                  ))}
                 </div>
 
-                {payMethod === "card_on_file" && job.customer.cardLast4 ? (
-                  <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 flex items-center justify-between gap-3">
-                    <div className="text-xs">
-                      <p className="font-bold text-white uppercase">
-                        Saved {job.customer.cardBrand ?? "Card"} •••• {job.customer.cardLast4}
-                      </p>
-                      <p className="text-slate-300 mt-0.5">Authorized during deposit booking</p>
-                    </div>
-                    <span className="rounded-full bg-[#F97316] text-[#0F172A] px-3 py-1 text-[11px] font-black shrink-0 shadow-sm">
-                      Ready to Charge
-                    </span>
-                  </div>
-                ) : null}
+                {paymentChannel === "card" && (
+                  <div className="space-y-4">
+                    {/* Method Tabs */}
+                    <div className="grid grid-cols-3 gap-2.5">
+                      {job.customer.cardLast4 ? (
+                        <button
+                          type="button"
+                          onClick={() => setPayMethod("card_on_file")}
+                          className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
+                            payMethod === "card_on_file"
+                              ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
+                              : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          <span className="block text-[10px] uppercase tracking-wide opacity-80">Saved Card</span>
+                          •••• {job.customer.cardLast4}
+                        </button>
+                      ) : null}
 
-                {payMethod === "new_card" ? (
-                  <div className="space-y-4 pt-1">
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <Label htmlFor="pay-cardnum" className="text-slate-300 text-xs">Card Number</Label>
-                        <span className="text-[11px] font-bold text-[#F97316]">
-                          {detectCardBrand(cardNumber)}
+                      <button
+                        type="button"
+                        onClick={() => setPayMethod("new_card")}
+                        className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
+                          payMethod === "new_card"
+                            ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
+                            : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase tracking-wide opacity-80">New Card</span>
+                        Credit / Debit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPayMethod("check")}
+                        className={`rounded-xl border p-3 text-xs font-bold transition-all text-left ${
+                          payMethod === "check"
+                            ? "border-[#F97316] bg-[#F97316]/20 text-white shadow-md shadow-orange-500/10"
+                            : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase tracking-wide opacity-80">Offline</span>
+                        Check / Bank
+                      </button>
+                    </div>
+
+                    {payMethod === "card_on_file" && job.customer.cardLast4 ? (
+                      <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 flex items-center justify-between gap-3">
+                        <div className="text-xs">
+                          <p className="font-bold text-white uppercase">
+                            Saved {job.customer.cardBrand ?? "Card"} •••• {job.customer.cardLast4}
+                          </p>
+                          <p className="text-slate-300 mt-0.5">Authorized during deposit booking</p>
+                        </div>
+                        <span className="rounded-full bg-[#F97316] text-[#0F172A] px-3 py-1 text-[11px] font-black shrink-0 shadow-sm">
+                          Ready to Charge
                         </span>
                       </div>
+                    ) : null}
+
+                    {payMethod === "new_card" ? (
+                      <div className="space-y-4 pt-1">
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <Label htmlFor="pay-cardnum" className="text-slate-300 text-xs">Card Number</Label>
+                            <span className="text-[11px] font-bold text-[#F97316]">
+                              {detectCardBrand(cardNumber)}
+                            </span>
+                          </div>
+                          <Input
+                            id="pay-cardnum"
+                            placeholder="4242 •••• •••• 4242"
+                            value={cardNumber}
+                            onChange={(e) => setCardNumber(formatCardInput(e.target.value))}
+                            className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="pay-expiry" className="text-slate-300 text-xs mb-1.5 block">Expiry Date</Label>
+                            <Input
+                              id="pay-expiry"
+                              placeholder="MM/YY"
+                              value={cardExpiry}
+                              onChange={(e) => setCardExpiry(formatExpiryInput(e.target.value))}
+                              className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="pay-cvc" className="text-slate-300 text-xs mb-1.5 block">CVC Code</Label>
+                            <Input
+                              id="pay-cvc"
+                              placeholder="123"
+                              maxLength={4}
+                              value={cardCvc}
+                              onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ""))}
+                              className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        {Boolean(token.includes("demo") || process.env.NODE_ENV !== "production") ? (
+                          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                            <button
+                              type="button"
+                              onClick={() => fillTestCard("success")}
+                              className="text-xs font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              Fill Test Card 4242
+                            </button>
+                            <span className="text-slate-500">·</span>
+                            <button
+                              type="button"
+                              onClick={() => fillTestCard("decline")}
+                              className="text-xs font-semibold text-slate-400 hover:text-slate-300"
+                            >
+                              Test Decline
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {payMethod === "check" ? (
+                      <div className="space-y-3 pt-1">
+                        <div>
+                          <Label htmlFor="pay-check-ref" className="text-slate-300 text-xs mb-1.5 block">Check / Reference Number</Label>
+                          <Input
+                            id="pay-check-ref"
+                            placeholder="e.g. Check # 1042"
+                            value={checkRef}
+                            onChange={(e) => setCheckRef(e.target.value)}
+                            className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          Hand payment to your technician on site or mail check to{" "}
+                          <strong className="text-white">{businessConfig.businessName}</strong>.
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <div>
+                      <Label htmlFor="pay-cardholder" className="text-slate-300 text-xs mb-1.5 block">Cardholder / Payer Name</Label>
                       <Input
-                        id="pay-cardnum"
-                        placeholder="4242 •••• •••• 4242"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(formatCardInput(e.target.value))}
+                        id="pay-cardholder"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
                         className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
                         required
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="pay-expiry" className="text-slate-300 text-xs mb-1.5 block">Expiry Date</Label>
-                        <Input
-                          id="pay-expiry"
-                          placeholder="MM/YY"
-                          value={cardExpiry}
-                          onChange={(e) => setCardExpiry(formatExpiryInput(e.target.value))}
-                          className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="pay-cvc" className="text-slate-300 text-xs mb-1.5 block">CVC Code</Label>
-                        <Input
-                          id="pay-cvc"
-                          placeholder="123"
-                          maxLength={4}
-                          value={cardCvc}
-                          onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ""))}
-                          className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {Boolean(token.includes("demo") || process.env.NODE_ENV !== "production") ? (
-                      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => fillTestCard("success")}
-                          className="text-xs font-semibold text-orange-400 hover:text-orange-300 flex items-center gap-1"
-                        >
-                          <Sparkles className="h-3 w-3" />
-                          Fill Test Card 4242
-                        </button>
-                        <span className="text-slate-500">·</span>
-                        <button
-                          type="button"
-                          onClick={() => fillTestCard("decline")}
-                          className="text-xs font-semibold text-slate-400 hover:text-slate-300"
-                        >
-                          Test Decline
-                        </button>
-                      </div>
-                    ) : null}
+                    <Button
+                      type="submit"
+                      size="lg"
+                      loading={paying}
+                      data-testid="pay-link-submit-btn"
+                      className="w-full rounded-xl font-black bg-[#F97316] hover:bg-[#EA580C] text-[#0F172A] hover:text-[#0F172A] shadow-lg shadow-orange-500/20 text-sm sm:text-base py-4 transition-all active:scale-[0.99]"
+                    >
+                      Pay {formatMoney(liveAmountDueCents)} Now
+                    </Button>
                   </div>
-                ) : null}
+                )}
 
-                {payMethod === "check" ? (
-                  <div className="space-y-3 pt-1">
-                    <div>
-                      <Label htmlFor="pay-check-ref" className="text-slate-300 text-xs mb-1.5 block">Check / Reference Number</Label>
+                {paymentChannel === "upi" && (
+                  <div className="space-y-4 py-2">
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                      <Label htmlFor="upi-vpa-input" className="text-slate-300 text-xs font-bold block">
+                        Enter UPI Virtual Payment Address (VPA)
+                      </Label>
                       <Input
-                        id="pay-check-ref"
-                        placeholder="e.g. Check # 1042"
-                        value={checkRef}
-                        onChange={(e) => setCheckRef(e.target.value)}
-                        className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
+                        id="upi-vpa-input"
+                        placeholder="yourname@okhdfcbank or yourname@upi"
+                        value={upiVpa}
+                        onChange={(e) => setUpiVpa(e.target.value)}
+                        className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl text-xs"
                       />
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        A payment collect request for <strong className="text-white">{formatMoney(liveAmountDueCents)}</strong> will be sent to your UPI app.
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      Hand payment to your technician on site or mail check to{" "}
-                      <strong className="text-white">{businessConfig.businessName}</strong>.
-                    </p>
+
+                    <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300 space-y-2">
+                      <p className="font-semibold text-white">Merchant Gateway Status: Category B / C</p>
+                      <p className="text-[11px] text-slate-300">
+                        Direct UPI intent requires merchant key activation. To complete immediate settlement now without delay, please use the Credit/Debit Card tab.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => setPaymentChannel("card")}
+                      className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs py-3"
+                    >
+                      Switch to Card &amp; Pay {formatMoney(liveAmountDueCents)}
+                    </Button>
                   </div>
-                ) : null}
+                )}
 
-                <div>
-                  <Label htmlFor="pay-cardholder" className="text-slate-300 text-xs mb-1.5 block">Cardholder / Payer Name</Label>
-                  <Input
-                    id="pay-cardholder"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    className="bg-[#0B1320] border-white/15 text-white placeholder:text-slate-500 rounded-xl"
-                    required
-                  />
-                </div>
+                {paymentChannel === "qr" && (
+                  <div className="space-y-4 py-2 text-center">
+                    <div className="mx-auto w-48 h-48 bg-white rounded-2xl p-3 flex flex-col items-center justify-center shadow-xl border-4 border-orange-500">
+                      {/* High-Contrast Dynamic QR Placeholder */}
+                      <div className="w-full h-full border-2 border-dashed border-slate-900 rounded-lg flex flex-col items-center justify-center p-2 text-slate-900">
+                        <span className="font-mono font-black text-xs tracking-widest uppercase">SCAN TO PAY</span>
+                        <span className="text-[10px] text-slate-600 mt-1">{formatMoney(liveAmountDueCents)}</span>
+                        <div className="mt-2 text-[9px] font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                          Invoice #{inv.invoiceNumber}
+                        </div>
+                      </div>
+                    </div>
 
-                <Button
-                  type="submit"
-                  size="lg"
-                  loading={paying}
-                  data-testid="pay-link-submit-btn"
-                  className="w-full rounded-xl font-black bg-[#F97316] hover:bg-[#EA580C] text-[#0F172A] hover:text-[#0F172A] shadow-lg shadow-orange-500/20 text-sm sm:text-base py-4 transition-all active:scale-[0.99]"
-                >
-                  Pay {formatMoney(liveAmountDueCents)} Now
-                </Button>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                        Scan with Any UPI or Banking App
+                      </h4>
+                      <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                        Dynamic QR generation activates upon merchant credentials configuration. For instant settlement, use Card payment.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => setPaymentChannel("card")}
+                      className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs py-3"
+                    >
+                      Pay with Card Instead
+                    </Button>
+                  </div>
+                )}
+
+                {paymentChannel === "wallets" && (
+                  <div className="space-y-4 py-2">
+                    <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                      <h4 className="text-xs font-bold text-white">Supported Digital Wallets</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-slate-300">PhonePe</div>
+                        <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-slate-300">Paytm Wallet</div>
+                        <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-slate-300">Google Pay</div>
+                        <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 text-slate-300">Amazon Pay</div>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-orange-300">
+                      <p className="font-semibold text-white">Integration Status: Pending Merchant Credentials</p>
+                      <p className="text-[11px] text-slate-300 mt-1">
+                        Wallet redirection will activate upon production merchant onboarding. Please use Card payment for immediate receipt issuance.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => setPaymentChannel("card")}
+                      className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs py-3"
+                    >
+                      Pay with Card Now
+                    </Button>
+                  </div>
+                )}
+
+                {paymentChannel === "netbanking" && (
+                  <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bank-select" className="text-slate-300 text-xs font-bold block">
+                        Select Your Banking Institution
+                      </Label>
+                      <select
+                        id="bank-select"
+                        value={selectedBank}
+                        onChange={(e) => setSelectedBank(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/15 rounded-xl text-white text-xs font-semibold focus:outline-none focus:border-[#F97316]"
+                      >
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>State Bank of India (SBI)</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                        <option>Other Supported Retail Bank</option>
+                      </select>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-1">
+                      <p className="font-semibold text-white">Netbanking Redirection Notice</p>
+                      <p className="text-[11px] text-slate-400">
+                        Selected institution: <strong className="text-white">{selectedBank}</strong>. Direct netbanking redirect is routed via Stripe India corporate gateway.
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={() => setPaymentChannel("card")}
+                      className="w-full rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs py-3"
+                    >
+                      Switch to Card &amp; Pay {formatMoney(liveAmountDueCents)}
+                    </Button>
+                  </div>
+                )}
               </section>
             </form>
           ) : null}

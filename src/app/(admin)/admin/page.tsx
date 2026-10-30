@@ -42,53 +42,53 @@ export default function AdminOverviewPage() {
     }, 600);
   };
 
-  // 6 KPI Metrics matching the approved reference
+  // 6 KPI Metrics matching the approved reference (Neutral zero states)
   const kpis = [
     {
       title: "Total Jobs Today",
-      value: "24",
-      subtext: "↑ 20% from yesterday",
-      subtextColor: "text-blue-400",
+      value: "0",
+      subtext: "—",
+      subtextColor: "text-slate-400",
       icon: Calendar,
       iconBg: "bg-blue-500/15 border-blue-500/30 text-blue-400",
     },
     {
       title: "Jobs In Progress",
-      value: "8",
-      subtext: "33% of total jobs",
+      value: "0",
+      subtext: "—",
       subtextColor: "text-slate-400",
       icon: Briefcase,
       iconBg: "bg-amber-500/15 border-amber-500/30 text-amber-400",
     },
     {
       title: "Completed Today",
-      value: "12",
-      subtext: "↑ 9% from yesterday",
+      value: "0",
+      subtext: "—",
       subtextColor: "text-emerald-400",
       icon: CheckCircle2,
       iconBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
     },
     {
       title: "Pending Dispatch",
-      value: "4",
-      subtext: "Needs assignment",
+      value: "0",
+      subtext: "—",
       subtextColor: "text-purple-400",
       icon: User,
       iconBg: "bg-purple-500/15 border-purple-500/30 text-purple-400",
     },
     {
       title: "Today's Revenue",
-      value: "$8,420",
-      subtext: "↑ 15% from yesterday",
+      value: "$0.00",
+      subtext: "—",
       subtextColor: "text-emerald-400",
       icon: DollarSign,
       iconBg: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
     },
     {
       title: "Overdue Invoices",
-      value: "6",
-      subtext: "$2,180.00 outstanding",
-      subtextColor: "text-rose-400",
+      value: "0",
+      subtext: "$0.00",
+      subtextColor: "text-slate-400",
       icon: FileText,
       iconBg: "bg-rose-500/15 border-rose-500/30 text-rose-400",
     },
@@ -102,7 +102,7 @@ export default function AdminOverviewPage() {
     { date: "May 11", label: "11", amount: 16800, x: 225, y: 135 },
     { date: "May 12", label: "12", amount: 20100, x: 290, y: 118 },
     { date: "May 13", label: "13", amount: 14500, x: 355, y: 146 },
-    { date: "May 14", label: "14", amount: 27800, x: 420, y: 78, highlight: "$8,420" },
+    { date: "May 14", label: "14", amount: 27800, x: 420, y: 78, highlight: "$0.00" },
   ];
 
   // Live dispatch feed items

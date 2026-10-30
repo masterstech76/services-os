@@ -34,78 +34,7 @@ export interface ModerationReviewItem {
   status: "Approved" | "Pending" | "Rejected";
 }
 
-const DEFAULT_REVIEWS: ModerationReviewItem[] = [
-  {
-    id: "rev-1",
-    customerName: "Service Client A",
-    avatarInitials: "RC",
-    avatarUrl: "/images/avatar-david.jpg",
-    rating: 5,
-    reviewText: "Great service! Technician was professional, diagnosed our AC fault in 10 minutes, and arrived exactly on time.",
-    date: "May 18, 2025",
-    status: "Approved",
-  },
-  {
-    id: "rev-2",
-    customerName: "Senior Field Tech",
-    avatarInitials: "MA",
-    avatarUrl: "/images/avatar-sarah.jpg",
-    rating: 4,
-    reviewText: "Clean workmanship and polite crew. The thermostat calibration was fast, though weekend parts dispatch was slightly delayed.",
-    date: "May 17, 2025",
-    status: "Pending",
-  },
-  {
-    id: "rev-3",
-    customerName: "Diagnostic Specialist",
-    avatarInitials: "DR",
-    avatarUrl: "/images/avatar-mike.jpg",
-    rating: 5,
-    reviewText: "Excellent duct cleaning service and very helpful staff. Airflow in the upper floors improved noticeably within hours.",
-    date: "May 16, 2025",
-    status: "Approved",
-  },
-  {
-    id: "rev-4",
-    customerName: "Service Client E",
-    avatarInitials: "SM",
-    avatarUrl: "/images/avatar-2.jpg",
-    rating: 4,
-    reviewText: "Quick response and quality work. Solved the water heater pilot light issue without charging for extra diagnostic hours.",
-    date: "May 15, 2025",
-    status: "Approved",
-  },
-  {
-    id: "rev-5",
-    customerName: "Service Client F",
-    avatarInitials: "MJ",
-    avatarUrl: "/images/avatar-1.jpg",
-    rating: 5,
-    reviewText: "Highly recommend ServicePro! Great experience from phone booking to final invoice payment on site.",
-    date: "May 14, 2025",
-    status: "Approved",
-  },
-  {
-    id: "rev-6",
-    customerName: "Service Client G",
-    avatarInitials: "JL",
-    avatarUrl: "/images/avatar-sarah.jpg",
-    rating: 3,
-    reviewText: "Service was okay. Work was completed properly but communication about technician arrival ETA could have been better.",
-    date: "May 13, 2025",
-    status: "Rejected",
-  },
-  {
-    id: "rev-7",
-    customerName: "Service Client H",
-    avatarInitials: "DK",
-    avatarUrl: "/images/avatar-david.jpg",
-    rating: 5,
-    reviewText: "Professional, reliable and very transparent pricing with itemized invoice right on the tablet.",
-    date: "May 12, 2025",
-    status: "Approved",
-  },
-];
+const DEFAULT_REVIEWS: ModerationReviewItem[] = [];
 
 export default function AdminReviewsModerationPage() {
   const [reviews, setReviews] = React.useState<ModerationReviewItem[]>(DEFAULT_REVIEWS);
@@ -244,11 +173,20 @@ export default function AdminReviewsModerationPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-slate-300">
-              {filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-white/[0.02] transition-colors group"
-                >
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <MessageSquare className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                    <p className="font-semibold text-white">No customer reviews in moderation queue</p>
+                    <p className="text-xs text-slate-400 mt-1">New incoming reviews will appear here for verification and approval.</p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-white/[0.02] transition-colors group"
+                  >
                   {/* Customer with Avatar */}
                   <td className="py-3.5 px-4 font-medium text-white whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
@@ -358,7 +296,7 @@ export default function AdminReviewsModerationPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

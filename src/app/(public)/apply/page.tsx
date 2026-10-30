@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Wrench,
   Truck,
@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Phone,
+  ArrowRight,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { businessConfig } from "@config/business.config";
@@ -24,8 +25,11 @@ const JOB_OPENINGS = [
   { id: "tech-apprentice", title: "Licensed Trade Apprentice / Field Helper", pay: "$22.00 – $30.00 / hr" },
 ];
 
-export default function ApplyPage() {
+function ApplyFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const jobParam = searchParams.get("job");
+
   const [selectedJob, setSelectedJob] = React.useState("Senior HVAC Diagnostic Specialist");
   const [fullName, setFullName] = React.useState("");
   const [phone, setPhone] = React.useState("");
@@ -39,6 +43,19 @@ export default function ApplyPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
   const [appId, setAppId] = React.useState("");
+
+  React.useEffect(() => {
+    if (jobParam) {
+      const matched = JOB_OPENINGS.find(
+        (j) =>
+          j.id.toLowerCase() === jobParam.toLowerCase() ||
+          j.title.toLowerCase().includes(jobParam.toLowerCase())
+      );
+      if (matched) {
+        setSelectedJob(matched.title);
+      }
+    }
+  }, [jobParam]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -56,6 +73,23 @@ export default function ApplyPage() {
       <Breadcrumbs items={[{ label: "Careers", href: "/careers" }, { label: "Fast Trade Application" }]} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12">
+        {/* Top Clarification Banner */}
+        <div className="bg-blue-950/60 border border-blue-500/30 rounded-2xl px-5 py-4 mb-6 text-sm text-slate-300 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="font-bold text-white block sm:inline">
+              This intake portal is exclusively for Field Technicians &amp; Trade Employment Applications.
+            </span>{" "}
+            <span>If you are a customer looking to schedule HVAC service or repairs, please</span>
+          </div>
+          <Link
+            href="/book"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs shrink-0 shadow-md shadow-orange-500/20 transition-all"
+          >
+            <span>Book Online Here</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
         {/* Top Back Navigation Pill */}
         <div className="mb-6 flex items-center justify-between">
           <Link
@@ -70,9 +104,7 @@ export default function ApplyPage() {
           </span>
         </div>
 
-        {/* ─────────────────────────────────────────────────────────────
-            MINI SCREEN WINDOW DIALOG
-        ───────────────────────────────────────────────────────────── */}
+        {/* Mini Screen Window Dialog */}
         <div className="rounded-3xl border border-white/15 bg-[#0B111E] shadow-2xl overflow-hidden backdrop-blur-2xl">
           {/* macOS-Style Window Title Bar */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-[#0F172A]/90 shrink-0">
@@ -88,63 +120,45 @@ export default function ApplyPage() {
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Recruiting Live</span>
+              <span>Direct Queue Ready</span>
             </div>
           </div>
 
-          {/* Mini Window Content Body */}
-          <div className="p-6 sm:p-10">
-            {submitted ? (
-              <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-8 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                <div className="w-14 h-14 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
-                    Trade Application Submitted
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            {/* Left Column: Form Intake */}
+            <div className="lg:col-span-7 p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-white/10">
+              {submitted ? (
+                <div className="py-12 text-center space-y-4 animate-in zoom-in-95">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
                   <h3 className="text-2xl font-bold text-white">Application Received!</h3>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Your candidate application code is <span className="font-mono font-bold text-[#F97316]">#{appId}</span> for the position of <span className="text-white font-semibold">{selectedJob}</span>.
-                </p>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 max-w-sm mx-auto text-left text-xs space-y-1.5 text-slate-300">
-                  <p className="text-slate-400">Applicant: <span className="text-white font-medium">{fullName}</span></p>
-                  <p className="text-slate-400">Contact Phone: <span className="text-white font-medium">{phone}</span></p>
-                  <p className="text-slate-400">Review Window: <span className="text-emerald-400 font-medium">Within 24 Hours</span></p>
-                </div>
-                <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSubmitted(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-colors"
-                  >
-                    Submit Another Application
-                  </button>
-                  <Link
-                    href="/careers"
-                    className="px-5 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs transition-colors shadow-md"
-                  >
-                    Back to Fleet Overview &rarr;
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="text-center mb-8 space-y-1.5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#F97316] bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full inline-block">
-                    DIRECT INTAKE DESK
-                  </span>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                    Fast Trade Application
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
-                    No lengthy resumes required. Enter your trade qualifications and our dispatch recruitment team will call you within 24 hours.
+                  <p className="text-sm text-slate-300 max-w-md mx-auto">
+                    Thank you, <strong className="text-white">{fullName}</strong>. Your trade file has been logged under candidate tracking code:
                   </p>
+                  <div className="inline-block px-5 py-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 text-[#F97316] font-mono font-bold text-lg">
+                    #{appId}
+                  </div>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Our Field Operations Director will contact you within 24 hours at <strong className="text-white">{phone}</strong>.
+                  </p>
+                  <div className="pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubmitted(false);
+                        setFullName("");
+                        setPhone("");
+                        setEmail("");
+                      }}
+                      className="text-xs text-orange-400 hover:text-orange-300 underline font-semibold"
+                    >
+                      Submit Another Trade Profile
+                    </button>
+                  </div>
                 </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl mx-auto">
-                  {/* Desired Position */}
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
                       Position Applying For
@@ -173,7 +187,7 @@ export default function ApplyPage() {
                         required
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="e.g. Lead Field Specialist"
+                        placeholder="e.g. John Miller"
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>
@@ -187,7 +201,7 @@ export default function ApplyPage() {
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder=""
+                        placeholder="(305) 555-0100"
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>
@@ -204,7 +218,7 @@ export default function ApplyPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="carlos@example.com"
+                        placeholder="technician@example.com"
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>
@@ -218,110 +232,140 @@ export default function ApplyPage() {
                         required
                         value={zipCode}
                         onChange={(e) => setZipCode(e.target.value)}
-                        placeholder="e.g. 33139"
+                        placeholder="e.g. 33101"
                         className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                       />
                     </div>
                   </div>
 
-                  {/* Experience Level */}
+                  {/* Experience Select */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                      Years of Field Trade Experience
+                      HVAC Field Experience Level
                     </label>
                     <select
                       value={experience}
                       onChange={(e) => setExperience(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/15 rounded-xl text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#F97316]"
+                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/15 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
                     >
-                      <option value="Under 2 Years (Apprentice / Helper)">Under 2 Years (Apprentice / Helper)</option>
-                      <option value="2–5 Years (Journeyman Tech)">2–5 Years (Journeyman Tech)</option>
-                      <option value="5–10 Years (Senior Specialist)">5–10 Years (Senior Specialist)</option>
-                      <option value="10+ Years (Master Technician)">10+ Years (Master Technician)</option>
+                      <option>1–2 Years (Apprentice / Field Helper)</option>
+                      <option>3–5 Years (Journeyman Mechanic)</option>
+                      <option>5–10 Years (Senior Specialist)</option>
+                      <option>10+ Years (Master Technician / Lead)</option>
                     </select>
                   </div>
 
-                  {/* Trade Certifications Checkbox Row */}
-                  <div className="pt-2 border-t border-white/10 space-y-2">
-                    <span className="block text-xs font-bold text-slate-300">
-                      Trade Certifications &amp; Driving Status
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 cursor-pointer hover:bg-white/10">
-                        <input
-                          type="checkbox"
-                          checked={hasEpa}
-                          onChange={(e) => setHasEpa(e.target.checked)}
-                          className="rounded accent-[#F97316] w-4 h-4"
-                        />
-                        <span>EPA 608 Universal</span>
-                      </label>
+                  {/* Checkbox Qualifications */}
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                    <label className="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasEpa}
+                        onChange={(e) => setHasEpa(e.target.checked)}
+                        className="rounded border-white/20 bg-black/40 text-[#F97316] focus:ring-0"
+                      />
+                      <span>Active EPA Section 608 Universal Certification</span>
+                    </label>
 
-                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 cursor-pointer hover:bg-white/10">
-                        <input
-                          type="checkbox"
-                          checked={hasNate}
-                          onChange={(e) => setHasNate(e.target.checked)}
-                          className="rounded accent-[#F97316] w-4 h-4"
-                        />
-                        <span>NATE Certified</span>
-                      </label>
+                    <label className="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasNate}
+                        onChange={(e) => setHasNate(e.target.checked)}
+                        className="rounded border-white/20 bg-black/40 text-[#F97316] focus:ring-0"
+                      />
+                      <span>NATE or HVAC Excellence Certification (Preferred)</span>
+                    </label>
 
-                      <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-slate-300 cursor-pointer hover:bg-white/10">
-                        <input
-                          type="checkbox"
-                          checked={cleanLicense}
-                          onChange={(e) => setCleanLicense(e.target.checked)}
-                          className="rounded accent-[#F97316] w-4 h-4"
-                        />
-                        <span>Clean Driver License</span>
-                      </label>
-                    </div>
+                    <label className="flex items-center gap-2.5 text-xs text-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={cleanLicense}
+                        onChange={(e) => setCleanLicense(e.target.checked)}
+                        className="rounded border-white/20 bg-black/40 text-[#F97316] focus:ring-0"
+                      />
+                      <span>Valid Driver&apos;s License with Clean Driving Record</span>
+                    </label>
                   </div>
 
-                  {/* Additional Notes */}
+                  {/* Notes / Equipment Experience */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                      Previous Employer or Key Equipment Specialties (Optional)
+                      Key Equipment Specialties (Inverter, Rooftop, Chillers, Controls)
                     </label>
                     <textarea
                       rows={3}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g. Carrier, Trane, Lennox troubleshooting, mini-splits, commercial chillers, brazing skills..."
-                      className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm placeholder:text-slate-500 focus:outline-none focus:border-[#F97316]"
+                      placeholder="List equipment brands (Trane, Carrier, Daikin, Lennox) or specific certifications..."
+                      className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316] resize-none"
                     />
                   </div>
 
-                  {/* Submit Button */}
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full h-12 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs sm:text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Delivering Application to Dispatch Fleet Desk...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>Submit Application to Agency Fleet Desk</span>
-                        </>
-                      )}
-                    </button>
-                    <p className="text-[11px] text-center text-slate-500 mt-2">
-                      Equal Opportunity Employer &bull; NATE &amp; EPA 608 Verified Trades
-                    </p>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{isSubmitting ? "Submitting Candidate File..." : "Submit Fast Application"}</span>
+                  </button>
                 </form>
+              )}
+            </div>
+
+            {/* Right Column: Perks & Fleet Specs */}
+            <div className="lg:col-span-5 p-6 sm:p-8 bg-[#0F172A]/40 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
+                  Technician Fleet Perks
+                </span>
+                <h4 className="text-xl font-bold text-white">
+                  Why Technicians Stay at {businessConfig.businessName}
+                </h4>
+
+                <div className="space-y-3 pt-2 text-xs text-slate-300">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3">
+                    <Truck className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Take-Home Ford Transit Van</strong>
+                      <span>Fully outfitted with Milwaukee cordless tools, recovery machines, and stocked van inventory.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">100% Paid Healthcare &amp; 401(k) Match</strong>
+                      <span>Comprehensive medical, dental, and vision insurance plus 4% 401(k) employer match.</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3">
+                    <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Automated Dispatch &amp; Zero Paperwork</strong>
+                      <span>Our field PWA logs refrigerant, generates digital invoices, and pays spiffs automatically.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+
+              <div className="pt-4 border-t border-white/10 text-xs text-slate-400">
+                <p>Have questions before applying? Call our trade recruitment desk at <strong className="text-white">{businessConfig.phone}</strong>.</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ApplyPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-[#0C1523] text-white p-8">Loading application desk...</div>}>
+      <ApplyFormContent />
+    </React.Suspense>
   );
 }

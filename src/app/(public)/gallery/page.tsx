@@ -15,9 +15,16 @@ import {
   Flame,
   Snowflake,
   Wrench,
-  FileText,
   BadgeCheck,
   Building,
+  Heart,
+  MessageCircle,
+  Share2,
+  Play,
+  Pause,
+  SlidersHorizontal,
+  Film,
+  Grid,
 } from "lucide-react";
 import { businessConfig } from "@config/business.config";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
@@ -29,6 +36,7 @@ interface WorkOrderProject {
   category: "all" | "installations" | "repairs" | "commercial" | "ducts";
   categoryLabel: string;
   image: string;
+  beforeImage?: string;
   neighborhood: string;
   leadTechnician: string;
   credentials: string;
@@ -41,6 +49,19 @@ interface WorkOrderProject {
   afterNotes: string;
   warranty: string;
   bookServiceSlug: string;
+  likes: number;
+  commentsCount: number;
+}
+
+interface VideoReel {
+  id: string;
+  title: string;
+  duration: string;
+  thumbnail: string;
+  views: string;
+  technician: string;
+  description: string;
+  serviceSlug: string;
 }
 
 const VERIFIED_PROJECTS: WorkOrderProject[] = [
@@ -50,6 +71,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "installations",
     categoryLabel: "High-Efficiency Replacement",
     image: "/images/svc-ac-repair.jpg",
+    beforeImage: "/images/svc-furnace-repair.jpg",
     neighborhood: "Coral Gables, FL",
     leadTechnician: "Lead Field Specialist",
     credentials: "NATE Master & EPA Universal #8472",
@@ -62,6 +84,8 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Sub-55dB whisper-quiet operation with ultra-precise indoor humidity stabilization at 48% RH.",
     warranty: "10-Year Equipment & 1-Year Workmanship Warranty",
     bookServiceSlug: "/services/ac-repair",
+    likes: 48,
+    commentsCount: 6,
   },
   {
     id: "proj-2",
@@ -69,6 +93,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "repairs",
     categoryLabel: "Precision Mechanical Repair",
     image: "/images/svc-ac-tuneup.jpg",
+    beforeImage: "/images/svc-emergency-hvac.jpg",
     neighborhood: "Downtown Miami, FL",
     leadTechnician: "Senior HVAC Specialist",
     credentials: "EPA Universal & Indoor Air Specialist",
@@ -81,6 +106,8 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Completely cleared condensate drain line, polished electrical contactors, zero drainage overflow risk.",
     warranty: "90-Day Fixed-Right No Breakdown Guarantee",
     bookServiceSlug: "/services/ac-tuneup",
+    likes: 35,
+    commentsCount: 4,
   },
   {
     id: "proj-3",
@@ -88,6 +115,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "installations",
     categoryLabel: "Controls & Automation",
     image: "/images/svc-thermostat-install.jpg",
+    beforeImage: "/images/svc-ac-repair.jpg",
     neighborhood: "Coconut Grove, FL",
     leadTechnician: "Lead Field Specialist",
     credentials: "Smart Home Controls Specialist",
@@ -100,6 +128,8 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Clean dedicated 24V continuous power feed with multi-stage humidity control integration.",
     warranty: "Lifetime Workmanship on Low-Voltage Wiring",
     bookServiceSlug: "/services/thermostat-install",
+    likes: 52,
+    commentsCount: 9,
   },
   {
     id: "proj-4",
@@ -107,6 +137,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "commercial",
     categoryLabel: "Commercial HVAC Engineering",
     image: "/images/svc-commercial-hvac.jpg",
+    beforeImage: "/images/svc-furnace-repair.jpg",
     neighborhood: "Doral Industrial District, FL",
     leadTechnician: "Commercial Systems Specialist",
     credentials: "Lead Commercial Rooftop Mechanical Specialist",
@@ -119,6 +150,8 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Direct-drive backward inclined plenum fans commissioned with precision static duct balancing.",
     warranty: "5-Year Commercial Compressor & 1-Year Labor SLA",
     bookServiceSlug: "/services/commercial-hvac",
+    likes: 29,
+    commentsCount: 3,
   },
   {
     id: "proj-5",
@@ -126,8 +159,9 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "ducts",
     categoryLabel: "IAQ Remediation",
     image: "/images/svc-duct-cleaning.jpg",
+    beforeImage: "/images/svc-emergency-hvac.jpg",
     neighborhood: "Miami Beach (Mid-Beach), FL",
-    leadTechnician: "Verified Customer",
+    leadTechnician: "Indoor Air Quality Tech",
     credentials: "NADCA Certified Air Duct Cleaner",
     completionDate: "October 08, 2026",
     equipment: "Abatement Technologies HEPA-Aire 2500 CFM Negative Air Machine",
@@ -138,6 +172,8 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Duct interior sanitized down to bare metal; sealed all supply boots with fiber-reinforced mastic.",
     warranty: "2-Year Mold-Free Airway Guarantee",
     bookServiceSlug: "/services/duct-cleaning",
+    likes: 64,
+    commentsCount: 11,
   },
   {
     id: "proj-6",
@@ -145,6 +181,7 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     category: "repairs",
     categoryLabel: "Refrigerant & Coil Diagnostics",
     image: "/images/svc-refrigerant-recharge.jpg",
+    beforeImage: "/images/svc-ac-repair.jpg",
     neighborhood: "Pinecrest, FL",
     leadTechnician: "Diagnostic Specialist",
     credentials: "EPA Section 608 Universal Specialist",
@@ -157,194 +194,354 @@ const VERIFIED_PROJECTS: WorkOrderProject[] = [
     afterNotes: "Replaced leaking Schrader core valve, weighed in exact 8.4 lbs R-410A charge, verified 19°F air delta.",
     warranty: "1-Year Leak-Free Refrigerant Circuit Warranty",
     bookServiceSlug: "/services/refrigerant-recharge",
+    likes: 41,
+    commentsCount: 5,
   },
 ];
 
-const CATEGORIES = [
-  { id: "all", label: "All Completed Work", count: 6 },
-  { id: "installations", label: "System Replacements", count: 2 },
-  { id: "repairs", label: "Mechanical Repairs", count: 2 },
-  { id: "commercial", label: "Commercial Rooftops", count: 1 },
-  { id: "ducts", label: "Duct IAQ Remediation", count: 1 },
+const VIDEO_REELS: VideoReel[] = [
+  {
+    id: "reel-1",
+    title: "Multi-Stage Inverter Compressor Diagnostic & Micro-Ohm Winding Test",
+    duration: "0:48",
+    thumbnail: "/images/svc-ac-repair.jpg",
+    views: "2.8k",
+    technician: "Lead Field Specialist",
+    description: "Watch our lead technician pinpoint an internal shorted scroll bypass valve in real-time using high-precision digital telemetry.",
+    serviceSlug: "/services/ac-repair",
+  },
+  {
+    id: "reel-2",
+    title: "Foaming Alkaline Condenser Coil Deep Chemical Sanitization",
+    duration: "0:36",
+    thumbnail: "/images/svc-ac-tuneup.jpg",
+    views: "4.1k",
+    technician: "Senior HVAC Specialist",
+    description: "Removing 3 seasons of coastal salt encrustation and micro-debris to restore maximum airflow efficiency across aluminum fins.",
+    serviceSlug: "/services/ac-tuneup",
+  },
+  {
+    id: "reel-3",
+    title: "Low-Micron Vacuum Decay Test on Dual-Fuel Inverter Circuit",
+    duration: "0:52",
+    thumbnail: "/images/svc-refrigerant-recharge.jpg",
+    views: "1.9k",
+    technician: "Diagnostic Specialist",
+    description: "Pulling a deep 380-micron vacuum hold with zero rise for 15 minutes prior to exact factory weigh-in of virgin refrigerant charge.",
+    serviceSlug: "/services/refrigerant-recharge",
+  },
 ];
 
 export default function RecentWorkPage() {
-  const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
+  const [activeTab, setActiveTab] = React.useState<"posts" | "reels">("posts");
+  const [likesState, setLikesState] = React.useState<Record<string, { liked: boolean; count: number }>>(() => {
+    const initial: Record<string, { liked: boolean; count: number }> = {};
+    VERIFIED_PROJECTS.forEach((p) => {
+      initial[p.id] = { liked: false, count: p.likes };
+    });
+    return initial;
+  });
+  const [beforeAfterMode, setBeforeAfterMode] = React.useState<Record<string, "after" | "before">>({});
   const [activeModalItem, setActiveModalItem] = React.useState<WorkOrderProject | null>(null);
+  const [playingReel, setPlayingReel] = React.useState<string | null>(null);
 
-  const filteredProjects = React.useMemo(() => {
-    if (selectedCategory === "all") return VERIFIED_PROJECTS;
-    return VERIFIED_PROJECTS.filter((p) => p.category === selectedCategory);
-  }, [selectedCategory]);
+  const toggleLike = (id: string) => {
+    setLikesState((prev) => {
+      const current = prev[id] || { liked: false, count: 0 };
+      const liked = !current.liked;
+      return {
+        ...prev,
+        [id]: {
+          liked,
+          count: liked ? current.count + 1 : current.count - 1,
+        },
+      };
+    });
+  };
+
+  const toggleBeforeAfter = (id: string) => {
+    setBeforeAfterMode((prev) => ({
+      ...prev,
+      [id]: prev[id] === "before" ? "after" : "before",
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-[#0C1523] text-white selection:bg-[#F97316] selection:text-white pb-20">
-      <Breadcrumbs items={[{ label: "Verified Field Installations" }]} />
+      <Breadcrumbs items={[{ label: "Field Gallery & Work" }]} />
 
-      {/* Professional Portfolio Header */}
-      <section className="relative bg-[#0C1523] border-b border-white/10 pt-12 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Header */}
+      <section className="relative bg-[#0C1523] border-b border-white/10 pt-10 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#F97316]/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto space-y-6 relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-xs font-bold text-[#F97316] uppercase tracking-wider">
-                <BadgeCheck className="w-4 h-4 text-emerald-400" />
-                Verified Engineering Portfolio
-              </span>
-              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-                Verified Field Installations &amp; Completed Work
-              </h1>
-              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-                Review verified field dossiers from recent service calls across South Florida. Every project includes diagnostic measurements, equipment specifications, and licensed technician sign-off.
-              </p>
-            </div>
+        <div className="max-w-4xl mx-auto text-center space-y-4 relative z-10">
+          <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-xs font-bold text-[#F97316] uppercase tracking-wider">
+            <BadgeCheck className="w-4 h-4 text-emerald-400" />
+            Verified Field Feed &amp; Diagnostics
+          </span>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+            Field Installations &amp; Video Reels
+          </h1>
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            Explore live photo dossiers and video reels from recent field calls across South Florida. Review diagnostic measurements, equipment specs, and verified work orders.
+          </p>
 
-            {/* Quick Fleet Metrics HUD */}
-            <div className="rounded-2xl border border-white/10 bg-[#0F172A]/90 backdrop-blur-xl p-5 shadow-xl space-y-3 shrink-0">
-              <div className="flex items-center justify-between gap-6">
-                <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
-                  Quality Assurance HUD
-                </span>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                  EPA Universal Fleet
-                </span>
-              </div>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Completed Work Orders:</span>
-                  <span className="font-mono font-bold text-white">1,248 Jobs</span>
-                </div>
-                <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">Customer Satisfaction:</span>
-                  <span className="font-mono font-bold text-[#F97316]">4.9 ★★★★★</span>
-                </div>
-                <div className="flex items-center justify-between gap-6">
-                  <span className="text-slate-400">First-Visit Fix Rate:</span>
-                  <span className="font-mono font-bold text-emerald-400">99.4%</span>
-                </div>
-              </div>
+          {/* Instagram-Style Dual Tabs Switcher */}
+          <div className="pt-4 flex items-center justify-center">
+            <div className="inline-flex p-1.5 rounded-2xl bg-[#0F172A] border border-white/15 shadow-xl">
+              <button
+                type="button"
+                onClick={() => setActiveTab("posts")}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "posts"
+                    ? "bg-[#F97316] text-white shadow-md shadow-orange-500/25"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Grid className="w-4 h-4" />
+                <span>Posts &amp; Before/After ({VERIFIED_PROJECTS.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("reels")}
+                className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === "reels"
+                    ? "bg-[#F97316] text-white shadow-md shadow-orange-500/25"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <Film className="w-4 h-4" />
+                <span>Video Reels ({VIDEO_REELS.length})</span>
+              </button>
             </div>
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 border-t border-white/10 pt-6">
-            {CATEGORIES.map((cat) => {
-              const isActive = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                    isActive
-                      ? "bg-[#F97316] text-white shadow-md shadow-orange-500/20"
-                      : "bg-[#0F172A]/80 text-slate-300 hover:text-white border border-white/10"
-                  }`}
-                >
-                  {cat.label} ({cat.count})
-                </button>
-              );
-            })}
           </div>
         </div>
       </section>
 
-      {/* Main Work Order Project Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              className="rounded-3xl border border-white/10 bg-[#0F172A]/80 backdrop-blur-xl overflow-hidden shadow-xl hover:border-white/20 transition-all flex flex-col justify-between group"
-            >
-              {/* Project Card Image Header */}
-              <div className="relative h-52 w-full overflow-hidden bg-slate-900">
-                <Image
-                  src={project.image}
-                  alt={project.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0C1523] via-transparent to-black/30" />
-                
-                {/* Work Order Badge */}
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-lg bg-black/70 border border-white/20 text-white font-mono text-[11px] font-bold backdrop-blur-md">
-                    #{project.workOrderId}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg bg-orange-500/80 text-white text-[10px] font-bold uppercase tracking-wider backdrop-blur-md">
-                    {project.categoryLabel}
-                  </span>
-                </div>
+      {/* Main Content Area */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-10">
+        {activeTab === "posts" ? (
+          /* POSTS FEED: Instagram-Style Cards with Before/After Slider & Likes */
+          <div className="space-y-8">
+            {VERIFIED_PROJECTS.map((project) => {
+              const currentMode = beforeAfterMode[project.id] || "after";
+              const currentImage = currentMode === "before" && project.beforeImage ? project.beforeImage : project.image;
+              const likeInfo = likesState[project.id] || { liked: false, count: project.likes };
 
-                <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-slate-300">
-                  <span className="flex items-center gap-1 font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#F97316]" />
-                    {project.neighborhood}
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    {project.completionDate}
-                  </span>
-                </div>
-              </div>
-
-              {/* Card Body */}
-              <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                <div className="space-y-2.5">
-                  <h3 className="font-heading text-base font-bold text-white group-hover:text-orange-400 transition-colors">
-                    {project.title}
-                  </h3>
-
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-xs space-y-1">
-                    <div className="text-slate-400 font-medium">
-                      Lead Specialist: <span className="text-white font-bold">{project.leadTechnician}</span>
+              return (
+                <article
+                  key={project.id}
+                  className="rounded-3xl border border-white/10 bg-[#0F172A]/90 backdrop-blur-xl overflow-hidden shadow-2xl"
+                >
+                  {/* Post Header: Profile, Name, Badge, Location */}
+                  <div className="p-4 sm:p-5 flex items-center justify-between border-b border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-600 border border-white/15 text-white font-black text-sm flex items-center justify-center shadow-md">
+                        {project.leadTechnician.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-white text-sm">
+                            {project.leadTechnician}
+                          </span>
+                          <span className="inline-flex items-center text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">
+                            <BadgeCheck className="w-3 h-3 mr-0.5 inline" />
+                            Verified &#x2713;
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3 text-[#F97316]" />
+                            {project.neighborhood}
+                          </span>
+                          <span>&bull;</span>
+                          <span className="font-mono text-[11px] text-slate-400">
+                            #{project.workOrderId}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-[#F97316] font-mono">
-                      {project.credentials}
+
+                    <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                      {project.completionDate}
+                    </span>
+                  </div>
+
+                  {/* Post Image Container with Interactive Before/After Toggle */}
+                  <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-slate-900 overflow-hidden">
+                    <Image
+                      src={currentImage}
+                      alt={project.title}
+                      fill
+                      className="object-cover transition-all duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+                    {/* Mode Indicator & Toggle Button */}
+                    <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleBeforeAfter(project.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 border border-white/20 text-white text-xs font-bold backdrop-blur-md hover:bg-black/90 transition-all cursor-pointer shadow-lg"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-[#F97316]" />
+                        <span>Showing: {currentMode === "before" ? "Initial Condition" : "Completed Work"}</span>
+                      </button>
+                    </div>
+
+                    {/* Category Label */}
+                    <div className="absolute bottom-4 left-4 z-10">
+                      <span className="px-3 py-1 rounded-full bg-[#F97316] text-white text-xs font-bold uppercase tracking-wider shadow-md">
+                        {project.categoryLabel}
+                      </span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
-                    {project.specs}
-                  </p>
+                  {/* Social Action Bar (Like, Comment, Share) */}
+                  <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between text-slate-300">
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleLike(project.id)}
+                        className={`flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                          likeInfo.liked ? "text-red-500" : "hover:text-red-400"
+                        }`}
+                        aria-label="Like this post"
+                      >
+                        <Heart className={`w-5 h-5 ${likeInfo.liked ? "fill-red-500" : ""}`} />
+                        <span>{likeInfo.count}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalItem(project)}
+                        className="flex items-center gap-1.5 text-xs font-bold hover:text-white transition-colors cursor-pointer"
+                        aria-label="Comments and engineering details"
+                      >
+                        <MessageCircle className="w-5 h-5 text-slate-400" />
+                        <span>{project.commentsCount} Notes</span>
+                      </button>
+                    </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold pt-1">
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span className="text-[11px]">{project.warranty}</span>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-8 px-4 shadow-sm"
+                    >
+                      <Link href={project.bookServiceSlug}>
+                        Book Service
+                      </Link>
+                    </Button>
+                  </div>
+
+                  {/* Post Caption Body */}
+                  <div className="p-5 sm:p-6 space-y-3">
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      {project.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      <strong className="text-white">Specs:</strong> {project.specs}
+                    </p>
+                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-emerald-400 font-semibold flex items-center justify-between flex-wrap gap-2">
+                      <span>✓ {project.efficiencyGain}</span>
+                      <span className="text-slate-400 font-mono text-[11px]">{project.warranty}</span>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalItem(project)}
+                        className="text-orange-400 hover:text-orange-300 font-semibold underline cursor-pointer"
+                      >
+                        View Full Engineering Case Dossier &rarr;
+                      </button>
+                      <span className="text-slate-400 font-mono text-[11px]">
+                        Certified by: {project.credentials}
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          /* VIDEO REELS FEED: Vertical 9:16 Cards */
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {VIDEO_REELS.map((reel) => {
+              const isPlaying = playingReel === reel.id;
+
+              return (
+                <div
+                  key={reel.id}
+                  className="rounded-3xl border border-white/10 bg-[#0F172A]/90 overflow-hidden shadow-2xl flex flex-col justify-between"
+                >
+                  {/* Vertical 9:16 Video Container */}
+                  <div className="relative aspect-[9/16] w-full bg-slate-900 overflow-hidden group">
+                    <Image
+                      src={reel.thumbnail}
+                      alt={reel.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                    {/* Duration Badge & Views */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between text-xs text-white">
+                      <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md font-mono text-[10px] font-bold border border-white/15">
+                        {reel.duration}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-bold border border-white/15">
+                        {reel.views} views
+                      </span>
+                    </div>
+
+                    {/* Centered Play/Pause Button */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setPlayingReel(isPlaying ? null : reel.id)}
+                        className="w-14 h-14 rounded-full bg-[#F97316]/90 hover:bg-[#F97316] text-white flex items-center justify-center shadow-xl shadow-orange-500/30 transition-transform hover:scale-110 cursor-pointer"
+                        aria-label={isPlaying ? "Pause reel" : "Play reel"}
+                      >
+                        {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+                      </button>
+                    </div>
+
+                    {/* Bottom Title Overlay */}
+                    <div className="absolute bottom-3 left-3 right-3 space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">
+                        {reel.technician}
+                      </span>
+                      <h4 className="text-xs font-bold text-white line-clamp-2 leading-tight">
+                        {reel.title}
+                      </h4>
+                    </div>
+                  </div>
+
+                  {/* Reel Footer & CTA */}
+                  <div className="p-4 space-y-3">
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                      {reel.description}
+                    </p>
+                    <Button asChild size="sm" className="w-full rounded-xl bg-white/10 hover:bg-[#F97316] text-white font-bold text-xs">
+                      <Link href={reel.serviceSlug}>
+                        Request Diagnostic &rarr;
+                      </Link>
+                    </Button>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="pt-4 border-t border-white/10 flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveModalItem(project)}
-                    className="flex-1 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold transition-all text-center cursor-pointer"
-                  >
-                    View Engineering Dossier
-                  </button>
-                  <Button
-                    asChild
-                    size="sm"
-                    className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-9 px-3.5 shadow-md"
-                  >
-                    <Link href={project.bookServiceSlug}>
-                      Book
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
-      {/* Engineering Case Study Modal Dialog */}
+      {/* Engineering Dossier Modal */}
       {activeModalItem && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="max-w-2xl w-full bg-[#0F172A] border border-white/20 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveModalItem(null)}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="absolute top-5 right-5 p-2 rounded-xl bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -360,7 +557,7 @@ export default function RecentWorkPage() {
                 {activeModalItem.title}
               </h2>
               <p className="text-xs text-slate-300">
-                Location: {activeModalItem.neighborhood} • Lead Tech: {activeModalItem.leadTechnician} ({activeModalItem.credentials})
+                Location: {activeModalItem.neighborhood} &bull; Lead Tech: {activeModalItem.leadTechnician} ({activeModalItem.credentials})
               </p>
             </div>
 

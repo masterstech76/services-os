@@ -42,68 +42,7 @@ export interface PayoutItem {
   status: "Paid" | "Pending";
 }
 
-const DEFAULT_PAYOUTS: PayoutItem[] = [
-  {
-    id: "pay-cm",
-    technicianName: "Lead Field Technician",
-    role: "HVAC Specialist",
-    avatarInitials: "CM",
-    avatarUrl: "/images/avatar-david.jpg",
-    jobsCount: 12,
-    earningsCents: 248000,
-    status: "Paid",
-  },
-  {
-    id: "pay-ma",
-    technicianName: "Senior Field Tech",
-    role: "Plumbing Expert",
-    avatarInitials: "MA",
-    avatarUrl: "/images/avatar-sarah.jpg",
-    jobsCount: 10,
-    earningsCents: 215000,
-    status: "Paid",
-  },
-  {
-    id: "pay-dr",
-    technicianName: "Diagnostic Specialist",
-    role: "AC Specialist",
-    avatarInitials: "DR",
-    avatarUrl: "/images/avatar-mike.jpg",
-    jobsCount: 8,
-    earningsCents: 182000,
-    status: "Pending",
-  },
-  {
-    id: "pay-tb",
-    technicianName: "HVAC Systems Lead",
-    role: "Installation Expert",
-    avatarInitials: "TB",
-    avatarUrl: "/images/avatar-1.jpg",
-    jobsCount: 7,
-    earningsCents: 154000,
-    status: "Paid",
-  },
-  {
-    id: "pay-lc",
-    technicianName: "Maintenance Specialist",
-    role: "Electrical Specialist",
-    avatarInitials: "LC",
-    avatarUrl: "/images/avatar-2.jpg",
-    jobsCount: 6,
-    earningsCents: 132000,
-    status: "Paid",
-  },
-  {
-    id: "pay-jw",
-    technicianName: "Commercial Tech",
-    role: "General Maintenance",
-    avatarInitials: "JW",
-    avatarUrl: "/images/avatar-david.jpg",
-    jobsCount: 5,
-    earningsCents: 118000,
-    status: "Pending",
-  },
-];
+const DEFAULT_PAYOUTS: PayoutItem[] = [];
 
 export default function AdminWorkerPayoutsPage() {
   const [payouts, setPayouts] = React.useState<PayoutItem[]>(DEFAULT_PAYOUTS);

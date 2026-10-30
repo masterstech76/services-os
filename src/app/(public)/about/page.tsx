@@ -274,31 +274,33 @@ export default function AboutPage() {
         </section>
 
         {/* 7. Certified Team - 4 Avatars Horizontal */}
-        <section className="space-y-6">
-          <div className="text-center max-w-xl mx-auto space-y-1">
-            <h2 className="font-heading text-2xl sm:text-3xl font-black text-white">
-              Meet Our Senior Field Specialists
-            </h2>
-            <p className="text-xs text-slate-400 font-medium">
-              Every dispatched technician is drug-screened, background-checked, and manufacturer-trained.
-            </p>
-          </div>
+        {teamMembers && teamMembers.length > 0 && (
+          <section className="space-y-6">
+            <div className="text-center max-w-xl mx-auto space-y-1">
+              <h2 className="font-heading text-2xl sm:text-3xl font-black text-white">
+                Meet Our Senior Field Specialists
+              </h2>
+              <p className="text-xs text-slate-400 font-medium">
+                Every dispatched technician is drug-screened, background-checked, and manufacturer-trained.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {teamMembers.map((m, idx) => (
-              <div key={idx} className="p-5 rounded-2xl bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 shadow-md text-center space-y-3">
-                <div className={`w-16 h-16 mx-auto rounded-full bg-gradient-to-tr ${m.color} text-white font-black text-xl flex items-center justify-center shadow-lg ring-4 ring-white/10`}>
-                  {m.initial}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {teamMembers.map((m, idx) => (
+                <div key={idx} className="p-5 rounded-2xl bg-[#0F172A]/80 backdrop-blur-xl border border-white/10 shadow-md text-center space-y-3">
+                  <div className={`w-16 h-16 mx-auto rounded-full bg-gradient-to-tr ${m.color} text-white font-black text-xl flex items-center justify-center shadow-lg ring-4 ring-white/10`}>
+                    {m.initial}
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-bold text-sm text-white">{m.name}</h3>
+                    <p className="text-xs text-[#F97316] font-semibold">{m.role}</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">{m.exp}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-heading font-bold text-sm text-white">{m.name}</h3>
-                  <p className="text-xs text-[#F97316] font-semibold">{m.role}</p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-1">{m.exp}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 8. The Platform Behind the Service: How ServicePro OS Operates */}
         <section className="rounded-3xl bg-gradient-to-b from-[#0F172A] to-[#0A0F1D] text-white p-8 sm:p-12 space-y-8 shadow-2xl border border-white/10">
@@ -353,6 +355,44 @@ export default function AboutPage() {
             <div className="flex items-center gap-2 text-emerald-400 font-semibold shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Real-Time Cloud Telemetry Active</span>
+            </div>
+          </div>
+        </section>
+
+        {/* 9. Final Action CTA Card with Background Photography */}
+        <section
+          className="relative rounded-3xl overflow-hidden p-8 sm:p-12 shadow-2xl border border-white/15"
+          style={{
+            backgroundImage: "linear-gradient(to right, rgba(12, 21, 35, 0.94) 35%, rgba(12, 21, 35, 0.7)), url('/images/final-cta-house.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div className="relative z-10 max-w-2xl space-y-4">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-[#F97316] text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              Direct Factory-Trained Dispatch
+            </span>
+            <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-white leading-tight">
+              Ready for Priority Climate Restoration?
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+              Book a guaranteed appointment window online in 60 seconds with 100% deposit credit toward your completed repair, or call our 24/7 emergency dispatch desk.
+            </p>
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <Button asChild size="lg" className="bg-[#F97316] hover:bg-[#EA580C] text-white font-bold px-8 shadow-lg shadow-[#F97316]/25 rounded-xl cursor-pointer">
+                <Link href="/book" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Book Online Now</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold px-6 rounded-xl cursor-pointer">
+                <a href={cleanPhoneHref} className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-[#F97316]" />
+                  <span>Call {businessConfig.phone}</span>
+                </a>
+              </Button>
             </div>
           </div>
         </section>

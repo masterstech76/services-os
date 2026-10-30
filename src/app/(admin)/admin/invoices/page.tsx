@@ -42,88 +42,10 @@ export interface InvoiceItem {
   dueDate: string;
 }
 
-const DEFAULT_INVOICES: InvoiceItem[] = [
-  {
-    id: "inv-1047",
-    invoiceNumber: "INV-1047",
-    customerName: "Service Client A",
-    customerEmail: "rcaldwell@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8427",
-    amountCents: 32000,
-    status: "paid",
-    dueDate: "May 14, 2025",
-  },
-  {
-    id: "inv-1046",
-    invoiceNumber: "INV-1046",
-    customerName: "Senior Field Tech",
-    customerEmail: "m.alvarez@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8426",
-    amountCents: 85000,
-    status: "pending",
-    dueDate: "May 16, 2025",
-  },
-  {
-    id: "inv-1045",
-    invoiceNumber: "INV-1045",
-    customerName: "Lead Field Technician",
-    customerEmail: "carlos.m@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8425",
-    amountCents: 125000,
-    status: "overdue",
-    dueDate: "May 10, 2025",
-  },
-  {
-    id: "inv-1044",
-    invoiceNumber: "INV-1044",
-    customerName: "Service Client",
-    customerEmail: "jennifer.w@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8424",
-    amountCents: 7500,
-    status: "paid",
-    dueDate: "May 12, 2025",
-  },
-  {
-    id: "inv-1043",
-    invoiceNumber: "INV-1043",
-    customerName: "Service Client H",
-    customerEmail: "daniel.kim@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8423",
-    amountCents: 54000,
-    status: "paid",
-    dueDate: "May 11, 2025",
-  },
-  {
-    id: "inv-1042",
-    invoiceNumber: "INV-1042",
-    customerName: "Maintenance Specialist",
-    customerEmail: "l.carter@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8422",
-    amountCents: 98000,
-    status: "pending",
-    dueDate: "May 18, 2025",
-  },
-  {
-    id: "inv-1041",
-    invoiceNumber: "INV-1041",
-    customerName: "Commercial Tech",
-    customerEmail: "j.wilson@example.com",
-    customerPhone: "+1 (XXX) XXX-XXXX",
-    jobNumber: "WO-8421",
-    amountCents: 62000,
-    status: "paid",
-    dueDate: "May 9, 2025",
-  },
-];
+const DEFAULT_INVOICES: InvoiceItem[] = [];
 
 export default function AdminInvoicesPage() {
-  const [invoices, setInvoices] = React.useState<InvoiceItem[]>(DEFAULT_INVOICES);
+  const [invoices, setInvoices] = React.useState<InvoiceItem[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("all");
@@ -159,10 +81,7 @@ export default function AdminInvoicesPage() {
               status: inv.status === "paid" ? "paid" : inv.status === "sent" ? "pending" : inv.status === "overdue" ? "overdue" : "pending",
               dueDate: inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "May 15, 2025",
             }));
-            // Merge with defaults so we have comprehensive demo rows matching exact mockup
-            const existingIds = new Set(mapped.map((m) => m.invoiceNumber));
-            const merged = [...mapped, ...DEFAULT_INVOICES.filter((d) => !existingIds.has(d.invoiceNumber))];
-            setInvoices(merged);
+            setInvoices(mapped);
           }
         }
       } catch {

@@ -260,13 +260,13 @@ export default function CareersPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenModal(job.title)}
-                  className="shrink-0 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-[#F97316] text-white font-bold text-xs sm:text-sm text-center transition-all shadow-sm cursor-pointer"
+                <Link
+                  href={`/apply?job=${job.id}`}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs sm:text-sm text-center transition-all shadow-md shadow-orange-500/25 cursor-pointer"
                 >
-                  Apply for this Role &rarr;
-                </button>
+                  <span>Apply for Job</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             ))}
           </div>

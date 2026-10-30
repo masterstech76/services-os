@@ -68,6 +68,7 @@ const FLEET_TECHNICIANS = [
 
 export default function AccountTechniciansPage() {
   const [isBookingOpen, setIsBookingOpen] = React.useState(false);
+  const [hasActiveDispatch] = React.useState(false);
 
   return (
     <div className="w-full max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-200">
@@ -98,113 +99,72 @@ export default function AccountTechniciansPage() {
         </div>
       </div>
 
-      {/* Primary Highlight: Active Assigned Technician Card */}
-      <section className="rounded-3xl border border-orange-500/30 bg-gradient-to-br from-[#0F1D38] via-[#0A1224] to-[#080D1A] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Primary Highlight: Active Assigned Technician Card or Empty State */}
+      {hasActiveDispatch ? (
+        <section className="rounded-3xl border border-orange-500/30 bg-gradient-to-br from-[#0F1D38] via-[#0A1224] to-[#080D1A] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          {/* Subtle decorative glow */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10 border-b border-white/10 pb-6 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-orange-500/40 shadow-xl bg-slate-800">
-                <img
-                  src={ASSIGNED_TECHNICIAN.avatarUrl}
-                  alt={ASSIGNED_TECHNICIAN.name}
-                  className="w-full h-full object-cover"
-                />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10 border-b border-white/10 pb-6 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-orange-500/40 shadow-xl bg-slate-800">
+                  <img
+                    src={ASSIGNED_TECHNICIAN.avatarUrl}
+                    alt={ASSIGNED_TECHNICIAN.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#0A1224]" />
               </div>
-              <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#0A1224]" />
-            </div>
 
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider mb-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                <span>{ASSIGNED_TECHNICIAN.status}</span>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold uppercase tracking-wider mb-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{ASSIGNED_TECHNICIAN.status}</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  {ASSIGNED_TECHNICIAN.name}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">{ASSIGNED_TECHNICIAN.title}</p>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white">
-                {ASSIGNED_TECHNICIAN.name}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300">
-                {ASSIGNED_TECHNICIAN.title} &bull; <span className="text-orange-400 font-semibold">{ASSIGNED_TECHNICIAN.yearsExperience} yrs experience</span>
-              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsBookingOpen(true)}
+                className="flex-1 lg:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-[#0C1523] font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                <span>Book Service</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
-
-          {/* Quick Contact & Live Track Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <Link
-              href={`/account/appointments/${ASSIGNED_TECHNICIAN.jobId}/track`}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-orange-500 text-[#0C1523] hover:bg-orange-400 font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 flex-1 sm:flex-none cursor-pointer"
+        </section>
+      ) : (
+        <section className="rounded-3xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-xl p-8 sm:p-12 text-center space-y-4 shadow-xl">
+          <div className="w-16 h-16 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+            <Wrench className="w-8 h-8 text-[#F97316]" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold text-white">No Active Technician Dispatched</h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+              When you schedule a service or emergency repair, your assigned EPA-certified technician&apos;s live GPS route, van unit, and contact line will display here.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setIsBookingOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-orange-500/20 cursor-pointer"
             >
-              <Navigation className="w-4 h-4" />
-              <span>Track Live Van GPS ({ASSIGNED_TECHNICIAN.etaMinutes}m ETA)</span>
-            </Link>
-
-            <a
-              href={`tel:${ASSIGNED_TECHNICIAN.phone}`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs transition-all active:scale-95 flex-1 sm:flex-none cursor-pointer"
-            >
-              <Phone className="w-4 h-4 text-emerald-400" />
-              <span>Call Technician</span>
-            </a>
+              <Sparkles className="w-4 h-4" />
+              <span>Book Appointment Online</span>
+            </button>
           </div>
-        </div>
-
-        {/* Technician Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 text-xs">
-          <div className="space-y-2 bg-white/5 p-4 rounded-2xl border border-white/5">
-            <span className="text-slate-400 uppercase tracking-wider font-semibold block text-[10px]">
-              Assigned Work Order
-            </span>
-            <div className="font-bold text-white text-sm">{ASSIGNED_TECHNICIAN.serviceName}</div>
-            <div className="text-slate-400 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-orange-400" />
-              <span>Scheduled Window: 02:00 PM - 04:00 PM Today</span>
-            </div>
-          </div>
-
-          <div className="space-y-2 bg-white/5 p-4 rounded-2xl border border-white/5">
-            <span className="text-slate-400 uppercase tracking-wider font-semibold block text-[10px]">
-              Mobile Fleet Unit
-            </span>
-            <div className="font-bold text-white text-sm flex items-center gap-1.5">
-              <Car className="w-4 h-4 text-emerald-400" />
-              <span>{ASSIGNED_TECHNICIAN.vehicle}</span>
-            </div>
-            <div className="text-slate-400 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Fully Stocked OEM Carrier, Trane &amp; Lennox Parts</span>
-            </div>
-          </div>
-
-          <div className="space-y-2 bg-white/5 p-4 rounded-2xl border border-white/5">
-            <span className="text-slate-400 uppercase tracking-wider font-semibold block text-[10px]">
-              Verified Credentials
-            </span>
-            <div className="flex items-center gap-2 font-bold text-white">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span>{ASSIGNED_TECHNICIAN.rating} rating ({ASSIGNED_TECHNICIAN.reviewsCount} verified homeowner reviews)</span>
-            </div>
-            <div className="text-slate-400">
-              License: <span className="text-white font-mono">{ASSIGNED_TECHNICIAN.license}</span> &bull; 100% Background Screened
-            </div>
-          </div>
-        </div>
-
-        {/* Credentials Badges */}
-        <div className="mt-6 pt-5 border-t border-white/10 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-400 mr-2 font-medium">Certified Qualifications:</span>
-          {ASSIGNED_TECHNICIAN.badges.map((badge) => (
-            <span
-              key={badge}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-semibold"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              {badge}
-            </span>
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Available Fleet Specialists Section */}
       <section className="space-y-4">

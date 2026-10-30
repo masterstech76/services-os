@@ -7,6 +7,7 @@ export interface TechnicianAssignment {
   rating: number;
   reviewCount: number;
   initials: string;
+  avatarUrl?: string;
   status: "available" | "busy_coming_soon" | "en_route";
   statusNote: string;
   stagedZone: string;

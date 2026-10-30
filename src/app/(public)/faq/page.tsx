@@ -338,8 +338,8 @@ export default function FAQPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Column: Sticky Category Sidebar (lg:col-span-4) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
+          {/* Left Column: Sticky Category Sidebar (sticky top-24 self-start) */}
+          <aside className="lg:col-span-4 sticky top-24 self-start space-y-4">
             <div className="p-5 rounded-3xl bg-[#0F172A]/90 border border-white/10 shadow-xl backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-white/10">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Browse by Category</span>

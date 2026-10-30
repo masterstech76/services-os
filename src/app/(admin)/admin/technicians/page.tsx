@@ -49,146 +49,12 @@ interface TechDirectoryItem {
   skills: string[];
 }
 
-const TECHNICIANS_DATA: TechDirectoryItem[] = [
-  {
-    id: "tech-001",
-    name: "Service Client A",
-    empId: "#T1047",
-    avatar: "/images/avatar-david.jpg",
-    specialization: "HVAC",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Miami, FL · 123 Ocean Dr.",
-    availability: "On Job",
-    availabilityColor: "bg-emerald-400",
-    currentJob: "WO-8428 - AC Repair, ETA: 30 mins",
-    vehicle: "MH-12-AB-1234 Ford Transit",
-    rating: 4.8,
-    reviewsCount: 156,
-    completedJobs: 156,
-    onTimeRate: "95%",
-    skills: ["HVAC", "Electrical", "Plumbing", "EPA Certified"],
-  },
-  {
-    id: "tech-002",
-    name: "Senior Field Tech",
-    empId: "#T1048",
-    avatar: "/images/avatar-sarah.jpg",
-    specialization: "Plumbing",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Miami Beach, FL · 450 Collins Ave.",
-    availability: "Available",
-    availabilityColor: "bg-teal-400",
-    currentJob: "No assignment",
-    vehicle: "MH-12-CD-5678 Ford Transit",
-    rating: 4.7,
-    reviewsCount: 142,
-    completedJobs: 142,
-    onTimeRate: "97%",
-    skills: ["Plumbing", "Water Heaters", "Pipe Fitting"],
-  },
-  {
-    id: "tech-003",
-    name: "Diagnostic Specialist",
-    empId: "#T1049",
-    avatar: "/images/avatar-mike.jpg",
-    specialization: "Electrical",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Coral Gables, FL · 800 Ponce de Leon",
-    availability: "En Route",
-    availabilityColor: "bg-blue-400",
-    currentJob: "#1052 - Electrical Repair, ETA: 15 mins",
-    vehicle: "MH-12-EF-9012 Chevrolet Van",
-    rating: 4.6,
-    reviewsCount: 98,
-    completedJobs: 98,
-    onTimeRate: "93%",
-    skills: ["Electrical", "Panel Upgrades", "Safety"],
-  },
-  {
-    id: "tech-009",
-    name: "Service Client E",
-    empId: "#T1050",
-    avatar: "/images/avatar-sarah.jpg",
-    specialization: "HVAC",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Brickell, FL · 1000 Brickell Ave.",
-    availability: "On Leave",
-    availabilityColor: "bg-purple-400",
-    currentJob: "No assignment",
-    vehicle: "MH-12-GH-3456 Ford Transit",
-    rating: 4.9,
-    reviewsCount: 176,
-    completedJobs: 176,
-    onTimeRate: "98%",
-    skills: ["HVAC", "Heat Pumps", "Diagnostics"],
-  },
-  {
-    id: "tech-010",
-    name: "Service Client F",
-    empId: "#T1051",
-    avatar: "/images/avatar-1.jpg",
-    specialization: "Appliances",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Hialeah, FL · 400 W 49th St.",
-    availability: "Available",
-    availabilityColor: "bg-teal-400",
-    currentJob: "No assignment",
-    vehicle: "MH-12-JK-7890 Ram ProMaster",
-    rating: 4.5,
-    reviewsCount: 87,
-    completedJobs: 87,
-    onTimeRate: "91%",
-    skills: ["Appliances", "Refrigeration", "Motors"],
-  },
-  {
-    id: "tech-011",
-    name: "Service Client G",
-    empId: "#T1052",
-    avatar: "/images/avatar-2.jpg",
-    specialization: "Cleaning",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Downtown Miami, FL · 200 Biscayne Blvd.",
-    availability: "Off Duty",
-    availabilityColor: "bg-slate-500",
-    currentJob: "No assignment",
-    vehicle: "MH-12-LM-2345 Nissan NV200",
-    rating: 4.3,
-    reviewsCount: 64,
-    completedJobs: 64,
-    onTimeRate: "94%",
-    skills: ["Cleaning", "Sanitization", "Air Quality"],
-  },
-  {
-    id: "tech-012",
-    name: "Service Client H",
-    empId: "#T1053",
-    avatar: "/images/avatar-3.jpg",
-    specialization: "General",
-    phone: "(XXX) XXX-XXXX",
-    email: "user@domain.com",
-    address: "Weston, FL · 1500 Weston Rd.",
-    availability: "On Job",
-    availabilityColor: "bg-emerald-400",
-    currentJob: "#1055 - Duct Cleaning, ETA: 45 mins",
-    vehicle: "MH-12-NP-6789 Ford Transit",
-    rating: 4.7,
-    reviewsCount: 93,
-    completedJobs: 93,
-    onTimeRate: "96%",
-    skills: ["General Maintenance", "Drywall", "Roofing"],
-  },
-];
+const TECHNICIANS_DATA: TechDirectoryItem[] = [];
 
 export default function AdminTechniciansPage() {
   const router = useRouter();
-  const [technicians, setTechnicians] = React.useState<TechDirectoryItem[]>(TECHNICIANS_DATA);
-  const [selectedTech, setSelectedTech] = React.useState<TechDirectoryItem>(TECHNICIANS_DATA[0]);
+  const [technicians, setTechnicians] = React.useState<TechDirectoryItem[]>([]);
+  const [selectedTech, setSelectedTech] = React.useState<TechDirectoryItem | null>(null);
 
   // Filters
   const [search, setSearch] = React.useState("");
@@ -204,21 +70,21 @@ export default function AdminTechniciansPage() {
   const [newPhone, setNewPhone] = React.useState("");
   const [newEmail, setNewEmail] = React.useState("");
 
-  // Top 5 KPI Metrics matching reference image
+  // Top 5 KPI Metrics
   const kpis = [
     {
       title: "Total Technicians",
-      value: "24",
-      subtext: "↑ 2 new this month",
-      subtextColor: "text-emerald-400",
+      value: String(technicians.length),
+      subtext: "Registered in system",
+      subtextColor: "text-slate-400",
       icon: Users,
       iconColor: "text-blue-400",
       iconBg: "bg-blue-500/15 border-blue-500/30",
     },
     {
       title: "Active Technicians",
-      value: "18",
-      subtext: "75% of total",
+      value: String(technicians.filter((t) => !["Off Duty", "On Leave"].includes(t.availability)).length),
+      subtext: technicians.length > 0 ? `${Math.round((technicians.filter((t) => !["Off Duty", "On Leave"].includes(t.availability)).length / technicians.length) * 100)}% of total` : "—",
       subtextColor: "text-slate-400",
       icon: ShieldCheck,
       iconColor: "text-emerald-400",
@@ -226,8 +92,8 @@ export default function AdminTechniciansPage() {
     },
     {
       title: "Available Now",
-      value: "8",
-      subtext: "33% of total",
+      value: String(technicians.filter((t) => t.availability === "Available").length),
+      subtext: technicians.length > 0 ? `${Math.round((technicians.filter((t) => t.availability === "Available").length / technicians.length) * 100)}% of total` : "—",
       subtextColor: "text-slate-400",
       icon: User,
       iconColor: "text-teal-400",
@@ -235,8 +101,8 @@ export default function AdminTechniciansPage() {
     },
     {
       title: "On Job",
-      value: "10",
-      subtext: "42% of total",
+      value: String(technicians.filter((t) => t.availability === "On Job" || t.availability === "En Route").length),
+      subtext: technicians.length > 0 ? `${Math.round((technicians.filter((t) => t.availability === "On Job" || t.availability === "En Route").length / technicians.length) * 100)}% of total` : "—",
       subtextColor: "text-slate-400",
       icon: Wrench,
       iconColor: "text-rose-400",
@@ -244,8 +110,8 @@ export default function AdminTechniciansPage() {
     },
     {
       title: "On Leave",
-      value: "3",
-      subtext: "12% of total",
+      value: String(technicians.filter((t) => t.availability === "On Leave").length),
+      subtext: technicians.length > 0 ? `${Math.round((technicians.filter((t) => t.availability === "On Leave").length / technicians.length) * 100)}% of total` : "—",
       subtextColor: "text-slate-400",
       icon: Pause,
       iconColor: "text-purple-400",
@@ -505,7 +371,7 @@ export default function AdminTechniciansPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {filteredTechs.map((tech) => {
-                    const isSelected = selectedTech.id === tech.id;
+                    const isSelected = selectedTech?.id === tech.id;
                     return (
                       <tr
                         key={tech.id}
@@ -651,6 +517,16 @@ export default function AdminTechniciansPage() {
 
         {/* RIGHT COLUMN: Selected Technician Quick Inspector Panel */}
         <div className="xl:col-span-3 rounded-2xl bg-[#0F172A]/90 border border-white/10 p-4 space-y-4 shadow-xl">
+          {!selectedTech ? (
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center space-y-3">
+              <div className="h-12 w-12 rounded-2xl bg-blue-500/10 border border-blue-500/25 flex items-center justify-center mx-auto">
+                <Users className="h-6 w-6 text-blue-400" />
+              </div>
+              <p className="text-sm font-bold text-white">No Technician Selected</p>
+              <p className="text-xs text-slate-400 max-w-xs">Select a technician from the list to view their details.</p>
+            </div>
+          ) : (
+          <>
           {/* Header Card */}
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/20 shrink-0 bg-slate-800">
@@ -775,6 +651,8 @@ export default function AdminTechniciansPage() {
               <span>Contact</span>
             </button>
           </div>
+          </>
+          )}
         </div>
       </div>
 

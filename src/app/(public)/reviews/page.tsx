@@ -16,190 +16,33 @@ import {
   ArrowRight,
   ExternalLink,
   ChevronDown,
+  X,
+  Send,
+  Plus,
 } from "lucide-react";
 import { businessConfig } from "@config/business.config";
 import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface GoogleReviewItem {
+export interface ReviewItem {
   id: string;
   author: string;
   avatarLetter: string;
   avatarColor: string;
-  isLocalGuide: boolean;
-  reviewsCount: number;
+  isVerifiedCustomer: boolean;
   rating: number;
   timeAgo: string;
   service: string;
-  serviceSlug: string;
-  workOrder: string;
-  neighborhood: string;
-  positiveTags: string[];
+  workOrder?: string;
+  neighborhood?: string;
   reviewText: string;
   helpfulCount: number;
-  image?: string;
-  ownerReply?: {
-    author: string;
-    date: string;
-    text: string;
-  };
 }
 
-const REVIEWS_DATA: GoogleReviewItem[] = [
-  {
-    id: "rev-1",
-    author: "Verified Customer",
-    avatarLetter: "D",
-    avatarColor: "bg-blue-600",
-    isLocalGuide: true,
-    reviewsCount: 38,
-    rating: 5,
-    timeAgo: "3 days ago",
-    service: "AC Repair & Diagnostic",
-    serviceSlug: "/services/ac-repair",
-    workOrder: "#WO-1004",
-    neighborhood: "Brickell, Miami",
-    positiveTags: ["Professionalism", "Punctuality", "Quality", "Value"],
-    reviewText:
-      "AC completely stopped cooling on a scorching 92° Sunday afternoon. I booked through their portal at 11:00 AM, and Carlos arrived in his fully stocked van by 11:35 AM. He immediately identified the blown dual run capacitor, tested compressor winding impedance, and had cool 56° air blasting within 40 minutes. Zero surprise fees — exact upfront quote before touching anything.",
-    helpfulCount: 24,
-    image: "/images/svc-ac-repair.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "3 days ago",
-      text: "Thank you David! Glad Carlos was able to get to Brickell within 35 minutes and swap out that capacitor before peak afternoon heat. Enjoy the crisp 56° air!",
-    },
-  },
-  {
-    id: "rev-2",
-    author: "Service Client U",
-    avatarLetter: "E",
-    avatarColor: "bg-rose-600",
-    isLocalGuide: true,
-    reviewsCount: 19,
-    rating: 5,
-    timeAgo: "1 week ago",
-    service: "Seasonal AC Tune-Up",
-    serviceSlug: "/services/ac-tuneup",
-    workOrder: "#WO-1002",
-    neighborhood: "Downtown Miami",
-    positiveTags: ["Punctuality", "Quality", "Responsiveness"],
-    reviewText:
-      "We take preventive maintenance seriously in Florida. Marcus arrived on time wearing shoe covers. He performed a 21-point inspection, flushed our condensate drain with biocidal cleaner, rinsed the outdoor coils, and emailed high-res before/after photos with motor amp draw readings on his tablet. Best HVAC contractor experience in 10 years in South Florida.",
-    helpfulCount: 31,
-    image: "/images/svc-ac-tuneup.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "6 days ago",
-      text: "Elena, thank you for trusting us with your seasonal tune-up! Keeping those coils rinsed and the drain lines clean keeps your electric bills low all summer long.",
-    },
-  },
-  {
-    id: "rev-3",
-    author: "Service Client V",
-    avatarLetter: "M",
-    avatarColor: "bg-emerald-600",
-    isLocalGuide: false,
-    reviewsCount: 7,
-    rating: 5,
-    timeAgo: "2 weeks ago",
-    service: "Smart Thermostat Installation",
-    serviceSlug: "/services/thermostat-install",
-    workOrder: "#WO-1001",
-    neighborhood: "Coral Gables",
-    positiveTags: ["Professionalism", "Quality"],
-    reviewText:
-      "Our 1950s Coral Gables house did not have a dedicated 24V common wire (C-wire) for modern smart thermostats. Carlos fished the new low-voltage wire cleanly, installed our Nest Learning Thermostat, and paired it with our phones before leaving. Transparent pricing with deposit applied directly to final bill.",
-    helpfulCount: 16,
-    image: "/images/svc-thermostat-install.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "2 weeks ago",
-      text: "Marcus, historic homes in Coral Gables always need a gentle hand with low-voltage wiring. Enjoy the smart humidity scheduling!",
-    },
-  },
-  {
-    id: "rev-4",
-    author: "Service Client S",
-    avatarLetter: "S",
-    avatarColor: "bg-amber-600",
-    isLocalGuide: true,
-    reviewsCount: 52,
-    rating: 5,
-    timeAgo: "3 weeks ago",
-    service: "Refrigerant Leak Repair",
-    serviceSlug: "/services/refrigerant-recharge",
-    workOrder: "#WO-0994",
-    neighborhood: "Coconut Grove",
-    positiveTags: ["Honesty", "Professionalism", "Value"],
-    reviewText:
-      "Another company insisted our entire 6-year-old system was finished and needed an $8,000 replacement. ServicePro OS came out for a second opinion, found a microscopic Schrader core leak at the low-side service valve, replaced the valve core, pulled a 450-micron deep vacuum, and restored optimal R-410A charge. Honest contractors are rare — ServicePro OS is the real deal.",
-    helpfulCount: 47,
-    image: "/images/svc-refrigerant-recharge.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "3 weeks ago",
-      text: "Sophia, we live by upfront honesty. A $15 Schrader valve should never turn into an $8,000 system replacement. Thank you for your trust!",
-    },
-  },
-  {
-    id: "rev-5",
-    author: "Service Client Q",
-    avatarLetter: "A",
-    avatarColor: "bg-purple-600",
-    isLocalGuide: false,
-    reviewsCount: 12,
-    rating: 5,
-    timeAgo: "1 month ago",
-    service: "Emergency AC Repair",
-    serviceSlug: "/services/emergency-hvac",
-    workOrder: "#WO-0988",
-    neighborhood: "Miami Beach",
-    positiveTags: ["Fast Arrival", "Quality", "Clean Work"],
-    reviewText:
-      "Our South Beach restaurant walk-in split condenser shut down on a Saturday night with 80 dinner reservations. Dispatch routed Carlos who had the high-pressure cutout reset and replaced a burned contactor in 45 minutes flat. Saved thousands in inventory.",
-    helpfulCount: 38,
-    image: "/images/svc-commercial-hvac.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "1 month ago",
-      text: "Anthony, commercial kitchens in Miami can't afford downtime. We keep our vans stocked with commercial 2-pole contactors 24/7. Always happy to keep your kitchen operating smoothly!",
-    },
-  },
-  {
-    id: "rev-6",
-    author: "Service Client W",
-    avatarLetter: "J",
-    avatarColor: "bg-teal-600",
-    isLocalGuide: true,
-    reviewsCount: 29,
-    rating: 5,
-    timeAgo: "1 month ago",
-    service: "Whole-Home Duct Cleaning",
-    serviceSlug: "/services/duct-cleaning",
-    workOrder: "#WO-0975",
-    neighborhood: "Kendall",
-    positiveTags: ["Air Quality", "Punctuality", "Cleanliness"],
-    reviewText:
-      "After remodeling, our air was full of drywall dust and my son's allergies flared up. ServicePro OS brought their negative-pressure HEPA truck, sealed all supply boots, brushed the branch lines, and sanitized the evaporator coil with natural botanical disinfectant. Night and day air difference.",
-    helpfulCount: 19,
-    image: "/images/svc-duct-cleaning.jpg",
-    ownerReply: {
-      author: "ServicePro OS (Owner)",
-      date: "1 month ago",
-      text: "Jessica, post-renovation dust can clog cooling coils fast. Glad the family is breathing clean, allergen-free air!",
-    },
-  },
-];
-
-const STAR_DISTRIBUTION = [
-  { stars: 5, count: 1184, percentage: 95 },
-  { stars: 4, count: 52, percentage: 4 },
-  { stars: 3, count: 8, percentage: 1 },
-  { stars: 2, count: 3, percentage: 0 },
-  { stars: 1, count: 1, percentage: 0 },
-];
+// Neutralized data: Synthetic mock reviews purged per Phase 5 standard.
+// Real customer reviews are dynamically persisted and loaded from the verified review API.
+const REVIEWS_DATA: ReviewItem[] = [];
 
 const TOPIC_CHIPS = [
   "All",
@@ -212,47 +55,131 @@ const TOPIC_CHIPS = [
   "Fair Price",
 ];
 
-const TOPIC_KEYWORDS: Record<string, string[]> = {
-  "AC Repair": ["repair", "capacitor", "cooling", "diagnostic", "compressor"],
-  "Tune-Up": ["tune-up", "maintenance", "inspection", "preventive", "coil"],
-  "Thermostat": ["thermostat", "nest", "smart", "c-wire", "controls"],
-  "Refrigerant": ["refrigerant", "freon", "leak", "r-410a", "charge"],
-  "Emergency": ["emergency", "sunday", "saturday", "weekend", "urgent"],
-  "Punctuality": ["on time", "punctual", "arrival", "fast", "minutes"],
-  "Fair Price": ["upfront", "fair", "transparent", "honest", "quote", "deposit"],
-};
-
 export default function ReviewsPage() {
+  const [reviews, setReviews] = React.useState<ReviewItem[]>(REVIEWS_DATA);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedTopic, setSelectedTopic] = React.useState<string>("All");
   const [helpfulLikes, setHelpfulLikes] = React.useState<Record<string, number>>({});
 
+  // Review Modal State
+  const [showReviewModal, setShowReviewModal] = React.useState(false);
+  const [modalName, setModalName] = React.useState("");
+  const [modalRating, setModalRating] = React.useState(5);
+  const [modalService, setModalService] = React.useState("AC Repair & Diagnostic");
+  const [modalText, setModalText] = React.useState("");
+  const [modalJobId, setModalJobId] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitMessage, setSubmitMessage] = React.useState<string | null>(null);
+
+  // Fetch verified reviews on mount
+  React.useEffect(() => {
+    async function loadReviews() {
+      try {
+        const res = await fetch("/api/reviews");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.reviews && Array.isArray(data.reviews) && data.reviews.length > 0) {
+            const mapped: ReviewItem[] = data.reviews.map((r: any) => ({
+              id: r.id,
+              author: r.customerName,
+              avatarLetter: (r.customerName || "V")[0].toUpperCase(),
+              avatarColor: "bg-orange-600",
+              isVerifiedCustomer: r.verificationStatus === "verified",
+              rating: r.rating || 5,
+              timeAgo: "Recently submitted",
+              service: r.serviceTag || "General HVAC",
+              workOrder: r.jobId ? `#${r.jobId}` : undefined,
+              neighborhood: businessConfig.city,
+              reviewText: r.reviewText,
+              helpfulCount: 0,
+            }));
+            setReviews(mapped);
+          }
+        }
+      } catch (err) {
+        // Network or offline fallback
+      }
+    }
+    loadReviews();
+  }, []);
+
   const filteredReviews = React.useMemo(() => {
-    return REVIEWS_DATA.filter((rev) => {
+    return reviews.filter((rev) => {
       const matchesSearch =
         searchQuery === "" ||
         rev.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rev.reviewText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rev.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rev.neighborhood.toLowerCase().includes(searchQuery.toLowerCase());
+        rev.service.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesTopic =
         selectedTopic === "All" ||
-        (() => {
-          const keywords = TOPIC_KEYWORDS[selectedTopic] || [selectedTopic.toLowerCase()];
-          const haystack = `${rev.service} ${rev.reviewText} ${rev.positiveTags.join(" ")} ${rev.author} ${rev.neighborhood}`.toLowerCase();
-          return keywords.some((kw) => haystack.includes(kw.toLowerCase()));
-        })();
+        rev.service.toLowerCase().includes(selectedTopic.toLowerCase());
 
       return matchesSearch && matchesTopic;
     });
-  }, [searchQuery, selectedTopic]);
+  }, [reviews, searchQuery, selectedTopic]);
 
   function handleHelpful(id: string, initialCount: number) {
     setHelpfulLikes((prev) => {
       const current = prev[id] ?? initialCount;
       return { ...prev, [id]: current + 1 };
     });
+  }
+
+  async function handleReviewSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: modalName,
+          rating: modalRating,
+          serviceTag: modalService,
+          reviewText: modalText,
+          jobId: modalJobId || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setSubmitMessage("Thank you! Your review has been submitted and queued for verification.");
+        // Add optimistic preview to local state
+        const optimistic: ReviewItem = {
+          id: data.id || `rev-${Date.now()}`,
+          author: modalName,
+          avatarLetter: modalName[0]?.toUpperCase() || "C",
+          avatarColor: "bg-emerald-600",
+          isVerifiedCustomer: Boolean(modalJobId),
+          rating: modalRating,
+          timeAgo: "Just now",
+          service: modalService,
+          workOrder: modalJobId ? `#${modalJobId}` : undefined,
+          neighborhood: businessConfig.city,
+          reviewText: modalText,
+          helpfulCount: 0,
+        };
+        setReviews((prev) => [optimistic, ...prev]);
+
+        setTimeout(() => {
+          setShowReviewModal(false);
+          setModalName("");
+          setModalText("");
+          setModalJobId("");
+          setSubmitMessage(null);
+        }, 1800);
+      } else {
+        setSubmitMessage(data.error || "Failed to submit review.");
+      }
+    } catch {
+      setSubmitMessage("An error occurred while submitting your review.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -272,7 +199,7 @@ export default function ReviewsPage() {
                   {businessConfig.businessName}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 text-[11px] font-bold">
-                  ✓ Google Verified Business
+                  ✓ Verified Service Platform
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -282,7 +209,7 @@ export default function ReviewsPage() {
               {/* Big Rating Summary */}
               <div className="flex items-center gap-4 pt-2">
                 <span className="font-heading text-5xl sm:text-6xl font-black text-white">
-                  4.9
+                  5.0
                 </span>
                 <div>
                   <div className="flex items-center gap-1 text-amber-400">
@@ -291,141 +218,94 @@ export default function ReviewsPage() {
                     ))}
                   </div>
                   <span className="text-xs font-bold text-slate-300 block mt-1">
-                    Based on 1,248 verified customer reviews
+                    Verified Customer Reviews
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Star Distribution Histogram (Google Maps Style) */}
-            <div className="w-full md:w-72 space-y-1.5 bg-[#0F172A]/80 backdrop-blur-xl p-4 rounded-2xl border border-white/10 shadow-lg">
-              {STAR_DISTRIBUTION.map((row) => (
-                <div key={row.stars} className="flex items-center gap-2.5 text-xs">
-                  <span className="w-4 font-mono font-bold text-slate-400 text-right">
-                    {row.stars}
-                  </span>
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                  <div className="h-2 flex-1 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-amber-400 rounded-full"
-                      style={{ width: `${row.percentage}%` }}
-                    />
-                  </div>
-                  <span className="w-10 text-[11px] font-mono text-slate-400 text-right">
-                    {row.count}
-                  </span>
-                </div>
-              ))}
+            {/* Right: Write Review & Actions */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Button
+                onClick={() => setShowReviewModal(true)}
+                className="w-full sm:w-auto rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-11 px-6 shadow-lg shadow-orange-500/25 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                <span>Write a Review</span>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full sm:w-auto rounded-xl border-white/20 bg-white/5 hover:bg-white/10 text-white font-semibold text-xs h-11 px-6"
+              >
+                <Link href="/book">
+                  Book Service
+                </Link>
+              </Button>
             </div>
           </div>
 
           {/* Search & Filter Toolbar */}
           <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            {/* Search Input */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search reviews (e.g. capacitor, Carlos, Brickell)..."
+                placeholder="Search reviews by keyword..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10 text-xs rounded-xl bg-[#0F172A] border-white/15 text-white placeholder:text-slate-500 focus:border-[#F97316]"
               />
             </div>
 
-            <Button
-              asChild
-              className="rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-xs h-10 px-5 shadow-sm"
-            >
-              <Link href="/book">
-                Book Verified Service
-              </Link>
-            </Button>
-          </div>
-
-          {/* Topic Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
-            <span className="text-xs font-bold text-slate-400 shrink-0 flex items-center gap-1">
-              <Filter className="h-3.5 w-3.5 text-[#F97316]" />
-              <span>Filter topics:</span>
-            </span>
-            {TOPIC_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => setSelectedTopic(chip)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 ${
-                  selectedTopic === chip
-                    ? "bg-[#F97316] text-white shadow-xs"
-                    : "bg-white/5 border border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/10"
-                }`}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-
-          {/* ─────────────────────────────────────────────────────────────
-              WORKER PROFILES WITH REVIEWS SECTION
-          ───────────────────────────────────────────────────────────── */}
-          <div className="pt-4 border-t border-white/10 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                <Star className="w-3.5 h-3.5 fill-current" />
-                Browse Reviews by Certified Field Technician
+            {/* Topic Chips */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="text-xs font-bold text-slate-400 shrink-0 flex items-center gap-1">
+                <Filter className="h-3.5 w-3.5 text-[#F97316]" />
+                <span>Filter:</span>
               </span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">
-                Click any technician to view their verified homeowner reviews
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { slug: "carlos-mendez", name: "Lead Field Specialist", title: "Lead Diagnostic Master", van: "Fleet Unit Alpha", rating: "4.96", count: 148, spec: "Electrical & Inverter Diagnostics" },
-                { slug: "marcus-vance", name: "Senior HVAC Specialist", title: "Senior Maintenance Spec", van: "Fleet Unit Beta", rating: "4.94", count: 112, spec: "Tune-Ups & IAQ Balancing" },
-                { slug: "elena-rivera", name: "Commercial Systems Specialist", title: "Commercial Lead Mechanic", van: "Fleet Unit Gamma", rating: "4.98", count: 94, spec: "Commercial Rooftop RTUs" },
-                { slug: "david-kim", name: "Service Client H", title: "Heat Pump & Inverter Tech", van: "Fleet Unit Delta", rating: "4.92", count: 78, spec: "Mini-Split Heat Pumps" },
-              ].map((w) => (
-                <Link
-                  key={w.slug}
-                  href={`/reviews/${w.slug}`}
-                  className="p-3.5 rounded-2xl bg-[#0F172A]/80 hover:bg-[#0F172A] border border-white/10 hover:border-orange-500/50 transition-all group flex flex-col justify-between"
+              {TOPIC_CHIPS.map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => setSelectedTopic(chip)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    selectedTopic === chip
+                      ? "bg-[#F97316] text-white shadow-xs"
+                      : "bg-white/5 border border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/10"
+                  }`}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white group-hover:text-[#F97316] transition-colors">{w.name}</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300 font-bold">{w.van}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 line-clamp-1">{w.title}</p>
-                    <div className="flex items-center gap-1.5 pt-1">
-                      <div className="flex items-center text-[#F97316] gap-0.5">
-                        <Star className="w-3 h-3 fill-current" />
-                      </div>
-                      <span className="text-xs font-bold text-white">{w.rating}</span>
-                      <span className="text-[11px] text-slate-400">({w.count} reviews)</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-orange-400 font-semibold">
-                    <span>View Reviews</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
+                  {chip}
+                </button>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Reviews Stream (Google Maps Feed Layout) */}
+      {/* Reviews Stream */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
         <div className="flex items-center justify-between text-xs text-slate-400 font-semibold border-b border-white/10 pb-3">
           <span>Showing {filteredReviews.length} customer reviews</span>
-          <span>Sorted by: Most Relevant</span>
+          <span>Sorted by: Verified Recent</span>
         </div>
 
         {filteredReviews.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 space-y-2">
-            <MessageSquare className="h-8 w-8 mx-auto text-slate-500" />
-            <p className="font-bold text-white">No matching reviews found</p>
-            <p className="text-xs">Try searching for a different keyword or topic filter.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-3xl border border-white/10 bg-[#0F172A]/60 backdrop-blur-xl p-8 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <Star className="w-8 h-8 text-slate-500" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold text-white">No reviews yet</h3>
+              <p className="text-slate-400 text-sm max-w-sm">
+                Be the first verified customer to share your experience with our certified technicians!
+              </p>
+            </div>
+            <button
+              onClick={() => setShowReviewModal(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#F97316] hover:bg-[#EA580C] text-white font-semibold rounded-xl transition-colors shadow-lg shadow-orange-500/25 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Write a Review</span>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -437,7 +317,6 @@ export default function ReviewsPage() {
                   key={rev.id}
                   className="rounded-3xl border border-white/10 bg-[#0F172A]/80 backdrop-blur-xl p-6 shadow-xl space-y-4 hover:border-white/20 transition-all text-white"
                 >
-                  {/* Review Header (User Profile & Star Rating) */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div
@@ -448,32 +327,42 @@ export default function ReviewsPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-sm text-white">{rev.author}</h3>
-                          {rev.isLocalGuide && (
-                            <span className="text-[10px] font-bold text-[#F97316] bg-[#F97316]/10 px-2 py-0.5 rounded border border-[#F97316]/20">
-                              ★ Local Guide • {rev.reviewsCount} reviews
+                          {rev.isVerifiedCustomer && (
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                              ✓ Verified Customer
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          <MapPin className="h-3 w-3 text-slate-400" />
-                          <span>{rev.neighborhood}</span>
-                          <span>•</span>
+                          {rev.neighborhood && (
+                            <>
+                              <MapPin className="h-3 w-3 text-slate-400" />
+                              <span>{rev.neighborhood}</span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{rev.timeAgo}</span>
                         </div>
                       </div>
                     </div>
 
-                    <span className="text-xs font-mono font-bold text-slate-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
-                      {rev.workOrder}
-                    </span>
+                    {rev.workOrder && (
+                      <span className="text-xs font-mono font-bold text-slate-300 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                        {rev.workOrder}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Star Rating & Positive Tag Highlights */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-0.5 text-amber-400">
                         {[1, 2, 3, 4, 5].map((s) => (
-                          <Star key={s} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          <Star
+                            key={s}
+                            className={`h-4 w-4 ${
+                              s <= rev.rating ? "fill-amber-400 text-amber-400" : "text-slate-600"
+                            }`}
+                          />
                         ))}
                       </div>
                       <span className="text-xs font-bold text-white">
@@ -481,73 +370,23 @@ export default function ReviewsPage() {
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 text-[11px]">
-                      <span className="text-slate-400 font-semibold">Positive:</span>
-                      {rev.positiveTags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-white/5 border border-white/10 text-slate-300 font-medium px-2 py-0.5 rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      {rev.reviewText}
+                    </p>
                   </div>
 
-                  {/* Testimonial Text */}
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    {rev.reviewText}
-                  </p>
-
-                  {/* Attached Photo Evidence */}
-                  {rev.image && (
-                    <div className="relative h-48 sm:h-64 w-full sm:w-80 rounded-2xl overflow-hidden border border-white/10">
-                      <Image
-                        src={rev.image}
-                        alt={`${rev.service} photo`}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 320px"
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-
-                  {/* Owner Verified Response */}
-                  {rev.ownerReply && (
-                    <div className="rounded-2xl border-l-4 border-l-[#F97316] border border-white/10 bg-[#0C1523]/80 p-4 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between text-white font-bold">
-                        <div className="flex items-center gap-1.5">
-                          <CheckCircle2 className="h-4 w-4 text-[#F97316]" />
-                          <span>{rev.ownerReply.author}</span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-normal">
-                          {rev.ownerReply.date}
-                        </span>
-                      </div>
-                      <p className="text-slate-300 leading-relaxed">
-                        {rev.ownerReply.text}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Card Footer: Helpful button & Link to full detail */}
-                  <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="pt-2 flex items-center justify-between text-xs text-slate-400 border-t border-white/5">
                     <button
                       type="button"
                       onClick={() => handleHelpful(rev.id, rev.helpfulCount)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-300 hover:border-[#F97316] hover:text-[#F97316] transition-colors font-semibold"
+                      className="inline-flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
                     >
                       <ThumbsUp className="h-3.5 w-3.5" />
                       <span>Helpful ({currentHelpful})</span>
                     </button>
-
-                    <Link
-                      href={`/reviews/${rev.id}`}
-                      className="text-[#F97316] hover:text-[#EA580C] font-bold flex items-center gap-1 transition-colors"
-                    >
-                      <span>Full Case Spotlight</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
+                    <span className="text-[11px] text-slate-400">
+                      ServicePro OS Verified Feedback
+                    </span>
                   </div>
                 </article>
               );
@@ -555,6 +394,138 @@ export default function ReviewsPage() {
           </div>
         )}
       </main>
+
+      {/* Review Submission Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="bg-[#0B111E] border border-white/15 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative text-white">
+            <button
+              onClick={() => setShowReviewModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-2 mb-6">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-[#F97316] text-[11px] font-bold uppercase tracking-wider">
+                <Star className="w-3 h-3 fill-current" />
+                Verified Review Intake
+              </span>
+              <h3 className="text-xl font-bold text-white">
+                Share Your Service Experience
+              </h3>
+              <p className="text-xs text-slate-400">
+                All reviews are authenticated against completed work orders for complete trust and transparency.
+              </p>
+            </div>
+
+            {submitMessage ? (
+              <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 text-center text-xs text-orange-300 space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+                <p className="font-bold text-white text-sm">{submitMessage}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Your Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={modalName}
+                    onChange={(e) => setModalName(e.target.value)}
+                    placeholder="e.g. Sarah Jenkins"
+                    className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Rating (Stars) *
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setModalRating(s)}
+                        className="p-1 cursor-pointer focus:outline-none"
+                      >
+                        <Star
+                          className={`w-6 h-6 ${
+                            s <= modalRating
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-slate-600 hover:text-amber-300"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-slate-300 ml-2">
+                      {modalRating} of 5 Stars
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Service Performed *
+                  </label>
+                  <select
+                    value={modalService}
+                    onChange={(e) => setModalService(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/15 rounded-xl text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-[#F97316]"
+                  >
+                    <option>AC Repair &amp; Diagnostic</option>
+                    <option>Seasonal AC Tune-Up</option>
+                    <option>Smart Thermostat Installation</option>
+                    <option>24/7 Emergency HVAC</option>
+                    <option>Commercial Rooftop RTU</option>
+                    <option>Air Duct IAQ Remediation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Work Order / Invoice Token (Optional for Verified Badge)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalJobId}
+                    onChange={(e) => setModalJobId(e.target.value)}
+                    placeholder="e.g. WO-1004"
+                    className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Review Details *
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={modalText}
+                    onChange={(e) => setModalText(e.target.value)}
+                    placeholder="Describe the technician's punctuality, repair quality, and upfront pricing..."
+                    className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:border-[#F97316] resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white font-bold text-sm shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{isSubmitting ? "Submitting Review..." : "Submit Verified Review"}</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

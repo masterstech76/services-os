@@ -315,83 +315,93 @@ export function ServicesCatalogClient({ businessPhone, city }: ServicesCatalogCl
                     </p>
                   </div>
 
-                  {/* Workers List Card: Who Can Do This Work */}
-                  <div className="mt-3 p-3 rounded-2xl bg-[#070D18]/90 border border-white/10 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-300 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
-                        <Users className="w-3.5 h-3.5 text-[#F97316]" />
-                        <span>Workers Who Can Do This ({workers.length})</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        {workers.filter((w) => w.status === "available").length} Ready Now
-                      </span>
-                    </div>
+                  {/* Workers List Card: Who Can Do This Work (Conditional) */}
+                  {workers && workers.length > 0 && (
+                    <div className="mt-3 p-3 rounded-2xl bg-[#070D18]/90 border border-white/10 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-300 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                          <Users className="w-3.5 h-3.5 text-[#F97316]" />
+                          <span>Workers Who Can Do This ({workers.length})</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          {workers.filter((w) => w.status === "available").length} Ready Now
+                        </span>
+                      </div>
 
-                    <div className="space-y-1.5">
-                      {workers.slice(0, 2).map((worker) => (
-                        <div
-                          key={worker.id}
-                          onClick={() => {
-                            setSelectedWorkerForModal({
-                              ...worker,
-                              slug: worker.id,
-                            });
-                            setWorkerProfileModalOpen(true);
-                          }}
-                          className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-orange-500/40 transition-all text-xs cursor-pointer group/worker"
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Open profile for ${worker.name}`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 text-white font-bold text-[10px] flex items-center justify-center shrink-0 group-hover/worker:scale-105 transition-transform">
-                              {worker.initials}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-white text-xs truncate group-hover/worker:text-[#F97316] transition-colors">
-                                  {worker.name}
-                                </span>
-                                <span className="text-[10px] text-amber-400 flex items-center gap-0.5 shrink-0">
-                                  <Star className="w-2.5 h-2.5 fill-amber-400" />
-                                  {worker.rating}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
-                                {worker.status === "available" ? (
-                                  <span className="text-emerald-400 font-medium flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Available Now
-                                  </span>
-                                ) : (
-                                  <span className="text-amber-400 font-medium flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                                    On Active Site (~35m)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                      <div className="space-y-1.5">
+                        {workers.slice(0, 2).map((worker) => (
+                          <div
+                            key={worker.id}
+                            onClick={() => {
                               setSelectedWorkerForModal({
                                 ...worker,
                                 slug: worker.id,
                               });
                               setWorkerProfileModalOpen(true);
                             }}
-                            className="shrink-0 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#F97316] border border-white/10 text-slate-300 hover:text-[#0C1523] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                            className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-orange-500/40 transition-all text-xs cursor-pointer group/worker"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open profile for ${worker.name}`}
                           >
-                            <span>Profile</span>
-                            <ArrowRight className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-2 min-w-0">
+                              {worker.avatarUrl ? (
+                                <img
+                                  src={worker.avatarUrl}
+                                  alt={worker.name}
+                                  className="w-6 h-6 rounded-lg object-cover border border-white/10 shrink-0 group-hover/worker:scale-105 transition-transform"
+                                />
+                              ) : (
+                                <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 text-white font-bold text-[10px] flex items-center justify-center shrink-0 group-hover/worker:scale-105 transition-transform">
+                                  {worker.initials}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-white text-xs truncate group-hover/worker:text-[#F97316] transition-colors">
+                                    {worker.name}
+                                  </span>
+                                  <span className="text-[10px] text-amber-400 flex items-center gap-0.5 shrink-0">
+                                    <Star className="w-2.5 h-2.5 fill-amber-400" />
+                                    {worker.rating}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[10px] text-slate-400 truncate">
+                                  {worker.status === "available" ? (
+                                    <span className="text-emerald-400 font-medium flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                      Available Now
+                                    </span>
+                                  ) : (
+                                    <span className="text-amber-400 font-medium flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      On Active Site (~35m)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWorkerForModal({
+                                  ...worker,
+                                  slug: worker.id,
+                                });
+                                setWorkerProfileModalOpen(true);
+                              }}
+                              className="shrink-0 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#F97316] border border-white/10 text-slate-300 hover:text-[#0C1523] text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                            >
+                              <span>Profile</span>
+                              <ArrowRight className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-white/10 space-y-3">
@@ -533,7 +543,7 @@ export function ServicesCatalogClient({ businessPhone, city }: ServicesCatalogCl
                       : "bg-[#F97316] hover:bg-[#EA580C] shadow-orange-500/25"
                   }`}
                 >
-                  Book with {worker.name.split(" ")[0]}
+                  Dispatch Available Specialist
                 </Button>
                 <Button
                   type="button"

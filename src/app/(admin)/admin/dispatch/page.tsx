@@ -339,7 +339,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-tech-1",
       type: "technician",
-      label: "Carlos (Unit Alpha)",
+      label: "Unit Alpha",
       sublabel: "Available",
       x: 42,
       y: 55,
@@ -350,7 +350,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-tech-2",
       type: "technician",
-      label: "Danny (Unit Beta)",
+      label: "Unit Beta",
       sublabel: "Wynwood Online",
       x: 52,
       y: 48,
@@ -361,7 +361,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-enroute-1",
       type: "en_route",
-      label: "Maria (Unit Gamma)",
+      label: "Unit Gamma",
       sublabel: "En Route to WO-8421",
       x: 48,
       y: 62,
@@ -372,7 +372,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-onjob-1",
       type: "on_job",
-      label: "WO-8438 (Carlos)",
+      label: "WO-8438 (Assigned Tech)",
       sublabel: "Downtown Miami",
       x: 58,
       y: 65,
@@ -383,7 +383,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-enroute-2",
       type: "en_route",
-      label: "Robert (Unit Delta)",
+      label: "Unit Delta",
       sublabel: "MacArthur Causeway",
       x: 68,
       y: 63,
@@ -405,7 +405,7 @@ export default function AdminDispatchBoardPage() {
     {
       id: "m-tech-3",
       type: "technician",
-      label: "Tony (Unit Epsilon)",
+      label: "Unit Epsilon",
       sublabel: "North Beach",
       x: 70,
       y: 35,
