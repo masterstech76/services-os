@@ -1,34 +1,48 @@
 /**
  * ServicePro OS — Live Supabase Auth, JWT, MFA & PostgREST RLS Integration Suite
  *
- * Runs against a local Supabase stack (`npx supabase start`) or an isolated staging
- * Supabase project provided via SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY.
- * Never hardcodes credentials and cleans up temporary test users on exit.
+ * Staging-only execution targeting https://rzmruyfeszkondbyxhnf.supabase.co
+ * via SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY.
+ * Never falls back to local Supabase or production, never hardcodes credentials,
+ * and cleans up temporary test users/tenants on exit.
  */
 
-const { execSync } = require('child_process');
 const crypto = require('crypto');
 const path = require('path');
 const { createClient } = require(path.resolve(__dirname, '..', 'admin_web', 'node_modules', '@supabase', 'supabase-js'));
 
+const EXPECTED_STAGING_HOST = 'rzmruyfeszkondbyxhnf.supabase.co';
+
 function resolveSupabaseConfig() {
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return {
-      url: process.env.SUPABASE_URL,
-      anonKey: process.env.SUPABASE_ANON_KEY,
-      serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      source: 'environment',
-    };
-  }
-  const raw = execSync('npx supabase status --output json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-  const parsed = JSON.parse(raw);
-  const url = parsed.API_URL || parsed.api_url;
-  const anonKey = parsed.ANON_KEY || parsed.anon_key || parsed.PUBLISHABLE_KEY || parsed.publishable_key;
-  const serviceKey = parsed.SERVICE_ROLE_KEY || parsed.service_role_key || parsed.SECRET_KEY || parsed.secret_key;
+  const url = (process.env.SUPABASE_URL || '').trim();
+  const anonKey = (process.env.SUPABASE_ANON_KEY || '').trim();
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+
   if (!url || !anonKey || !serviceKey) {
-    throw new Error('Could not resolve local Supabase API_URL / ANON_KEY / SERVICE_ROLE_KEY from `npx supabase status --output json`.');
+    throw new Error(
+      'STAGING_CONFIG_REQUIRED: Set SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY. Local Supabase fallback is disabled.'
+    );
   }
-  return { url, anonKey, serviceKey, source: 'local-supabase-cli' };
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('INVALID_SUPABASE_URL: SUPABASE_URL must be a valid HTTPS URL.');
+  }
+
+  if (parsed.protocol !== 'https:' || parsed.hostname !== EXPECTED_STAGING_HOST) {
+    throw new Error(
+      `FORBIDDEN_TARGET: Expected https://${EXPECTED_STAGING_HOST}, got ${parsed.protocol}//${parsed.hostname}. Localhost and non-staging targets are blocked.`
+    );
+  }
+
+  return {
+    url: `https://${EXPECTED_STAGING_HOST}`,
+    anonKey,
+    serviceKey,
+    source: 'staging-env',
+  };
 }
 
 function base32ToBytes(base32) {

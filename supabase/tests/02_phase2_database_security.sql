@@ -4,7 +4,7 @@
 -- ============================================================================
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(15);
 
 -- 1. Verify FORCE ROW LEVEL SECURITY is enabled on all 21 tables
 SELECT is(

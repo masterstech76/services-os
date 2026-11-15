@@ -26,9 +26,6 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Verify Docker daemon availability
-        run: docker info --format '{{.ServerVersion}}'
-
       - name: Install pinned workspace & admin_web dependencies
         run: |
           npm ci
@@ -41,10 +38,12 @@ jobs:
           node scripts/test_phase3_4_security.cjs
           node scripts/test_handover_cleanup.cjs
 
-      - name: Start isolated local Supabase stack (PostgreSQL 16 + GoTrue + PostgREST)
-        run: npx supabase start
-
-      - name: Run full live security verification suite (Static SQL/RLS, pgTAP, Live GoTrue/JWT/MFA/RLS)
+      - name: Run staging-only live security verification suite (Static SQL/RLS, Remote pgTAP, Live GoTrue/JWT/MFA/RLS)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
         run: npm run verify:security-live
 
       - name: Run TypeScript build & linter
@@ -73,7 +72,3 @@ jobs:
           name: phase1-live-security-evidence
           path: audit_report/LIVE_VERIFICATION_EVIDENCE.json
           if-no-files-found: warn
-
-      - name: Cleanup local Supabase containers
-        if: always()
-        run: npx supabase stop --no-backup || true
