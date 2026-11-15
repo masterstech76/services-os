@@ -704,7 +704,7 @@ DECLARE
     v_tenant_id UUID := public.current_tenant_id();
     v_clamped_radius INT := LEAST(GREATEST(COALESCE(p_radius_meters, 40000), 1000), 100000);
 BEGIN
-    IF NOT public.is_active_user() AND auth.role() <> 'service_role' THEN
+    IF NOT public.is_active_user() AND auth.role() IS DISTINCT FROM 'service_role' THEN
         RAISE EXCEPTION 'FORBIDDEN: Active authenticated session required.';
     END IF;
 
@@ -841,7 +841,7 @@ DECLARE
     v_tech_location GEOGRAPHY;
     v_distance_meters DOUBLE PRECISION;
 BEGIN
-    IF auth.role() <> 'service_role' AND NOT public.is_active_user() THEN
+    IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.is_active_user() THEN
         RAISE EXCEPTION 'FORBIDDEN: Active authenticated user required.';
     END IF;
 
@@ -859,7 +859,7 @@ BEGIN
         RAISE EXCEPTION 'Booking not found';
     END IF;
 
-    IF auth.role() <> 'service_role' THEN
+    IF auth.role() IS DISTINCT FROM 'service_role' THEN
         IF v_booking.tenant_id IS DISTINCT FROM v_tenant_id THEN
             RAISE EXCEPTION 'FORBIDDEN: Cross-tenant booking access denied.';
         END IF;
@@ -910,7 +910,7 @@ DECLARE
     v_tenant_id UUID := public.current_tenant_id();
     v_booking RECORD;
 BEGIN
-    IF auth.role() <> 'service_role' AND NOT public.is_active_user() THEN
+    IF auth.role() IS DISTINCT FROM 'service_role' AND NOT public.is_active_user() THEN
         RAISE EXCEPTION 'FORBIDDEN: Active authenticated user required.';
     END IF;
 
@@ -928,7 +928,7 @@ BEGIN
         RAISE EXCEPTION 'Booking not found';
     END IF;
 
-    IF auth.role() <> 'service_role' THEN
+    IF auth.role() IS DISTINCT FROM 'service_role' THEN
         IF v_booking.tenant_id IS DISTINCT FROM v_tenant_id THEN
             RAISE EXCEPTION 'FORBIDDEN: Cross-tenant escrow release denied.';
         END IF;

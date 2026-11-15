@@ -154,14 +154,6 @@ SELECT throws_ok(
 );
 
 -- 8. Assigned Tech A succeeds via authorized verify_arrival_geofence & release_escrow_to_technician
-DO $$
-DECLARE v_st TEXT;
-BEGIN
-  SELECT status INTO v_st FROM public.bookings WHERE id = '10000000-0000-0000-0000-000000000401';
-  IF v_st IS DISTINCT FROM 'EN_ROUTE' THEN
-    RAISE EXCEPTION 'DEBUG: expected EN_ROUTE before verify_arrival_geofence, got %', COALESCE(v_st, '<NULL>');
-  END IF;
-END $$;
 SELECT is(
   public.verify_arrival_geofence('10000000-0000-0000-0000-000000000401', 25.7617, -80.1918),
   TRUE,

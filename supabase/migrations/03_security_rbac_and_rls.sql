@@ -1603,7 +1603,7 @@ DECLARE
     v_deleted JSONB := '{}'::jsonb;
     v_cnt INT;
 BEGIN
-    IF auth.role() <> 'service_role' THEN
+    IF auth.role() IS DISTINCT FROM 'service_role' THEN
         RAISE EXCEPTION 'FORBIDDEN: cleanup_seller_test_records_atomic requires service_role.';
     END IF;
 
