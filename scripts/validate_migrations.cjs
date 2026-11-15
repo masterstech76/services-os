@@ -1,7 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const files = ['01_initial_schema.sql', '02_postgis_functions.sql', '03_security_rbac_and_rls.sql'];
+const files = [
+  '01_initial_schema.sql',
+  '02_postgis_functions.sql',
+  '03_security_rbac_and_rls.sql',
+  '04_phase2_database_security_hardening.sql',
+];
 const createdTables = new Set();
 const rlsEnabledTables = new Set();
 const policyCounts = new Map();

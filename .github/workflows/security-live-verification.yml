@@ -34,9 +34,10 @@ jobs:
           npm ci
           npm --prefix admin_web ci
 
-      - name: Run zero-fake-data & handover cleanup safety tests
+      - name: Run zero-fake-data, Phase 2 static DB security & handover cleanup safety tests
         run: |
           npm run verify:data-env
+          node scripts/test_phase2_database_security.cjs
           node scripts/test_handover_cleanup.cjs
 
       - name: Start isolated local Supabase stack (PostgreSQL 16 + GoTrue + PostgREST)
