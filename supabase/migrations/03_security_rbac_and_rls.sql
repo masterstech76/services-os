@@ -321,24 +321,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
     SELECT public.current_user_role() = 'CUSTOMER';
 $$;
 
--- Backwards-compatible aliases in auth schema
-CREATE OR REPLACE FUNCTION auth.current_user_role()
-RETURNS VARCHAR LANGUAGE sql STABLE AS $$ SELECT public.current_user_role(); $$;
-
-CREATE OR REPLACE FUNCTION auth.current_tenant_id()
-RETURNS UUID LANGUAGE sql STABLE AS $$ SELECT public.current_tenant_id(); $$;
-
-CREATE OR REPLACE FUNCTION auth.is_admin()
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$ SELECT public.is_admin(); $$;
-
-CREATE OR REPLACE FUNCTION auth.is_staff()
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$ SELECT public.is_staff(); $$;
-
-CREATE OR REPLACE FUNCTION auth.is_technician()
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$ SELECT public.is_technician(); $$;
-
-CREATE OR REPLACE FUNCTION auth.is_customer()
-RETURNS BOOLEAN LANGUAGE sql STABLE AS $$ SELECT public.is_customer(); $$;
+-- (Helper functions live in public.* schema; auth schema is owned by supabase_auth_admin)
 
 -- =====================================================================
 -- 8. Enable Row-Level Security (RLS) On ALL 19 Tables
