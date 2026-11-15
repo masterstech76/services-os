@@ -56,6 +56,7 @@ INSERT INTO auth.users (id, email) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 SELECT set_config('role', 'service_role', true);
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
 -- Test atomic first-admin bootstrap (and second-attempt rejection)
 SELECT is(
@@ -156,6 +157,7 @@ SELECT is(public.is_admin(), FALSE, 'Missing public.users record fails is_admin(
 
 -- 8. Test deactivated Admin with stale aal2 / app_metadata.role = 'ADMIN' -> ANONYMOUS & is_admin() = FALSE
 SELECT set_config('role', 'service_role', true);
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
 UPDATE public.users SET is_active = FALSE WHERE id = '11111111-1111-1111-1111-111111111111';
 
 SELECT set_config('role', 'authenticated', true);
@@ -177,6 +179,7 @@ SELECT throws_ok(
 );
 
 SELECT set_config('role', 'service_role', true);
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
 SELECT throws_ok(
   $$SELECT public.cleanup_seller_test_records_atomic('pgtap-cust@servicepro.test', FALSE)$$,
   NULL,
