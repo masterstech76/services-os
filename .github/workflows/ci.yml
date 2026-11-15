@@ -13,28 +13,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          npm install
+          cd admin_web && npm install
 
-      - name: Verify environment & config
-        run: pnpm verify-env
+      - name: Verify environment & SQL migrations
+        run: npm run verify-env
 
-      - name: TypeScript typecheck
-        run: pnpm typecheck
+      - name: Validate Flutter mobile codebase
+        run: npm run validate-mobile
 
-      - name: ESLint check
-        run: pnpm lint
+      - name: TypeScript typecheck & production build
+        run: npm run build
 
-      - name: Unit, Slot Engine, Concurrency & RLS tests
-        run: pnpm test
+      - name: Linter check
+        run: npm run lint

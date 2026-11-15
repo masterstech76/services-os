@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@layer base {
+  body {
+    background-color: #F4F7FB;
+    color: #0F172A;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+/* ServicePro OS Deep Teal Theme */
+.servicepro-sidebar {
+  background-color: #0C3832;
+  color: #E2E8F0;
+}
+
+/* Global Selection Styling: Crisp Black Text (Never White/Invisible) */
+::selection {
+  background-color: #A7F3D0 !important;
+  color: #000000 !important;
+}
+
+input::selection,
+textarea::selection {
+  background-color: #A7F3D0 !important;
+  color: #000000 !important;
+}
+
+.servicepro-nav-active {
+  background-color: #059669;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.servicepro-nav-hover:hover {
+  background-color: #134E45;
+  color: #FFFFFF;
+}
+
+/* Thin Scrollbar */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
