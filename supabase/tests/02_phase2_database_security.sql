@@ -43,12 +43,12 @@ INSERT INTO public.provider_profiles (id, user_id, trade_license_number, trade_c
   ('20000000-0000-0000-0000-000000000122', '20000000-0000-0000-0000-000000000022', 'P2-LIC-002', 'HVAC', TRUE, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.categories (id, tenant_id, name, slug, is_active) VALUES
-  ('10000000-0000-0000-0000-000000000201', '10000000-0000-0000-0000-000000000001', 'HVAC', 'p2-hvac-a', TRUE)
+INSERT INTO public.categories (id, tenant_id, slug, title, icon_name, image_url, is_active) VALUES
+  ('10000000-0000-0000-0000-000000000201', '10000000-0000-0000-0000-000000000001', 'p2-hvac-a', 'HVAC', 'ac_unit', 'assets/hvac.png', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.services (id, category_id, name, base_price_cents, is_active) VALUES
-  ('10000000-0000-0000-0000-000000000301', '10000000-0000-0000-0000-000000000201', 'AC Tune-up', 9900, TRUE)
+INSERT INTO public.services (id, category_id, name, description, base_price_cents, is_active) VALUES
+  ('10000000-0000-0000-0000-000000000301', '10000000-0000-0000-0000-000000000201', 'AC Tune-up', 'Synthetic Phase 2 test service', 9900, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.bookings (
