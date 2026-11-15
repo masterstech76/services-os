@@ -83,7 +83,7 @@ SELECT throws_ok(
     ARRAY['deadbeef'],
     encode(digest('nonce-pgtap-2', 'sha256'), 'hex')
   )$$,
-  'BOOTSTRAP_LOCKED: First administrator is already provisioned. Public bootstrap is permanently disabled.',
+  'BOOTSTRAP_LOCKED: Master Administrator has already been provisioned. First-time bootstrap is permanently disabled.',
   'Second bootstrap attempt is permanently rejected'
 );
 
