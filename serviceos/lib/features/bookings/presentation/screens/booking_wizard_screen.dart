@@ -190,7 +190,7 @@ class _BookingWizardScreenState extends State<BookingWizardScreen> {
               ),
               child: const TextField(
                 decoration: InputDecoration(
-                  hintText: 'Buzzer #4892, parking spot #14 on ground level...',
+                  hintText: 'Gate or buzzer code, parking instructions...',
                   border: InputBorder.none,
                 ),
               ),

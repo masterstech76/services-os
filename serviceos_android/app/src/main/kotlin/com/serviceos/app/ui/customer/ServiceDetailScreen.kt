@@ -33,7 +33,7 @@ fun ServiceDetailScreen(
         durationMinutes = 60,
         rating = 4.95,
         reviewCount = 340,
-        imageUrl = "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=800"
+        imageUrl = ""
     ),
     onBack: () -> Unit = {},
     onBookNow: () -> Unit = {}

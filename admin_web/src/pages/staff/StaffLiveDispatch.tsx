@@ -25,18 +25,19 @@ export const StaffLiveDispatch: React.FC = () => {
   } = useAdmin();
 
   const [isPinging, setIsPinging] = useState(false);
-  const [lastPingTelemetry, setLastPingTelemetry] = useState('30.2672° N, 97.7431° W (Accuracy ±2m)');
+  const [lastPingTelemetry, setLastPingTelemetry] = useState('Awaiting live technician telemetry');
 
   const handleRefreshPing = () => {
     setIsPinging(true);
-    setTimeout(() => {
-      setIsPinging(false);
-      const lat = (30.2672 + (Math.random() - 0.5) * 0.005).toFixed(4);
-      const lng = (97.7431 + (Math.random() - 0.5) * 0.005).toFixed(4);
-      const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      setLastPingTelemetry(`${lat}° N, ${lng}° W • Handshake ${time}`);
-      addToast('Active technician GPS beacons pinged & telemetry refreshed!', 'success');
-    }, 600);
+    const activeCount = technicians.filter(t => t.status === 'Available' || t.status === 'Busy').length;
+    const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setIsPinging(false);
+    setLastPingTelemetry(
+      activeCount > 0
+        ? `${activeCount} active technician${activeCount === 1 ? '' : 's'} synced at ${time}`
+        : `No active technician beacons online (${time})`
+    );
+    addToast(`Telemetry refreshed (${activeCount} active technician${activeCount === 1 ? '' : 's'}).`, 'info');
   };
 
   const activeBookings = bookings.filter(b => (b.status === 'In Progress' || b.status === 'Scheduled') && b.technicianId && b.technicianId !== 'unassigned');

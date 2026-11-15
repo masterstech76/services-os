@@ -1,7 +1,8 @@
 // ============================================================================
 // ServicePro OS — Supabase Edge Function: stripe-payment-intent
-// Creates a Stripe PaymentIntent with Escrow Hold (capture_method: 'manual')
-// and 15% Platform Take Rate / 85% Stripe Connect Provider Transfer.
+// Server-authoritative PaymentIntent creation with Escrow Hold
+// (capture_method: 'manual'), database-verified totals, Connect lookup,
+// caller ownership check, and Stripe Idempotency-Key.
 // ============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -40,7 +41,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const jwt = authHeader.replace('Bearer ', '');
+    const jwt = authHeader.replace('Bearer ', '').trim();
     const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(jwt);
     if (authError || !userData?.user) {
       return new Response(
@@ -49,31 +50,97 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const body = await req.json();
-    const bookingId = String(body.bookingId || '');
-    const amountCents = Math.round(Number(body.amountCents || 0));
-    const currency = String(body.currency || 'usd').toLowerCase();
-    const providerConnectAccountId = body.providerConnectAccountId ? String(body.providerConnectAccountId) : null;
+    const { data: callerUser } = await supabaseAdmin
+      .from('users')
+      .select('id, role, tenant_id, is_active')
+      .eq('id', userData.user.id)
+      .maybeSingle();
 
-    if (!bookingId || amountCents < 100) {
+    if (!callerUser || callerUser.is_active !== true) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Valid bookingId and amountCents (>= 100) are required.' }),
+        JSON.stringify({ success: false, error: 'Account is inactive or not registered.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = await req.json();
+    const bookingId = String(body.bookingId || '').trim();
+    const currency = String(body.currency || 'usd').toLowerCase();
+
+    if (!bookingId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Valid bookingId is required.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // 15% Platform Take Rate
-    const platformFeeCents = Math.round(amountCents * 0.15);
+    // 1. Fetch authoritative booking record BEFORE contacting Stripe (ignore client amountCents / connectId)
+    const { data: bookingRow, error: bookingErr } = await supabaseAdmin
+      .from('bookings')
+      .select(
+        'id, tenant_id, customer_id, provider_id, is_emergency, labor_cost_cents, diagnostic_fee_cents, parts_total_cents, tax_amount_cents, total_authorized_cents, platform_fee_cents'
+      )
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (bookingErr || !bookingRow) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Booking not found.' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const isOwner = bookingRow.customer_id === callerUser.id;
+    const isTenantAdmin = callerUser.role === 'ADMIN' && callerUser.tenant_id === bookingRow.tenant_id;
+    if (!isOwner && !isTenantAdmin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden: caller does not own this booking.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Compute authoritative financials via PostgreSQL calculate_booking_financials RPC
+    const { data: finRows, error: finErr } = await supabaseAdmin.rpc('calculate_booking_financials', {
+      p_labor_cents: Number(bookingRow.labor_cost_cents || 0),
+      p_parts_cents: Number(bookingRow.parts_total_cents || 0),
+      p_is_emergency: Boolean(bookingRow.is_emergency),
+      p_tax_rate_basis_points: 700,
+    });
+
+    const fin = Array.isArray(finRows) ? finRows[0] : finRows;
+    const serverAmountCents = Number(fin?.total_authorized_cents ?? bookingRow.total_authorized_cents ?? 0);
+    const serverPlatformFeeCents = Number(fin?.platform_take_cents ?? bookingRow.platform_fee_cents ?? 0);
+
+    if (finErr || serverAmountCents < 100) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid server-calculated booking total (< 100 cents).' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Look up verified Stripe Connect destination exclusively from provider_profiles
+    let providerConnectAccountId: string | null = null;
+    if (bookingRow.provider_id) {
+      const { data: providerProfile } = await supabaseAdmin
+        .from('provider_profiles')
+        .select('stripe_connect_id')
+        .eq('user_id', bookingRow.provider_id)
+        .maybeSingle();
+      if (providerProfile?.stripe_connect_id && String(providerProfile.stripe_connect_id).startsWith('acct_')) {
+        providerConnectAccountId = String(providerProfile.stripe_connect_id);
+      }
+    }
 
     const form = new URLSearchParams();
-    form.set('amount', String(amountCents));
+    form.set('amount', String(serverAmountCents));
     form.set('currency', currency);
     form.set('capture_method', 'manual');
     form.set('metadata[booking_id]', bookingId);
-    form.set('metadata[customer_id]', userData.user.id);
+    form.set('metadata[customer_id]', bookingRow.customer_id);
+    form.set('metadata[tenant_id]', bookingRow.tenant_id);
 
-    if (providerConnectAccountId && providerConnectAccountId.startsWith('acct_')) {
-      form.set('application_fee_amount', String(platformFeeCents));
+    if (providerConnectAccountId) {
+      form.set('application_fee_amount', String(serverPlatformFeeCents));
       form.set('transfer_data[destination]', providerConnectAccountId);
     }
 
@@ -82,6 +149,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         Authorization: `Bearer ${stripeSecretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': `pi_booking_${bookingId}_${serverAmountCents}`,
       },
       body: form.toString(),
     });
@@ -97,35 +165,26 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Record payment row and link payment_intent_id to booking
-    const { data: bookingRow } = await supabaseAdmin
+    await supabaseAdmin.from('payments').insert({
+      tenant_id: bookingRow.tenant_id,
+      booking_id: bookingId,
+      customer_id: bookingRow.customer_id,
+      provider_id: bookingRow.provider_id || null,
+      amount_cents: serverAmountCents,
+      currency: currency.toUpperCase(),
+      status: 'AUTHORIZED',
+      gateway: 'STRIPE',
+      gateway_payment_intent_id: stripeJson.id,
+      fee_amount_cents: serverPlatformFeeCents,
+    });
+
+    await supabaseAdmin
       .from('bookings')
-      .select('tenant_id, customer_id, provider_id')
-      .eq('id', bookingId)
-      .maybeSingle();
-
-    if (bookingRow?.tenant_id) {
-      await supabaseAdmin.from('payments').insert({
-        tenant_id: bookingRow.tenant_id,
-        booking_id: bookingId,
-        customer_id: bookingRow.customer_id || userData.user.id,
-        provider_id: bookingRow.provider_id || null,
-        amount_cents: amountCents,
-        currency: currency.toUpperCase(),
-        status: 'AUTHORIZED',
-        gateway: 'STRIPE',
-        gateway_payment_intent_id: stripeJson.id,
-        fee_amount_cents: platformFeeCents,
-      });
-
-      await supabaseAdmin
-        .from('bookings')
-        .update({
-          payment_intent_id: stripeJson.id,
-          escrow_status: 'HELD_IN_ESCROW',
-        })
-        .eq('id', bookingId);
-    }
+      .update({
+        payment_intent_id: stripeJson.id,
+        escrow_status: 'HELD_IN_ESCROW',
+      })
+      .eq('id', bookingId);
 
     return new Response(
       JSON.stringify({
@@ -133,6 +192,8 @@ Deno.serve(async (req: Request) => {
         paymentIntentId: stripeJson.id,
         clientSecret: stripeJson.client_secret,
         status: stripeJson.status,
+        authorizedAmountCents: serverAmountCents,
+        platformFeeCents: serverPlatformFeeCents,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

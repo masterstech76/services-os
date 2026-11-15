@@ -108,8 +108,17 @@ export const Page30RefundManagement: React.FC = () => {
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historical Approval Rate</div>
-          <div className="text-2xl font-extrabold text-emerald-700 mt-0.5">14.2%</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">85.8% resolved via pro return-visit</div>
+          <div className="text-2xl font-extrabold text-emerald-700 mt-0.5">
+            {(() => {
+              const resolved = cases.filter(c => c.status !== 'Pending Review');
+              if (resolved.length === 0) return '0.0%';
+              const approved = resolved.filter(c => c.status === 'Approved').length;
+              return `${((approved / resolved.length) * 100).toFixed(1)}%`;
+            })()}
+          </div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+            {cases.length === 0 ? 'No adjudicated refund disputes yet' : 'Calculated from resolved dispute cases'}
+          </div>
         </div>
       </div>
 

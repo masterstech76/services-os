@@ -47,20 +47,18 @@ export const StaffEmergencyHandover: React.FC = () => {
 
     setIsSubmitting(true);
     const newTech = technicians.find(t => t.id === selectedNewTechId);
-    
-    setTimeout(() => {
-      emergencyHandover(
-        selectedBooking.id, 
-        selectedNewTechId, 
-        `${handoverReason}: ${notes || 'Handed over by operations staff'}`
-      );
-      addToast(`Order ${selectedBooking.jobNo} successfully transferred to ${newTech?.name}! Customer SMS dispatched.`, 'success');
-      setIsSubmitting(false);
-      setNotes('');
+
+    emergencyHandover(
+      selectedBooking.id,
+      selectedNewTechId,
+      `${handoverReason}: ${notes || 'Handed over by operations staff'}`
+    );
+    addToast(`Order ${selectedBooking.jobNo} transferred to ${newTech?.name || 'selected technician'}.`, 'success');
+    setIsSubmitting(false);
+    setNotes('');
       
-      const remaining = assignedBookings.filter(b => b.id !== selectedBooking.id);
-      setSelectedBooking(remaining.length > 0 ? remaining[0] : null);
-    }, 400);
+    const remaining = assignedBookings.filter(b => b.id !== selectedBooking.id);
+    setSelectedBooking(remaining.length > 0 ? remaining[0] : null);
   };
 
   return (

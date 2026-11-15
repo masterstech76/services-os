@@ -21,6 +21,7 @@ import com.serviceos.app.core.theme.LocalExtraColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TechJobExecutionScreen(
+    accessNotes: String = "",
     onJobCompleted: () -> Unit = {},
     onOpenChat: () -> Unit = {}
 ) {
@@ -152,7 +153,9 @@ fun TechJobExecutionScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text("ETA: 12 minutes (2.4 miles)", fontWeight = FontWeight.Bold, color = extraColors.verified)
-                                Text("Gate Code: #4892", fontWeight = FontWeight.Bold)
+                                if (accessNotes.isNotBlank()) {
+                                    Text("Access: $accessNotes", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }

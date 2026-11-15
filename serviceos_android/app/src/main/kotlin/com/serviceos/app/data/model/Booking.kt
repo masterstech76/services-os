@@ -23,5 +23,5 @@ data class Booking(
     val taxAmount: Double = 0.0,
     val totalAmount: Double,
     val status: BookingStatus,
-    val safetyPin: String = "4892"
+    val safetyPin: String = ""
 )

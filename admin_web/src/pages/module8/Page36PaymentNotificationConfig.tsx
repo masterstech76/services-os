@@ -71,46 +71,64 @@ export const Page36PaymentNotificationConfig: React.FC = () => {
     });
   };
 
-  // 1. Payment Gateways State
+  // 1. Payment Gateways State (Secret keys are memory-only; never persisted to browser localStorage)
   const [stripeLiveKey, setStripeLiveKey] = useState(() => localStorage.getItem('cfg_stripeLiveKey') || '');
-  const [stripeSecretKey, setStripeSecretKey] = useState(() => localStorage.getItem('cfg_stripeSecretKey') || '');
+  const [stripeSecretKey, setStripeSecretKey] = useState('');
   const [squareAppId, setSquareAppId] = useState(() => localStorage.getItem('cfg_squareAppId') || '');
-  const [squareAccessToken, setSquareAccessToken] = useState(() => localStorage.getItem('cfg_squareAccessToken') || '');
+  const [squareAccessToken, setSquareAccessToken] = useState('');
   const [razorpayKeyId, setRazorpayKeyId] = useState(() => localStorage.getItem('cfg_razorpayKeyId') || '');
-  const [razorpayKeySecret, setRazorpayKeySecret] = useState(() => localStorage.getItem('cfg_razorpayKeySecret') || '');
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
   const [razorpayCurrency, setRazorpayCurrency] = useState(() => localStorage.getItem('cfg_razorpayCurrency') || 'USD');
   const [paypalClientId, setPaypalClientId] = useState(() => localStorage.getItem('cfg_paypalClientId') || '');
-  const [paypalSecret, setPaypalSecret] = useState(() => localStorage.getItem('cfg_paypalSecret') || '');
+  const [paypalSecret, setPaypalSecret] = useState('');
 
   // 2. Transactional Email State (Amazon SES, SendGrid, Postmark)
   const [sesRegion, setSesRegion] = useState(() => localStorage.getItem('cfg_sesRegion') || 'us-east-1 (N. Virginia)');
   const [sesSenderEmail, setSesSenderEmail] = useState(() => localStorage.getItem('cfg_sesSenderEmail') || '');
-  const [sesAccessKeyId, setSesAccessKeyId] = useState(() => localStorage.getItem('cfg_sesAccessKeyId') || '');
-  const [sesSecretAccessKey, setSesSecretAccessKey] = useState(() => localStorage.getItem('cfg_sesSecretAccessKey') || '');
-  const [sendgridApiKey, setSendgridApiKey] = useState(() => localStorage.getItem('cfg_sendgridApiKey') || '');
+  const [sesAccessKeyId, setSesAccessKeyId] = useState('');
+  const [sesSecretAccessKey, setSesSecretAccessKey] = useState('');
+  const [sendgridApiKey, setSendgridApiKey] = useState('');
   const [sendgridFromEmail, setSendgridFromEmail] = useState(() => localStorage.getItem('cfg_sendgridFromEmail') || '');
-  const [postmarkServerToken, setPostmarkServerToken] = useState(() => localStorage.getItem('cfg_postmarkServerToken') || '');
+  const [postmarkServerToken, setPostmarkServerToken] = useState('');
   const [postmarkBroadcastStream, setPostmarkBroadcastStream] = useState(() => localStorage.getItem('cfg_postmarkBroadcastStream') || 'outbound-dispatch-invoices');
 
   // 3. SMS & Voice State
   const [twilioSid, setTwilioSid] = useState(() => localStorage.getItem('cfg_twilioSid') || '');
   const [twilioSenderNumber, setTwilioSenderNumber] = useState(() => localStorage.getItem('cfg_twilioSenderNumber') || '');
-  const [birdApiKey, setBirdApiKey] = useState(() => localStorage.getItem('cfg_birdApiKey') || '');
+  const [birdApiKey, setBirdApiKey] = useState('');
   const [birdChannelId, setBirdChannelId] = useState(() => localStorage.getItem('cfg_birdChannelId') || '');
-  const [vonageApiKey, setVonageApiKey] = useState(() => localStorage.getItem('cfg_vonageApiKey') || '');
+  const [vonageApiKey, setVonageApiKey] = useState('');
 
   // 4. Maps & Geolocation State
   const [googleMapsKey, setGoogleMapsKey] = useState(() => localStorage.getItem('cfg_googleMapsKey') || '');
-  const [mapboxAccessToken, setMapboxAccessToken] = useState(() => localStorage.getItem('cfg_mapboxAccessToken') || '');
+  const [mapboxAccessToken, setMapboxAccessToken] = useState('');
   const [osrmServerUrl, setOsrmServerUrl] = useState(() => localStorage.getItem('cfg_osrmServerUrl') || 'https://router.project-osrm.org');
 
   // 5. Cloud Database & AWS Suite State
   const [awsBucketName, setAwsBucketName] = useState(() => localStorage.getItem('cfg_awsBucketName') || '');
   const [awsRdsEndpoint, setAwsRdsEndpoint] = useState(() => localStorage.getItem('cfg_awsRdsEndpoint') || '');
   const [awsSnsTopicArn, setAwsSnsTopicArn] = useState(() => localStorage.getItem('cfg_awsSnsTopicArn') || '');
-  const [awsAccessKey, setAwsAccessKey] = useState(() => localStorage.getItem('cfg_awsAccessKey') || '');
+  const [awsAccessKey, setAwsAccessKey] = useState('');
   const [supabaseUrl, setSupabaseUrl] = useState(() => localStorage.getItem('cfg_supabaseUrl') || '');
   const [gcpProjectId, setGcpProjectId] = useState(() => localStorage.getItem('cfg_gcpProjectId') || '');
+
+  useEffect(() => {
+    const secretKeys = [
+      'cfg_stripeSecretKey',
+      'cfg_squareAccessToken',
+      'cfg_razorpayKeySecret',
+      'cfg_paypalSecret',
+      'cfg_sesAccessKeyId',
+      'cfg_sesSecretAccessKey',
+      'cfg_sendgridApiKey',
+      'cfg_postmarkServerToken',
+      'cfg_birdApiKey',
+      'cfg_vonageApiKey',
+      'cfg_mapboxAccessToken',
+      'cfg_awsAccessKey',
+    ];
+    secretKeys.forEach((k) => localStorage.removeItem(k));
+  }, []);
 
   // 6. Accounting State
   const [qbRealmId, setQbRealmId] = useState(() => localStorage.getItem('cfg_qbRealmId') || '');
@@ -121,16 +139,15 @@ export const Page36PaymentNotificationConfig: React.FC = () => {
 
   const testConnection = (providerName: string) => {
     setTestingProvider(providerName);
-    setTimeout(() => {
-      setTestingProvider(null);
-      let isConfigured = false;
-      const cleanCheck = (val?: string) => Boolean(val && val.trim() && !val.includes('your_') && !val.includes('placeholder') && !val.includes('xxx'));
+    setTestingProvider(null);
+    let isConfigured = false;
+    const cleanCheck = (val?: string) => Boolean(val && val.trim() && !val.includes('your_') && !val.includes('placeholder') && !val.includes('xxx'));
 
-      if (providerName.includes('Stripe')) isConfigured = cleanCheck(stripeLiveKey) || cleanCheck(stripeSecretKey);
-      else if (providerName.includes('Square')) isConfigured = cleanCheck(squareAppId) || cleanCheck(squareAccessToken);
-      else if (providerName.includes('Razorpay')) isConfigured = cleanCheck(razorpayKeyId);
-      else if (providerName.includes('PayPal')) isConfigured = cleanCheck(paypalClientId);
-      else if (providerName.includes('SES') || providerName.includes('Amazon SES')) isConfigured = cleanCheck(sesAccessKeyId) || cleanCheck(sesSenderEmail);
+    if (providerName.includes('Stripe')) isConfigured = cleanCheck(stripeLiveKey) || cleanCheck(stripeSecretKey);
+    else if (providerName.includes('Square')) isConfigured = cleanCheck(squareAppId) || cleanCheck(squareAccessToken);
+    else if (providerName.includes('Razorpay')) isConfigured = cleanCheck(razorpayKeyId);
+    else if (providerName.includes('PayPal')) isConfigured = cleanCheck(paypalClientId);
+    else if (providerName.includes('SES') || providerName.includes('Amazon SES')) isConfigured = cleanCheck(sesAccessKeyId) || cleanCheck(sesSenderEmail);
       else if (providerName.includes('SendGrid')) isConfigured = cleanCheck(sendgridApiKey);
       else if (providerName.includes('Postmark')) isConfigured = cleanCheck(postmarkServerToken);
       else if (providerName.includes('Twilio')) isConfigured = cleanCheck(twilioSid);
@@ -151,45 +168,32 @@ export const Page36PaymentNotificationConfig: React.FC = () => {
       } else {
         addToast(`${providerName} unconfigured: Please enter your credentials and save before testing.`, 'warning');
       }
-    }, 400);
   };
 
   const handleSaveAll = () => {
-    // Persist all state values
+    // Persist ONLY non-secret public identifiers and toggles; secret keys remain server-side
     localStorage.setItem('servicepro_enabled_integrations', JSON.stringify(enabledProviders));
     localStorage.setItem('cfg_stripeLiveKey', stripeLiveKey);
-    localStorage.setItem('cfg_stripeSecretKey', stripeSecretKey);
     localStorage.setItem('cfg_squareAppId', squareAppId);
-    localStorage.setItem('cfg_squareAccessToken', squareAccessToken);
     localStorage.setItem('cfg_razorpayKeyId', razorpayKeyId);
-    localStorage.setItem('cfg_razorpayKeySecret', razorpayKeySecret);
     localStorage.setItem('cfg_razorpayCurrency', razorpayCurrency);
     localStorage.setItem('cfg_paypalClientId', paypalClientId);
-    localStorage.setItem('cfg_paypalSecret', paypalSecret);
 
     localStorage.setItem('cfg_sesRegion', sesRegion);
     localStorage.setItem('cfg_sesSenderEmail', sesSenderEmail);
-    localStorage.setItem('cfg_sesAccessKeyId', sesAccessKeyId);
-    localStorage.setItem('cfg_sesSecretAccessKey', sesSecretAccessKey);
-    localStorage.setItem('cfg_sendgridApiKey', sendgridApiKey);
     localStorage.setItem('cfg_sendgridFromEmail', sendgridFromEmail);
-    localStorage.setItem('cfg_postmarkServerToken', postmarkServerToken);
     localStorage.setItem('cfg_postmarkBroadcastStream', postmarkBroadcastStream);
 
     localStorage.setItem('cfg_twilioSid', twilioSid);
     localStorage.setItem('cfg_twilioSenderNumber', twilioSenderNumber);
-    localStorage.setItem('cfg_birdApiKey', birdApiKey);
     localStorage.setItem('cfg_birdChannelId', birdChannelId);
-    localStorage.setItem('cfg_vonageApiKey', vonageApiKey);
 
     localStorage.setItem('cfg_googleMapsKey', googleMapsKey);
-    localStorage.setItem('cfg_mapboxAccessToken', mapboxAccessToken);
     localStorage.setItem('cfg_osrmServerUrl', osrmServerUrl);
 
     localStorage.setItem('cfg_awsBucketName', awsBucketName);
     localStorage.setItem('cfg_awsRdsEndpoint', awsRdsEndpoint);
     localStorage.setItem('cfg_awsSnsTopicArn', awsSnsTopicArn);
-    localStorage.setItem('cfg_awsAccessKey', awsAccessKey);
     localStorage.setItem('cfg_supabaseUrl', supabaseUrl);
     localStorage.setItem('cfg_gcpProjectId', gcpProjectId);
 
@@ -197,7 +201,7 @@ export const Page36PaymentNotificationConfig: React.FC = () => {
     localStorage.setItem('cfg_xeroTenantId', xeroTenantId);
     localStorage.setItem('cfg_freshbooksAccountId', freshbooksAccountId);
 
-    addToast('All API credentials, configurations, and Enabled/Disabled states saved to enterprise vault!', 'success');
+    addToast('Public integration settings saved. Secret keys must be stored in Supabase Edge Function Secrets.', 'success');
   };
 
   // Reusable Enable/Disable Toggle Component

@@ -4,11 +4,13 @@ import '../../../../core/theme/app_theme.dart';
 class LiveDispatchRadarScreen extends StatefulWidget {
   final VoidCallback onArrivalConfirmed;
   final VoidCallback onBack;
+  final String? safetyPin;
 
   const LiveDispatchRadarScreen({
     super.key,
     required this.onArrivalConfirmed,
     required this.onBack,
+    this.safetyPin,
   });
 
   @override
@@ -177,12 +179,10 @@ class _LiveDispatchRadarScreenState extends State<LiveDispatchRadarScreen> with 
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: AppColors.verifiedEmerald.withOpacity(0.12),
                                 border: Border.all(color: AppColors.verifiedEmerald, width: 2),
-                                image: const DecorationImage(
-                                  image: NetworkImage('https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150'),
-                                  fit: BoxFit.cover,
-                                ),
                               ),
+                              child: const Icon(Icons.engineering_rounded, color: AppColors.verifiedEmerald, size: 26),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -232,7 +232,10 @@ class _LiveDispatchRadarScreenState extends State<LiveDispatchRadarScreen> with 
                                   Text('Ask technician for this code on arrival', style: TextStyle(fontSize: 11, color: textSecondary)),
                                 ],
                               ),
-                              const Text('4892', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                              Text(
+                                (widget.safetyPin != null && widget.safetyPin!.isNotEmpty) ? widget.safetyPin! : '----',
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 2),
+                              ),
                             ],
                           ),
                         ),
@@ -247,7 +250,14 @@ class _LiveDispatchRadarScreenState extends State<LiveDispatchRadarScreen> with 
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            onPressed: () {},
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Connecting masked VoIP relay to assigned technician...'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
                             child: const Text('Call Pro 📞', style: TextStyle(fontWeight: FontWeight.w700)),
                           ),
                         ),

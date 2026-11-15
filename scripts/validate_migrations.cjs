@@ -6,6 +6,7 @@ const files = [
   '02_postgis_functions.sql',
   '03_security_rbac_and_rls.sql',
   '04_phase2_database_security_hardening.sql',
+  '05_phase3_payments_and_webhook_idempotency.sql',
 ];
 const createdTables = new Set();
 const rlsEnabledTables = new Set();

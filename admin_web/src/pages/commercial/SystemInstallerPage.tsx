@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Server,
   Database,
@@ -18,6 +18,7 @@ import {
   Code2
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
+import { supabaseService } from '../../services/supabaseClient';
 
 interface MigrationItem {
   id: string;
@@ -31,6 +32,8 @@ export const SystemInstallerPage: React.FC = () => {
   const { agencyName, addToast } = useAdmin();
   const [isRunningMigrations, setIsRunningMigrations] = useState(false);
   const [activeTab, setActiveTab] = useState<'health' | 'migrations' | 'dossier'>('health');
+  const [dbConnected, setDbConnected] = useState<boolean>(false);
+  const [dbStatusLabel, setDbStatusLabel] = useState<string>('Checking connection...');
 
   const [migrations, setMigrations] = useState<MigrationItem[]>([
     {
@@ -38,44 +41,90 @@ export const SystemInstallerPage: React.FC = () => {
       name: '01 Initial Schema & DDL',
       file: '01_initial_schema.sql',
       desc: 'Users, roles, categories, services, bookings lifecycle, parts, and audit logs',
-      status: 'applied'
+      status: 'pending'
     },
     {
       id: 'm2',
       name: '02 PostGIS Functions',
       file: '02_postgis_functions.sql',
       desc: 'find_nearest_technicians(), ST_DWithin geofence, and calculate_booking_financials()',
-      status: 'applied'
+      status: 'pending'
     },
     {
       id: 'm3',
       name: '03 Security RBAC & RLS',
       file: '03_security_rbac_and_rls.sql',
       desc: 'PostgreSQL 16 Row-Level Security, immutable audit trigger, TOTP MFA tables',
-      status: 'applied'
+      status: 'pending'
+    },
+    {
+      id: 'm4',
+      name: '04 Database Security Hardening',
+      file: '04_phase2_database_security_hardening.sql',
+      desc: 'FORCE RLS on all 21 tables, search_path hardening, Storage bucket isolation',
+      status: 'pending'
+    },
+    {
+      id: 'm5',
+      name: '05 Payments & Webhook Idempotency',
+      file: '05_phase3_payments_and_webhook_idempotency.sql',
+      desc: 'stripe_webhook_events replay protection & booking financial field trigger',
+      status: 'pending'
     }
   ]);
 
-  const runAllMigrations = () => {
-    setIsRunningMigrations(true);
-    setMigrations(prev => prev.map(m => ({ ...m, status: 'pending' })));
-
-    let current = 0;
-    const interval = setInterval(() => {
-      if (current < migrations.length) {
-        const idx = current;
-        setMigrations(prev => {
-          const next = [...prev];
-          next[idx] = { ...next[idx], status: 'applied' };
-          return next;
-        });
-        current++;
-      } else {
-        clearInterval(interval);
-        setIsRunningMigrations(false);
-        addToast('All 4 PostgreSQL 16 migrations validated and active!', 'success');
+  const probeLiveHealth = async () => {
+    const client = supabaseService.getClient();
+    if (!supabaseService.isConfigured() || !client) {
+      setDbConnected(false);
+      setDbStatusLabel('Not configured (set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY)');
+      setMigrations(prev => prev.map(m => ({ ...m, status: 'pending' })));
+      return false;
+    }
+    try {
+      const { data: migrationFlags, error } = await client.rpc('verify_schema_migrations_status');
+      if (error || !migrationFlags || typeof migrationFlags !== 'object') {
+        setDbConnected(false);
+        setDbStatusLabel(error ? `Migration probe incomplete: ${error.message}` : 'Migration verification RPC unavailable');
+        setMigrations(prev => prev.map(m => ({ ...m, status: 'pending' })));
+        return false;
       }
-    }, 800);
+      const flags = migrationFlags as Record<string, boolean>;
+      setMigrations(prev =>
+        prev.map(m => ({
+          ...m,
+          status: flags[m.id] === true ? 'applied' : 'pending'
+        }))
+      );
+      const allVerified = ['m1', 'm2', 'm3', 'm4', 'm5'].every((id) => flags[id] === true);
+      setDbConnected(allVerified);
+      setDbStatusLabel(
+        allVerified
+          ? 'Connected via Supabase PostgreSQL 16 (5/5 Migrations Verified)'
+          : 'Connected, but one or more migrations are unverified'
+      );
+      return allVerified;
+    } catch (err) {
+      setDbConnected(false);
+      setDbStatusLabel('Connection probe failed');
+      setMigrations(prev => prev.map(m => ({ ...m, status: 'pending' })));
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    probeLiveHealth();
+  }, []);
+
+  const runAllMigrations = async () => {
+    setIsRunningMigrations(true);
+    const ok = await probeLiveHealth();
+    setIsRunningMigrations(false);
+    if (ok) {
+      addToast('Live Supabase PostgreSQL 16 schema probe succeeded across all 5 migrations!', 'success');
+    } else {
+      addToast('Supabase is not connected or schema tables are missing. Run `supabase db push` first.', 'warning');
+    }
   };
 
   const handleDownloadDossier = () => {
@@ -126,7 +175,7 @@ Status: 100% Production Ready`;
               activeTab === 'migrations' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            SQL Migrations (4)
+            SQL Migrations (5)
           </button>
           <button
             onClick={() => setActiveTab('dossier')}
@@ -147,11 +196,11 @@ Status: 100% Production Ready`;
             <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase">Database</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className={`w-2 h-2 rounded-full ${dbConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
               </div>
               <h3 className="text-lg font-black text-slate-900">PostgreSQL 16</h3>
-              <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Connected via Supabase
+              <p className={`text-[11px] font-bold flex items-center gap-1 ${dbConnected ? 'text-emerald-600' : 'text-amber-600'}`}>
+                <CheckCircle2 className="w-3.5 h-3.5" /> {dbStatusLabel}
               </p>
             </div>
 
@@ -259,9 +308,13 @@ Status: 100% Production Ready`;
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-black rounded-lg border border-emerald-200 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    ACTIVE
+                  <span className={`px-3 py-1 text-xs font-black rounded-lg border flex items-center gap-1 ${
+                    m.status === 'applied'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                  }`}>
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${m.status === 'applied' ? 'text-emerald-600' : 'text-amber-600'}`} />
+                    {m.status === 'applied' ? 'VERIFIED' : 'PENDING PROBE'}
                   </span>
                 </div>
               </div>

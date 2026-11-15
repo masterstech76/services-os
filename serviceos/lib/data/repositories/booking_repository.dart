@@ -66,7 +66,7 @@ class BookingRepository implements IBookingRepository {
               totalAuthorized: totalCents / 100,
               status: _parseBookingStatus(row['status'] as String? ?? 'REQUESTED'),
               customerAddress: row['address_text'] as String? ?? '',
-              safetyPin: row['safety_pin'] as String? ?? '4892',
+              safetyPin: row['safety_pin'] as String? ?? '',
               technicianId: row['provider_id'] as String? ?? '',
               technicianName: 'Assigned Pro',
               scheduledAt: DateTime.tryParse(row['scheduled_start'] as String? ?? '') ?? DateTime.now(),
@@ -101,6 +101,22 @@ class BookingRepository implements IBookingRepository {
 
   @override
   Future<bool> approveExtraParts(String bookingId, double amount) async {
+    if (_supabaseService.isLiveConnected && _supabaseService.client != null) {
+      try {
+        final partsCents = (amount * 100).round();
+        final approved = await _supabaseService.client!.rpc(
+          'approve_booking_extra_parts',
+          params: {
+            'p_booking_id': bookingId,
+            'p_parts_total_cents': partsCents,
+          },
+        );
+        if (approved != true) return false;
+      } catch (_) {
+        return false;
+      }
+    }
+
     if (_cache != null) {
       final idx = _cache!.indexWhere((b) => b.id == bookingId);
       if (idx != -1) {
@@ -128,16 +144,19 @@ class BookingRepository implements IBookingRepository {
 
   @override
   Future<bool> completeWorkOrderWithSignature(String bookingId, String signatureBase64, {String? safetyPin}) async {
+    final cachedPin = _cache?.where((b) => b.id == bookingId).map((b) => b.safetyPin).firstOrNull ?? '';
+    final pinToUse = (safetyPin != null && safetyPin.trim().isNotEmpty) ? safetyPin.trim() : cachedPin;
+
     if (_supabaseService.isLiveConnected) {
-      final pinToUse = safetyPin ??
-          _cache?.where((b) => b.id == bookingId).map((b) => b.safetyPin).firstOrNull ??
-          '4892';
+      if (pinToUse.isEmpty) {
+        return false;
+      }
       final released = await _remoteDataSource.releaseEscrowToTechnician(
         bookingId: bookingId,
         pinCode: pinToUse,
       );
       if (!released) {
-        await _remoteDataSource.updateBookingStatus(bookingId, 'COMPLETED');
+        return false;
       }
     }
     if (_cache != null) {
@@ -182,6 +201,78 @@ class BookingRepository implements IBookingRepository {
     final netPayout = total * 0.85;
     final safetyPin = '${1000 + (DateTime.now().millisecond % 9000)}';
 
+    if (_supabaseService.isLiveConnected && _supabaseService.client != null) {
+      try {
+        final client = _supabaseService.client!;
+        final currentUserId = client.auth.currentUser?.id;
+        if (currentUserId == null) return null;
+
+        final userRow = await client
+            .from('users')
+            .select('tenant_id')
+            .eq('id', currentUserId)
+            .maybeSingle();
+        final tenantId = userRow?['tenant_id'] as String?;
+        if (tenantId == null) return null;
+
+        var serviceRow = await client
+            .from('services')
+            .select('id')
+            .ilike('name', serviceTitle)
+            .limit(1)
+            .maybeSingle();
+        serviceRow ??= await client
+            .from('services')
+            .select('id')
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+        final serviceId = serviceRow?['id'] as String?;
+        if (serviceId == null) return null;
+
+        final created = await _remoteDataSource.createBooking({
+          'tenant_id': tenantId,
+          'customer_id': currentUserId,
+          'service_id': serviceId,
+          'booking_reference': newRef,
+          'address_text': customerAddress,
+          'scheduled_start': scheduledAt.toUtc().toIso8601String(),
+          'is_emergency': isEmergencyRush,
+          'emergency_surcharge_cents': (rushFee * 100).round(),
+          'labor_cost_cents': (basePrice * 100).round(),
+          'parts_total_cents': (extraPartsTotal * 100).round(),
+          'platform_fee_cents': (platformFee * 100).round(),
+          'net_payout_cents': (netPayout * 100).round(),
+          'total_authorized_cents': (total * 100).round(),
+          'safety_pin': safetyPin,
+          'status': 'REQUESTED',
+        });
+        if (created == null) return null;
+
+        final createdModel = BookingModel(
+          id: created['id'] as String? ?? newRef,
+          serviceTitle: serviceTitle,
+          category: category,
+          basePrice: basePrice,
+          extraPartsTotal: extraPartsTotal,
+          platformFee: platformFee,
+          netTechPayout: netPayout,
+          totalAuthorized: total,
+          status: _parseBookingStatus(created['status'] as String? ?? 'REQUESTED'),
+          customerAddress: created['address_text'] as String? ?? customerAddress,
+          safetyPin: created['safety_pin'] as String? ?? safetyPin,
+          technicianId: created['provider_id'] as String? ?? '',
+          technicianName: 'Pending Assignment',
+          scheduledAt: scheduledAt,
+        );
+        _cache ??= [];
+        _cache!.insert(0, createdModel);
+        return createdModel;
+      } catch (_) {
+        return null;
+      }
+    }
+
     final newBooking = BookingModel(
       id: newRef,
       serviceTitle: serviceTitle,
@@ -194,8 +285,8 @@ class BookingRepository implements IBookingRepository {
       status: BookingStatus.requested,
       customerAddress: customerAddress,
       safetyPin: safetyPin,
-      technicianId: 'tech_01',
-      technicianName: 'Matching Pro...',
+      technicianId: '',
+      technicianName: 'Pending Assignment',
       scheduledAt: scheduledAt,
     );
 

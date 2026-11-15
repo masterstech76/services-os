@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,6 +21,7 @@ object BookingRepository {
     private const val KEY_BOOKINGS_JSON = "saved_bookings_v1"
     private const val KEY_SUPABASE_URL = "supabase_url"
     private const val KEY_SUPABASE_ANON_KEY = "supabase_anon_key"
+    private const val KEY_ACCESS_TOKEN = "supabase_access_token"
 
     private var prefs: SharedPreferences? = null
     private val _bookings = MutableStateFlow<List<Booking>>(emptyList())
@@ -28,6 +30,7 @@ object BookingRepository {
     val sampleBookings: List<Booking>
         get() = _bookings.value
 
+    @Synchronized
     fun init(context: Context) {
         if (prefs == null) {
             prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -35,11 +38,31 @@ object BookingRepository {
         }
     }
 
-    fun configureSupabase(url: String, anonKey: String) {
+    fun configureSupabase(url: String, anonKey: String, accessToken: String? = null) {
         prefs?.edit()
             ?.putString(KEY_SUPABASE_URL, url.trim())
             ?.putString(KEY_SUPABASE_ANON_KEY, anonKey.trim())
+            ?.apply {
+                if (accessToken != null) {
+                    putString(KEY_ACCESS_TOKEN, accessToken.trim())
+                }
+            }
             ?.apply()
+    }
+
+    fun setAuthToken(accessToken: String?) {
+        prefs?.edit()?.apply {
+            if (accessToken.isNullOrBlank()) {
+                remove(KEY_ACCESS_TOKEN)
+            } else {
+                putString(KEY_ACCESS_TOKEN, accessToken.trim())
+            }
+        }?.apply()
+    }
+
+    private fun bearerToken(anonKey: String): String {
+        val jwt = prefs?.getString(KEY_ACCESS_TOKEN, null)
+        return if (!jwt.isNullOrBlank()) jwt else anonKey
     }
 
     fun isCloudConfigured(): Boolean {
@@ -73,7 +96,7 @@ object BookingRepository {
                         status = runCatching {
                             BookingStatus.valueOf(obj.optString("status", "REQUESTED"))
                         }.getOrDefault(BookingStatus.REQUESTED),
-                        safetyPin = obj.optString("safetyPin", "4892")
+                        safetyPin = ""
                     )
                 )
             }
@@ -83,6 +106,7 @@ object BookingRepository {
         }
     }
 
+    @Synchronized
     private fun saveToPreferences() {
         val current = _bookings.value
         val arr = JSONArray()
@@ -102,20 +126,21 @@ object BookingRepository {
             obj.put("taxAmount", b.taxAmount)
             obj.put("totalAmount", b.totalAmount)
             obj.put("status", b.status.name)
-            obj.put("safetyPin", b.safetyPin)
             arr.put(obj)
         }
         prefs?.edit()?.putString(KEY_BOOKINGS_JSON, arr.toString())?.apply()
     }
 
     fun addBooking(booking: Booking) {
-        _bookings.value = listOf(booking) + _bookings.value
+        _bookings.update { listOf(booking) + it }
         saveToPreferences()
     }
 
     fun updateStatus(bookingId: String, newStatus: BookingStatus) {
-        _bookings.value = _bookings.value.map {
-            if (it.id == bookingId || it.reference == bookingId) it.copy(status = newStatus) else it
+        _bookings.update { list ->
+            list.map {
+                if (it.id == bookingId || it.reference == bookingId) it.copy(status = newStatus) else it
+            }
         }
         saveToPreferences()
     }
@@ -124,13 +149,15 @@ object BookingRepository {
         if (!isCloudConfigured()) return@withContext false
         val baseUrl = prefs?.getString(KEY_SUPABASE_URL, "")?.trimEnd('/') ?: return@withContext false
         val anonKey = prefs?.getString(KEY_SUPABASE_ANON_KEY, "") ?: return@withContext false
+        val authJwt = prefs?.getString(KEY_ACCESS_TOKEN, null)
+        if (authJwt.isNullOrBlank()) return@withContext false
 
         try {
             val endpoint = URL("$baseUrl/rest/v1/bookings?select=*,services(name)&order=created_at.desc")
             val conn = (endpoint.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("apikey", anonKey)
-                setRequestProperty("Authorization", "Bearer $anonKey")
+                setRequestProperty("Authorization", "Bearer ${bearerToken(anonKey)}")
                 setRequestProperty("Accept", "application/json")
                 connectTimeout = 8000
                 readTimeout = 8000
@@ -164,11 +191,16 @@ object BookingRepository {
                             taxAmount = taxCents / 100.0,
                             totalAmount = totalCents / 100.0,
                             status = runCatching { BookingStatus.valueOf(statusStr) }.getOrDefault(BookingStatus.REQUESTED),
-                            safetyPin = row.optString("safety_pin", "4892")
+                            safetyPin = row.optString("safety_pin", "")
                         )
                     )
                 }
-                _bookings.value = remoteList
+                val remoteIds = remoteList.map { it.id }.toSet()
+                val remoteRefs = remoteList.map { it.reference }.toSet()
+                _bookings.update { current ->
+                    val unsyncedLocal = current.filter { it.id !in remoteIds && it.reference !in remoteRefs }
+                    unsyncedLocal + remoteList
+                }
                 saveToPreferences()
                 return@withContext true
             }
@@ -182,6 +214,8 @@ object BookingRepository {
         if (!isCloudConfigured()) return@withContext false
         val baseUrl = prefs?.getString(KEY_SUPABASE_URL, "")?.trimEnd('/') ?: return@withContext false
         val anonKey = prefs?.getString(KEY_SUPABASE_ANON_KEY, "") ?: return@withContext false
+        val authJwt = prefs?.getString(KEY_ACCESS_TOKEN, null)
+        if (authJwt.isNullOrBlank()) return@withContext false
 
         try {
             val endpoint = URL("$baseUrl/rest/v1/rpc/release_escrow_to_technician")
@@ -189,7 +223,7 @@ object BookingRepository {
                 requestMethod = "POST"
                 doOutput = true
                 setRequestProperty("apikey", anonKey)
-                setRequestProperty("Authorization", "Bearer $anonKey")
+                setRequestProperty("Authorization", "Bearer ${bearerToken(anonKey)}")
                 setRequestProperty("Content-Type", "application/json")
                 connectTimeout = 8000
                 readTimeout = 8000

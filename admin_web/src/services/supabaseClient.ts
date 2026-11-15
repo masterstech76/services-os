@@ -619,6 +619,22 @@ class SupabaseService {
     }
   }
 
+  private toDeterministicUuid(seed: string): string {
+    let h1 = 0x811c9dc5;
+    let h2 = 0x9e3779b9;
+    let h3 = 0x85ebca6b;
+    let h4 = 0xc2b2ae35;
+    for (let i = 0; i < seed.length; i++) {
+      const ch = seed.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 0x01000193) >>> 0;
+      h2 = Math.imul(h2 ^ ch, 0x85ebca6b) >>> 0;
+      h3 = Math.imul(h3 ^ (ch + i), 0xc2b2ae35) >>> 0;
+      h4 = Math.imul(h4 ^ (ch * 31), 0x27d4eb2f) >>> 0;
+    }
+    const hex = [h1, h2, h3, h4].map((v) => v.toString(16).padStart(8, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+  }
+
   public async saveBooking(booking: Partial<Booking>): Promise<boolean> {
     if (!this.client) return false;
     try {
@@ -662,6 +678,10 @@ class SupabaseService {
       const estimateDollars = booking.estimate || 150;
       const safetyPin = String((booking as any).safetyPin || Math.floor(1000 + Math.random() * 9000)).slice(0, 6);
       const rawReference = booking.jobNo || `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
+      const rawScheduled = (booking as any).scheduledStart || (booking as any).scheduledDate || (booking as any).scheduledTime;
+      const parsedScheduled = rawScheduled && !Number.isNaN(Date.parse(String(rawScheduled)))
+        ? new Date(String(rawScheduled)).toISOString()
+        : new Date().toISOString();
 
       const payload: Record<string, any> = {
         tenant_id: tenantId,
@@ -670,7 +690,7 @@ class SupabaseService {
         booking_reference: rawReference.slice(0, 16),
         address_text: booking.customerAddress || 'Client Location',
         service_location: `SRID=4326;POINT(${booking.lng || -80.1918} ${booking.lat || 25.7617})`,
-        scheduled_start: new Date().toISOString(),
+        scheduled_start: parsedScheduled,
         is_emergency: booking.priority === 'Critical',
         emergency_surcharge_cents: booking.priority === 'Critical' ? 4900 : 0,
         labor_cost_cents: Math.round(estimateDollars * 80),
@@ -694,13 +714,18 @@ class SupabaseService {
 
       if (this.isValidUuid(booking.id)) {
         payload.id = booking.id;
+      } else if (booking.id) {
+        payload.id = this.toDeterministicUuid(`booking:${tenantId}:${booking.id}`);
       }
       if (this.isValidUuid(booking.technicianId)) {
         payload.provider_id = booking.technicianId;
       }
 
-      const { error } = await this.client.from('bookings').upsert(payload);
-      if (error) throw error;
+      const { data, error } = await this.client.from('bookings').upsert(payload).select('id').maybeSingle();
+      if (error || !data?.id) {
+        if (error) throw error;
+        return false;
+      }
       return true;
     } catch (e) {
       console.warn('[SupabaseService] saveBooking error:', e);
@@ -716,34 +741,43 @@ class SupabaseService {
       const names = (tech.name || 'New Technician').trim().split(' ');
       const firstName = names[0] || 'Field';
       const lastName = names.slice(1).join(' ') || 'Technician';
+      const isExisting = this.isValidUuid(tech.id);
 
       // Aligned with users_role_check: CHECK (role IN ('CUSTOMER', 'TECHNICIAN', 'ADMIN', 'STAFF'))
       const payload: Record<string, any> = {
         tenant_id: tenantId,
-        email: (tech as any).email || `${firstName.toLowerCase()}.${Date.now()}@technician.local`,
         phone: tech.phone || `+1800${String(Date.now()).slice(-7)}`,
         first_name: firstName,
         last_name: lastName,
         role: 'TECHNICIAN',
         is_active: true
       };
-      if (this.isValidUuid(tech.id)) {
+      if ((tech as any).email) {
+        payload.email = (tech as any).email;
+      } else if (!isExisting) {
+        payload.email = `${firstName.toLowerCase()}.${Date.now()}@technician.local`;
+      }
+      if (isExisting) {
         payload.id = tech.id;
+      } else if (tech.id) {
+        payload.id = this.toDeterministicUuid(`tech:${tenantId}:${tech.id}`);
       }
       const { data, error } = await this.client.from('users').upsert(payload).select('id').maybeSingle();
-      if (error) throw error;
-
-      if (data?.id) {
-        await this.client.from('provider_profiles').upsert({
-          user_id: data.id,
-          trade_license_number: `LIC-${String(Date.now()).slice(-6)}`,
-          trade_category: tech.specialization || 'General Service',
-          is_verified: true,
-          is_online: tech.status === 'Available' || tech.status === 'On Job',
-          average_rating: tech.rating || 4.95,
-          completed_jobs_count: tech.jobsCompleted || 0,
-        }, { onConflict: 'user_id' });
+      if (error || !data?.id) {
+        if (error) throw error;
+        return false;
       }
+
+      const { error: profileError } = await this.client.from('provider_profiles').upsert({
+        user_id: data.id,
+        trade_license_number: (tech as any).licenseNumber || `LIC-${String(data.id).slice(0, 6).toUpperCase()}`,
+        trade_category: tech.specialization || 'General Service',
+        is_verified: true,
+        is_online: tech.status === 'Available' || tech.status === 'On Job',
+        average_rating: tech.rating || 4.95,
+        completed_jobs_count: tech.jobsCompleted || 0,
+      }, { onConflict: 'user_id' });
+      if (profileError) throw profileError;
       return true;
     } catch (e) {
       console.warn('[SupabaseService] saveTechnician error:', e);
@@ -771,9 +805,14 @@ class SupabaseService {
       };
       if (this.isValidUuid(category.id)) {
         payload.id = category.id;
+      } else if (category.id) {
+        payload.id = this.toDeterministicUuid(`category:${tenantId}:${category.id}`);
       }
-      const { error } = await this.client.from('categories').upsert(payload);
-      if (error) throw error;
+      const { data, error } = await this.client.from('categories').upsert(payload).select('id').maybeSingle();
+      if (error || !data?.id) {
+        if (error) throw error;
+        return false;
+      }
       return true;
     } catch (e) {
       console.warn('[SupabaseService] saveCategory error:', e);
@@ -817,9 +856,14 @@ class SupabaseService {
       };
       if (this.isValidUuid(service.id)) {
         payload.id = service.id;
+      } else if (service.id) {
+        payload.id = this.toDeterministicUuid(`service:${categoryId}:${service.id}`);
       }
-      const { error } = await this.client.from('services').upsert(payload);
-      if (error) throw error;
+      const { data, error } = await this.client.from('services').upsert(payload).select('id').maybeSingle();
+      if (error || !data?.id) {
+        if (error) throw error;
+        return false;
+      }
       return true;
     } catch (e) {
       console.warn('[SupabaseService] saveService error:', e);
@@ -839,15 +883,25 @@ class SupabaseService {
     }
   }
 
-  public async verifyBookingEscrow(bookingId: string): Promise<boolean> {
+  public async verifyBookingEscrow(bookingId: string, pinCode?: string): Promise<boolean> {
     if (!this.client || !this.isValidUuid(bookingId)) return false;
     try {
-      const { error } = await this.client
+      if (pinCode) {
+        const { data, error } = await this.client.rpc('release_escrow_to_technician', {
+          p_booking_id: bookingId,
+          p_pin_code: pinCode,
+        });
+        if (error) throw error;
+        return data === true;
+      }
+      const { data, error } = await this.client
         .from('bookings')
         .update({ escrow_status: 'RELEASED_TO_PROVIDER', status: 'COMPLETED' })
-        .eq('id', bookingId);
+        .eq('id', bookingId)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
-      return true;
+      return Boolean(data?.id);
     } catch (e) {
       console.warn('[SupabaseService] verifyBookingEscrow error:', e);
       return false;

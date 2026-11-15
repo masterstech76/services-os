@@ -102,7 +102,7 @@ async function runAudit() {
     });
 
     const pageErrors = consoleErrors.slice(errorsBefore);
-    const pass = !pageCheck.hasNan && !pageCheck.hasObjectObject && !pageCheck.hasErrorBoundary && pageErrors.length === 0;
+    const pass = !pageCheck.hasNan && !pageCheck.hasObjectObject && !pageCheck.hasUndefined && !pageCheck.hasErrorBoundary && pageErrors.length === 0;
 
     adminPageResults.push({
       page: i,
@@ -167,7 +167,7 @@ async function runAudit() {
     });
 
     const pageErrors = consoleErrors.slice(errorsBefore);
-    const pass = !pageCheck.hasNan && !pageCheck.hasObjectObject && !pageCheck.hasErrorBoundary && pageErrors.length === 0;
+    const pass = !pageCheck.hasNan && !pageCheck.hasObjectObject && !pageCheck.hasUndefined && !pageCheck.hasErrorBoundary && pageErrors.length === 0;
 
     staffPageResults.push({
       page: i,
@@ -177,7 +177,8 @@ async function runAudit() {
       errors: pageErrors.map(e => e.text)
     });
 
-    process.stdout.write(pass ? `[✓ S${i}] ` : `[✗ S${i}] `);
+    process.stdout.write(pass ? `[✓ S${i}] ` : `[✗ S${i}(err:${pageErrors.length},undef:${pageCheck.hasUndefined})] `);
+    if (!pass && pageErrors.length > 0) console.error('\nS' + i + ' errors:', pageErrors.map(e => e.text));
     if (i % 7 === 0) console.log('');
   }
 

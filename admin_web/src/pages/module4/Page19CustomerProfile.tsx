@@ -710,27 +710,30 @@ export const Page19CustomerProfile: React.FC = () => {
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div>
-                  <div className="font-extrabold text-slate-900">#INV-2026-092 • 4-Ton Heat Pump</div>
-                  <div className="text-[10px] text-slate-500">Nov 14, 2026 • Stripe ACH Transfer</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-emerald-700 text-sm">$3,450.00</span>
-                  <span className="block text-[9px] font-bold text-emerald-600">PAID</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div>
-                  <div className="font-extrabold text-slate-900">#INV-2026-081 • Annual Plumbing</div>
-                  <div className="text-[10px] text-slate-500">Nov 11, 2026 • Card Ending 4892</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-slate-900 text-sm">$189.00</span>
-                  <span className="block text-[9px] font-bold text-emerald-600">PAID</span>
-                </div>
-              </div>
+              {(() => {
+                const customerInvoices = bookings
+                  .filter((b) => b.customerId === customer.id || b.customerName === customer.name)
+                  .slice(0, 5);
+                if (customerInvoices.length === 0) {
+                  return (
+                    <div className="py-6 text-center text-xs text-slate-400">
+                      No service invoices recorded for this customer yet.
+                    </div>
+                  );
+                }
+                return customerInvoices.map((inv) => (
+                  <div key={inv.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
+                    <div>
+                      <div className="font-extrabold text-slate-900">#{inv.jobNo || inv.id} • {inv.serviceName || 'Service Booking'}</div>
+                      <div className="text-[10px] text-slate-500">{inv.scheduleDate || 'Scheduled'} • {inv.paymentStatus || 'Escrow / Stripe'}</div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black text-emerald-700 text-sm">${Number(inv.estimate || 0).toFixed(2)}</span>
+                      <span className="block text-[9px] font-bold text-emerald-600">{inv.status || 'RECORDED'}</span>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 

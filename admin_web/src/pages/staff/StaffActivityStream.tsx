@@ -68,10 +68,8 @@ export const StaffActivityStream: React.FC = () => {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      addToast('Activity stream synchronized with live system records.', 'info');
-    }, 400);
+    setIsRefreshing(false);
+    addToast(`Activity stream synchronized (${streamEvents.length} records).`, 'info');
   };
 
   return (

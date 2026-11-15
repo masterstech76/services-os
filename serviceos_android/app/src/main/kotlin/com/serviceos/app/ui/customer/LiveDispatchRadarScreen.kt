@@ -27,7 +27,8 @@ import com.serviceos.app.core.theme.LocalExtraColors
 fun LiveDispatchRadarScreen(
     onBack: () -> Unit = {},
     onChatClick: () -> Unit = {},
-    onCompleteClick: () -> Unit = {}
+    onCompleteClick: () -> Unit = {},
+    safetyPin: String = ""
 ) {
     val extraColors = LocalExtraColors.current
 
@@ -79,7 +80,7 @@ fun LiveDispatchRadarScreen(
                             )
                         }
                         Text(
-                            text = "PIN: 4892",
+                            text = if (safetyPin.isNotBlank()) "PIN: $safetyPin" else "PIN: Pending",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
@@ -87,13 +88,20 @@ fun LiveDispatchRadarScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        AsyncImage(
-                            model = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-                            contentDescription = "Assigned Service Specialist",
-                            modifier = Modifier
-                                .size(52.dp)
-                                .clip(CircleShape)
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = extraColors.verified.copy(alpha = 0.14f),
+                            modifier = Modifier.size(52.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Engineering,
+                                    contentDescription = "Assigned Service Specialist",
+                                    tint = extraColors.verified,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
@@ -171,7 +179,11 @@ fun LiveDispatchRadarScreen(
 
             // Safety Disclosure
             Text(
-                text = "Show verification PIN 4892 to your pro upon arrival to confirm identity.",
+                text = if (safetyPin.isNotBlank()) {
+                    "Show verification PIN $safetyPin to your pro upon arrival to confirm identity."
+                } else {
+                    "Show your booking verification PIN to your pro upon arrival to confirm identity."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 modifier = Modifier.padding(bottom = 8.dp)

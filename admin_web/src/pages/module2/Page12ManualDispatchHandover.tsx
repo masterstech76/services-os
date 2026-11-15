@@ -30,11 +30,10 @@ export const Page12ManualDispatchHandover: React.FC = () => {
 
   const handleReScan = () => {
     setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      setRadarStatus('14 Active Pro Geofences Synced');
-      addToast('Dispatch Radar re-calibrated! Nearest available pros sorted by arrival ETA.', 'success');
-    }, 600);
+    const activeCount = technicians.filter(t => t.status === 'Available' || t.status === 'Busy').length;
+    setIsScanning(false);
+    setRadarStatus(`${activeCount} Active Pro Geofence${activeCount === 1 ? '' : 's'} Synced`);
+    addToast(`Dispatch Radar synced with ${activeCount} active technician${activeCount === 1 ? '' : 's'}.`, 'success');
   };
 
   const executeEmergencyHandover = () => {

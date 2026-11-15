@@ -80,10 +80,8 @@ export const Page03TodayActivity: React.FC = () => {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      addToast('Activity audit stream synchronized with live system state.', 'info');
-    }, 400);
+    setIsRefreshing(false);
+    addToast(`Activity audit stream synchronized (${dynamicActivities.length} events).`, 'info');
   };
 
   const filteredActivities = dynamicActivities.filter(item => {

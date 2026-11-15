@@ -134,8 +134,13 @@ export const Page29TechnicianPayouts: React.FC = () => {
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Disbursed This Month</div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">$148,420.00</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">100% On-Time Stripe ACH transfers</div>
+          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">
+            ${payouts
+              .filter(p => p.status === 'Disbursed' && p.grossAmount > 0)
+              .reduce((acc, p) => acc + p.grossAmount * (1 - commissionRate / 100), 0)
+              .toFixed(2)}
+          </div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Computed from live disbursed payouts</div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">

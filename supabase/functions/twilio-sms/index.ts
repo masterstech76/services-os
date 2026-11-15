@@ -1,7 +1,7 @@
 // ============================================================================
 // ServicePro OS — Supabase Edge Function: twilio-sms
-// Authenticates caller JWT, validates phone number, dispatches SMS via Twilio
-// REST API, and records an audit trail in public.security_audit_logs.
+// Authenticates caller JWT, enforces active ADMIN/STAFF role, validates E.164,
+// rate-limits per actor, dispatches SMS via Twilio REST API, and audits.
 // ============================================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -10,6 +10,8 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const E164_REGEX = /^\+[1-9]\d{7,14}$/;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -42,7 +44,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const jwt = authHeader.replace('Bearer ', '');
+    const jwt = authHeader.replace('Bearer ', '').trim();
     const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(jwt);
     if (authError || !userData?.user) {
       return new Response(
@@ -51,14 +53,46 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const { data: userRow } = await supabaseAdmin
+      .from('users')
+      .select('id, email, role, tenant_id, is_active')
+      .eq('id', userData.user.id)
+      .maybeSingle();
+
+    if (!userRow || userRow.is_active !== true || !['ADMIN', 'STAFF'].includes(String(userRow.role))) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden: Active ADMIN or STAFF role required to dispatch SMS.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     const to = String(body.to || '').trim();
     const message = String(body.message || '').trim();
 
-    if (!to || !message || message.length > 1600) {
+    if (!E164_REGEX.test(to) || !message || message.length > 1600) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Recipient phone number and message (1..1600 chars) are required.' }),
+        JSON.stringify({
+          success: false,
+          error: 'Valid E.164 recipient phone (+1234567890) and message (1..1600 chars) are required.',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Per-actor 60-second rate limit check (max 10 SMS/min)
+    const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+    const { count: recentCount } = await supabaseAdmin
+      .from('security_audit_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('actor_email', userRow.email)
+      .eq('event_type', 'TWILIO_SMS_SENT')
+      .gte('created_at', oneMinuteAgo);
+
+    if ((recentCount || 0) >= 10) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Rate limit exceeded: max 10 SMS per minute.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -86,16 +120,18 @@ Deno.serve(async (req: Request) => {
           success: false,
           error: twilioJson?.message || 'Twilio carrier rejected SMS transmission.',
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     await supabaseAdmin.from('security_audit_logs').insert({
-      actor_email: userData.user.email || 'dispatcher',
-      role: 'ADMIN',
+      tenant_id: userRow.tenant_id,
+      actor_email: userRow.email,
+      role: userRow.role,
       event_type: 'TWILIO_SMS_SENT',
       severity: 'INFO',
-      ip_address: '127.0.0.1',
+      ip_address: clientIp,
       details: `Dispatched SMS (${twilioJson.sid}) to ${to}`,
     });
 

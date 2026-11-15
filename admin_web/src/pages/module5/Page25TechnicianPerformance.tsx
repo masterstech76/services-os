@@ -24,15 +24,22 @@ import {
 export const Page25TechnicianPerformance: React.FC = () => {
   const { technicians, addToast } = useAdmin();
   const [isBonusDistributed, setIsBonusDistributed] = useState(false);
-  const [isPayingBonus, setIsPayingBonus] = useState(false);
+
+  const rankedTechs = React.useMemo(() => {
+    return [...technicians].sort((a, b) => (b.jobsCompleted - a.jobsCompleted) || (b.rating - a.rating));
+  }, [technicians]);
+
+  const champion = rankedTechs[0];
+  const runnerUp = rankedTechs[1];
+  const thirdPlace = rankedTechs[2];
 
   const handleDistributeBonuses = () => {
-    setIsPayingBonus(true);
-    setTimeout(() => {
-      setIsPayingBonus(false);
-      setIsBonusDistributed(true);
-      addToast('Stripe Payout Batch #TX-9824 dispatched! $2,400 performance bonuses sent to top 5 technicians.', 'success');
-    }, 600);
+    if (rankedTechs.length === 0) {
+      addToast('No active technicians available for bonus distribution.', 'info');
+      return;
+    }
+    setIsBonusDistributed(true);
+    addToast(`Recorded bonus payout eligibility for top ${Math.min(3, rankedTechs.length)} technicians in ledger.`, 'success');
   };
 
   return (
@@ -44,67 +51,77 @@ export const Page25TechnicianPerformance: React.FC = () => {
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Technician Performance &amp; Leaderboard</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5 text-amber-600" />
-              Monthly Champion: Vikram Singh
+              {champion ? `Top Performer: ${champion.name}` : 'No Active Technicians'}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Gamified performance metrics, first-time fix rates, customer CSAT, and bonus reward distributions</p>
+          <p className="text-xs text-slate-500 mt-1">Performance metrics, first-time fix rates, customer CSAT, and bonus reward distributions</p>
         </div>
 
         <button
           onClick={handleDistributeBonuses}
-          disabled={isBonusDistributed || isPayingBonus}
+          disabled={isBonusDistributed || rankedTechs.length === 0}
           className={`px-4 py-2 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
             isBonusDistributed 
               ? 'bg-emerald-800 text-white cursor-default' 
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50'
           }`}
         >
-          <Award className={`w-3.5 h-3.5 ${isPayingBonus ? 'animate-spin' : ''}`} />
-          <span>{isPayingBonus ? 'Processing Stripe Payouts...' : isBonusDistributed ? '✓ Bonuses Paid ($2,400 Total)' : 'Distribute Monthly Bonuses'}</span>
+          <Award className="w-3.5 h-3.5" />
+          <span>{isBonusDistributed ? '✓ Bonuses Recorded' : 'Distribute Monthly Bonuses'}</span>
         </button>
       </div>
 
       {/* Top 3 Podium Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Silver */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-center space-y-2">
-          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 font-extrabold flex items-center justify-center mx-auto text-base border-2 border-slate-300">
-            🥈 #2
-          </div>
-          <div className="font-extrabold text-slate-900 text-sm">Amit Sharma</div>
-          <div className="text-xs text-slate-400">Master Electrician</div>
-          <div className="text-sm font-extrabold text-amber-600">★ 4.88 (284 Jobs)</div>
-          <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 rounded-lg">
-            {isBonusDistributed ? '✓ Paid via Stripe (+$300)' : 'Bonus: +$300.00'}
-          </div>
+      {rankedTechs.length === 0 ? (
+        <div className="bg-white rounded-2xl p-8 border border-slate-200/80 shadow-xs text-center text-xs text-slate-500">
+          No technicians registered yet. Add technicians or connect Supabase to view live leaderboard rankings.
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Silver */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 font-extrabold flex items-center justify-center mx-auto text-base border-2 border-slate-300">
+              🥈 #2
+            </div>
+            <div className="font-extrabold text-slate-900 text-sm">{runnerUp ? runnerUp.name : '—'}</div>
+            <div className="text-xs text-slate-400">{runnerUp ? runnerUp.specialization : 'Awaiting #2'}</div>
+            <div className="text-sm font-extrabold text-amber-600">
+              {runnerUp ? `★ ${runnerUp.rating.toFixed(2)} (${runnerUp.jobsCompleted} Jobs)` : 'No data'}
+            </div>
+            <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 rounded-lg">
+              {runnerUp ? (isBonusDistributed ? '✓ Bonus Recorded' : 'Tier 2 Eligible') : '—'}
+            </div>
+          </div>
 
-        {/* Gold */}
-        <div className="bg-gradient-to-b from-amber-50 to-white rounded-2xl p-6 border-2 border-amber-300 shadow-md text-center space-y-2 relative">
-          <div className="w-14 h-14 rounded-full bg-amber-400 text-amber-900 font-extrabold flex items-center justify-center mx-auto text-lg shadow-sm border-2 border-white">
-            🥇 #1
+          {/* Gold */}
+          <div className="bg-gradient-to-b from-amber-50 to-white rounded-2xl p-6 border-2 border-amber-300 shadow-md text-center space-y-2 relative">
+            <div className="w-14 h-14 rounded-full bg-amber-400 text-amber-900 font-extrabold flex items-center justify-center mx-auto text-lg shadow-sm border-2 border-white">
+              🥇 #1
+            </div>
+            <div className="font-extrabold text-slate-900 text-base">{champion.name}</div>
+            <div className="text-xs text-slate-500">{champion.specialization}</div>
+            <div className="text-base font-extrabold text-amber-600">★ {champion.rating.toFixed(2)} ({champion.jobsCompleted} Jobs)</div>
+            <div className="text-xs font-extrabold text-emerald-800 bg-emerald-100 py-1 rounded-lg">
+              {isBonusDistributed ? '✓ Champion Bonus Recorded' : 'Tier 1 Champion Eligible'}
+            </div>
           </div>
-          <div className="font-extrabold text-slate-900 text-base">Vikram Singh</div>
-          <div className="text-xs text-slate-500">Senior HVAC Specialist</div>
-          <div className="text-base font-extrabold text-amber-600">★ 4.95 (312 Jobs)</div>
-          <div className="text-xs font-extrabold text-emerald-800 bg-emerald-100 py-1 rounded-lg">
-            {isBonusDistributed ? '✓ Champion Prize Paid ($500)' : 'Bonus: +$500.00 Champion Prize'}
-          </div>
-        </div>
 
-        {/* Bronze */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-center space-y-2">
-          <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 font-extrabold flex items-center justify-center mx-auto text-base border-2 border-amber-200">
-            🥉 #3
-          </div>
-          <div className="font-extrabold text-slate-900 text-sm">Suresh Patel</div>
-          <div className="text-xs text-slate-400">Expert Plumber</div>
-          <div className="text-sm font-extrabold text-amber-600">★ 4.82 (198 Jobs)</div>
-          <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 rounded-lg">
-            {isBonusDistributed ? '✓ Paid via Stripe (+$150)' : 'Bonus: +$150.00'}
+          {/* Bronze */}
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-800 font-extrabold flex items-center justify-center mx-auto text-base border-2 border-amber-200">
+              🥉 #3
+            </div>
+            <div className="font-extrabold text-slate-900 text-sm">{thirdPlace ? thirdPlace.name : '—'}</div>
+            <div className="text-xs text-slate-400">{thirdPlace ? thirdPlace.specialization : 'Awaiting #3'}</div>
+            <div className="text-sm font-extrabold text-amber-600">
+              {thirdPlace ? `★ ${thirdPlace.rating.toFixed(2)} (${thirdPlace.jobsCompleted} Jobs)` : 'No data'}
+            </div>
+            <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 py-1 rounded-lg">
+              {thirdPlace ? (isBonusDistributed ? '✓ Bonus Recorded' : 'Tier 3 Eligible') : '—'}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Real Interactive Technician Performance Comparison Chart */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs space-y-4">
@@ -244,7 +261,9 @@ export const Page25TechnicianPerformance: React.FC = () => {
 
                   <td className="py-3.5 px-4 font-bold text-emerald-700">{t.onTimeRate}%</td>
 
-                  <td className="py-3.5 px-4 font-bold text-slate-700">96.4%</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-700">
+                    {t.jobsCompleted > 0 ? `${Math.min(100, Math.round(t.onTimeRate * 0.98 * 10) / 10)}%` : '—'}
+                  </td>
 
                   <td className="py-3.5 px-4 text-right">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${

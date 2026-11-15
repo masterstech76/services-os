@@ -26,13 +26,11 @@ export const StaffDailyReport: React.FC = () => {
 
   const handleSubmitReport = () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      setSubmittedAt(timeStr);
-      addToast('Daily Operations Report cryptographically sealed and submitted to Main Head!', 'success');
-    }, 600);
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    setSubmittedAt(timeStr);
+    addToast(`Daily Operations Report recorded (${completedToday} completed, ${inProgress} active, ${pending} pending).`, 'success');
   };
 
   const handleExportReport = () => {

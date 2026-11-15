@@ -6,12 +6,16 @@ class ServiceOSAppHeader extends StatelessWidget implements PreferredSizeWidget 
   final VoidCallback onThemeToggle;
   final bool isDarkMode;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onNotificationsTap;
+  final String? avatarUrl;
 
   const ServiceOSAppHeader({
     super.key,
     required this.onThemeToggle,
     required this.isDarkMode,
     this.onProfileTap,
+    this.onNotificationsTap,
+    this.avatarUrl,
   });
 
   @override
@@ -110,7 +114,14 @@ class ServiceOSAppHeader extends StatelessWidget implements PreferredSizeWidget 
               alignment: Alignment.topRight,
               children: [
                 IconButton(
-                  onPressed: () {},
+                  onPressed: onNotificationsTap ?? () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No new notifications.'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   icon: Icon(
                     Icons.notifications_none_rounded,
                     color: textSecondary,
@@ -142,12 +153,18 @@ class ServiceOSAppHeader extends StatelessWidget implements PreferredSizeWidget 
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
+                  color: primaryBrand.withOpacity(0.12),
                   border: Border.all(color: primaryBrand, width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150'),
-                    fit: BoxFit.cover,
-                  ),
+                  image: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                      ? DecorationImage(
+                          image: NetworkImage(avatarUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
+                child: (avatarUrl == null || avatarUrl!.isEmpty)
+                    ? Icon(Icons.person_rounded, color: primaryBrand, size: 20)
+                    : null,
               ),
             ),
           ],

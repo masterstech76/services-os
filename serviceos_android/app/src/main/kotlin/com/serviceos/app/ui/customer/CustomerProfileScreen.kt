@@ -59,13 +59,20 @@ fun CustomerProfileScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AsyncImage(
-                        model = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200",
-                        contentDescription = "Customer Profile",
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Customer Profile",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column {
                         Text(

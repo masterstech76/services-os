@@ -61,11 +61,9 @@ export const Page33CustomerReviewsManagement: React.FC = () => {
 
   const handleSyncCDN = () => {
     setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      setSyncStatus(`CDN Synced: Just now (${featuredIds.size} live)`);
-      addToast(`Batch synced ${featuredIds.size} featured 5-star testimonials to Customer Mobile App hero feed!`, 'success');
-    }, 600);
+    setIsSyncing(false);
+    setSyncStatus(`Synced (${featuredIds.size} featured)`);
+    addToast(`Updated ${featuredIds.size} featured testimonials from live review records.`, 'success');
   };
 
   const filteredReviews = reviews.filter(r => {

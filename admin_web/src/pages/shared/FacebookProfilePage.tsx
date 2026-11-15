@@ -470,12 +470,14 @@ export const FacebookProfilePage: React.FC = () => {
           <div className="absolute inset-0 bg-[radial-gradient(#34d399_1px,transparent_1px)] [background-size:20px_20px] opacity-25" />
           
           {/* High-res background image */}
-          <img
-            src={coverPhoto}
-            alt="Profile Cover"
-            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
-            className="w-full h-full object-cover mix-blend-overlay opacity-80 transition-all duration-300 group-hover:scale-102"
-          />
+          {coverPhoto && (
+            <img
+              src={coverPhoto}
+              alt="Profile Cover"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+              className="w-full h-full object-cover mix-blend-overlay opacity-80 transition-all duration-300 group-hover:scale-102"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/25" />
 
           {/* Cover Watermark Badge */}
@@ -1035,11 +1037,17 @@ export const FacebookProfilePage: React.FC = () => {
                 />
 
                 <div className="flex items-center gap-3">
-                  <img
-                    src={userProfile.avatar}
-                    alt={userProfile.name}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30"
-                  />
+                  {userProfile.avatar ? (
+                    <img
+                      src={userProfile.avatar}
+                      alt={userProfile.name}
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm ring-2 ring-emerald-500/30 shrink-0">
+                      {(userProfile.name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <input
                     id="facebook-status-input"
                     type="text"
@@ -1357,11 +1365,17 @@ export const FacebookProfilePage: React.FC = () => {
 
                 {/* Comment Input Box */}
                 <div className="flex items-center gap-2 pt-1">
-                  <img
-                    src={userProfile.avatar}
-                    alt={userProfile.name}
-                    className="w-7 h-7 rounded-full object-cover shrink-0"
-                  />
+                  {userProfile.avatar ? (
+                    <img
+                      src={userProfile.avatar}
+                      alt={userProfile.name}
+                      className="w-7 h-7 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {(userProfile.name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <input
                     id={`comment-input-${post.id}`}
                     type="text"

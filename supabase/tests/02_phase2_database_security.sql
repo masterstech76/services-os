@@ -52,12 +52,13 @@ INSERT INTO public.services (id, category_id, name, base_price_cents, is_active)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.bookings (
-  id, tenant_id, customer_id, provider_id, service_id, status,
-  service_address_text, service_location, scheduled_start_at,
-  agreed_price_cents, platform_fee_cents, net_payout_cents, safety_pin, escrow_status
+  id, tenant_id, booking_reference, customer_id, provider_id, service_id, status,
+  address_text, service_location, scheduled_start,
+  labor_cost_cents, total_authorized_cents, platform_fee_cents, net_payout_cents, safety_pin, escrow_status
 ) VALUES (
   '10000000-0000-0000-0000-000000000401',
   '10000000-0000-0000-0000-000000000001',
+  'BK-P2-TEST-401',
   '10000000-0000-0000-0000-000000000011',
   '10000000-0000-0000-0000-000000000012',
   '10000000-0000-0000-0000-000000000301',
@@ -65,7 +66,7 @@ INSERT INTO public.bookings (
   '100 Test St',
   ST_SetSRID(ST_MakePoint(-80.1918, 25.7617), 4326)::geography,
   NOW() + INTERVAL '1 hour',
-  15000, 2250, 12750, '4829', 'AUTHORIZED'
+  15000, 15000, 2250, 12750, '4829', 'HELD_IN_ESCROW'
 ) ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.payments (

@@ -136,23 +136,29 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
             children: [
               Stack(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 36,
-                    backgroundImage: NetworkImage('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200'),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.nightPrimary : AppColors.dayPrimary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: surfaceColor, width: 2),
-                      ),
-                      child: const Icon(Icons.verified, size: 14, color: Colors.white),
+                    backgroundColor: (isDark ? AppColors.nightPrimary : AppColors.dayPrimary).withValues(alpha: 0.14),
+                    child: Icon(
+                      Icons.person_outline,
+                      size: 32,
+                      color: isDark ? AppColors.nightPrimary : AppColors.dayPrimary,
                     ),
                   ),
+                  if (_email.isNotEmpty)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.nightPrimary : AppColors.dayPrimary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: surfaceColor, width: 2),
+                        ),
+                        child: const Icon(Icons.verified, size: 14, color: Colors.white),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(width: 16),
