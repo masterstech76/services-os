@@ -1,0 +1,77 @@
+name: ServicePro OS — Live Security & Database Verification
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-security-verification:
+    name: Live PostgreSQL, pgTAP, RLS, Auth/JWT & Web Regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (pinned v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.1'
+          cache: 'npm'
+
+      - name: Verify Docker daemon availability
+        run: docker info --format '{{.ServerVersion}}'
+
+      - name: Install pinned workspace & admin_web dependencies
+        run: |
+          npm ci
+          npm --prefix admin_web ci
+
+      - name: Run zero-fake-data & handover cleanup safety tests
+        run: |
+          npm run verify:data-env
+          node scripts/test_handover_cleanup.cjs
+
+      - name: Start isolated local Supabase stack (PostgreSQL 16 + GoTrue + PostgREST)
+        run: npx supabase start
+
+      - name: Run full live security verification suite (Static SQL/RLS, pgTAP, Live GoTrue/JWT/MFA/RLS)
+        run: npm run verify:security-live
+
+      - name: Run TypeScript build & linter
+        run: |
+          npm run build
+          npm run lint
+
+      - name: Run 52-page UI/RBAC & commercial turnkey regression suites
+        run: |
+          npx --prefix admin_web vite --port 3000 --host 127.0.0.1 >/tmp/vite.log 2>&1 &
+          VITE_PID=$!
+          trap "kill $VITE_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 30); do
+            if curl -sSf http://127.0.0.1:3000 >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm test
+          npm run test:commercial
+
+      - name: Upload sanitized live verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-live-security-evidence
+          path: audit_report/LIVE_VERIFICATION_EVIDENCE.json
+          if-no-files-found: warn
+
+      - name: Cleanup local Supabase containers
+        if: always()
+        run: npx supabase stop --no-backup || true

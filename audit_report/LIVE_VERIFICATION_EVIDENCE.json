@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-11-15T06:21:48.277Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32"
+  },
+  "steps": [
+    {
+      "id": "01",
+      "label": "SQL Migration & 21-Table RLS Coverage Validator",
+      "status": "PASS",
+      "exitCode": 0,
+      "outputTail": "> servicepro-os-workspace@1.0.0 verify-env\n> node scripts/validate_migrations.cjs\n\n01_initial_schema.sql: Parentheses balance = 0, inString = false, inDollarQuote = false\n02_postgis_functions.sql: Parentheses balance = 0, inString = false, inDollarQuote = false\n03_security_rbac_and_rls.sql: Parentheses balance = 0, inString = false, inDollarQuote = false\nVerified 21 tables, 21/21 with RLS enabled, and 49 explicit RLS policies.\nPhase 1 security regression checks passed (MFA credential isolation, encryption at rest, & server-side MFA enforcement present).\nALL 3 PRODUCTION SQL MIGRATIONS & 19-TABLE RLS COVERAGE VALIDATED SUCCESSFULLY!"
+    },
+    {
+      "id": "02",
+      "label": "Phase 1 Static Security Assertions",
+      "status": "PASS",
+      "exitCode": 0,
+      "outputTail": "s_verified_mfa_session()\nPASS (Static): admin_revoke_user_mfa independently enforces MFA-verified is_admin()\nPASS (Static): has_verified_mfa_session() rejects revoked or expired MFA sessions\nPASS (Static): Client signOut revokes server MFA session and verifyActiveCloudSession enforces isMfaVerifiedForSession\nPASS (Static): enroll_my_mfa blocks overwriting an already-enabled MFA credential\nPASS (Static): TOTP secrets are AES-256 encrypted at rest via pgp_sym_encrypt\nPASS (Static): bootstrap-first-admin rejects unauthorized requests using timing-safe X-Bootstrap-Token check\nPASS (Static): Cloud Staff and Cloud Admin both route through mandatory server MFA enrollment/challenge\nPASS (Static): Inactive Admin or Staff user immediately returns ANONYMOUS without falling back to app_metadata.role\nPASS (Static): Missing public.users record can NEVER inherit ADMIN or STAFF from app_metadata.role\nPASS (Static): has_verified_mfa_session() rejects inactive or missing users even with aal2 or existing user_mfa_sessions row\nPASS (Static): Deactivating a user automatically revokes active MFA sessions via trigger and admin_set_user_active enforces is_admin()\nALL STATIC PHASE 1 SECURITY CHECKS PASSED!"
+    },
+    {
+      "id": "03",
+      "label": "Supabase CLI Availability",
+      "status": "PASS",
+      "exitCode": 0,
+      "outputTail": "3.1.0"
+    },
+    {
+      "id": "04",
+      "label": "Docker Daemon Health",
+      "status": "BLOCKED_OR_FAILED",
+      "exitCode": 1,
+      "outputTail": "'docker' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n\n\nCommand failed: docker info\n'docker' is not recognized as an internal or external command,\r\noperable program or batch file."
+    }
+  ],
+  "overallStatus": "BLOCKED"
+}
