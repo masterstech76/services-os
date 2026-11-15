@@ -189,10 +189,10 @@ async function main() {
     console.log('ALL LIVE SUPABASE AUTH, JWT, MFA & POSTGREST RLS TESTS PASSED!');
   } finally {
     for (const uid of createdUserIds) {
-      await adminSvc.auth.admin.deleteUser(uid).catch(() => {});
+      try { await adminSvc.auth.admin.deleteUser(uid); } catch {}
     }
     if (createdTenantId) {
-      await adminSvc.from('tenants').delete().eq('id', createdTenantId).catch(() => {});
+      try { await adminSvc.from('tenants').delete().eq('id', createdTenantId); } catch {}
     }
   }
 }

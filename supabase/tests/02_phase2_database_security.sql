@@ -38,9 +38,9 @@ INSERT INTO public.users (id, tenant_id, email, phone, first_name, last_name, ro
   ('20000000-0000-0000-0000-000000000022', '20000000-0000-0000-0000-000000000002', 'p2-tech-b@test.local', '+18005550205', 'Tech', 'B', 'TECHNICIAN', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.provider_profiles (id, user_id, trade_category, is_verified, is_online) VALUES
-  ('10000000-0000-0000-0000-000000000112', '10000000-0000-0000-0000-000000000012', 'HVAC', TRUE, TRUE),
-  ('20000000-0000-0000-0000-000000000122', '20000000-0000-0000-0000-000000000022', 'HVAC', TRUE, TRUE)
+INSERT INTO public.provider_profiles (id, user_id, trade_license_number, trade_category, is_verified, is_online) VALUES
+  ('10000000-0000-0000-0000-000000000112', '10000000-0000-0000-0000-000000000012', 'P2-LIC-001', 'HVAC', TRUE, TRUE),
+  ('20000000-0000-0000-0000-000000000122', '20000000-0000-0000-0000-000000000022', 'P2-LIC-002', 'HVAC', TRUE, TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.categories (id, tenant_id, name, slug, is_active) VALUES
