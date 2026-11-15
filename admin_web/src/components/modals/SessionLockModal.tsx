@@ -39,6 +39,9 @@ export const SessionLockModal: React.FC = () => {
 
   if (!isSessionLocked) return null;
 
+  // No default PIN exists. Without a configured PIN the only way to resume is to sign in again.
+  const hasConfiguredPin = !!localStorage.getItem('servicepro_security_pin');
+
   const handleKeyPress = (num: string) => {
     if (pin.length < 4) {
       const nextPin = pin + num;
@@ -47,7 +50,7 @@ export const SessionLockModal: React.FC = () => {
       if (nextPin.length === 4) {
         setTimeout(() => {
           if (!unlockSession(nextPin)) {
-            setErrorMessage('Invalid PIN. Use default 1234 or Quick Resume.');
+            setErrorMessage('Invalid PIN. Please try again.');
             setPin('');
           }
         }, 150);
@@ -63,10 +66,6 @@ export const SessionLockModal: React.FC = () => {
   const handleBackspace = () => {
     setPin(prev => prev.slice(0, -1));
     setErrorMessage('');
-  };
-
-  const handleQuickUnlock = () => {
-    unlockSession('1234');
   };
 
   return (
@@ -108,7 +107,9 @@ export const SessionLockModal: React.FC = () => {
           Console Session Locked
         </h2>
         <p className="text-xs text-slate-400 text-center mt-1 mb-5">
-          Station node TX-01 suspended. Re-enter your enterprise 4-digit PIN.
+          {hasConfiguredPin
+            ? 'Station node TX-01 suspended. Re-enter your enterprise 4-digit PIN.'
+            : 'Session suspended. Sign out and sign in again to resume.'}
         </p>
 
         {/* Current Active Operator Profile Chip */}
@@ -140,7 +141,6 @@ export const SessionLockModal: React.FC = () => {
 
           <button
             onClick={() => {
-              unlockSession('1234');
               logout();
             }}
             className="px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 rounded-xl hover:bg-rose-950/40 border border-rose-900/40 transition-colors cursor-pointer"
@@ -150,6 +150,8 @@ export const SessionLockModal: React.FC = () => {
           </button>
         </div>
 
+        {hasConfiguredPin && (
+          <>
         {/* PIN Dots Display */}
         <div className="flex items-center justify-center gap-3 mb-4">
           {[0, 1, 2, 3].map(idx => (
@@ -202,17 +204,8 @@ export const SessionLockModal: React.FC = () => {
             <Delete className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Actions */}
-        <div className="w-full flex items-center gap-3">
-          <button
-            onClick={handleQuickUnlock}
-            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-          >
-            <Unlock className="w-4 h-4" />
-            <span>Quick Resume (Default PIN: 1234)</span>
-          </button>
-        </div>
+          </>
+        )}
 
         <div className="mt-4 text-[10px] text-slate-500 text-center font-mono">
           Station Terminal #01 • Secure Connection Active

@@ -164,7 +164,7 @@ export function verifyOtpCode(destination: string, submittedCode: string): Verif
   }
 
   // 4. Verify code match
-  if (record.code === cleanCode || cleanCode === '123456') { // 123456 bootstrap fallback
+  if (record.code === cleanCode) {
     record.isUsed = true;
     saveStoredOtps(store);
 

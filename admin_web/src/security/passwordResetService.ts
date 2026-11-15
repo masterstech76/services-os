@@ -5,6 +5,7 @@
 
 import { validatePasswordStrength, hashPasswordClient, verifyPasswordHash } from './passwordPolicy';
 import { recordSecurityEvent } from './securityAuditLogger';
+import { supabaseService } from '../services/supabaseClient';
 
 const RESET_TOKEN_EXPIRATION_MS = 15 * 60 * 1000; // 15 minutes validity
 const MAX_RESET_REQUESTS_PER_HOUR = 3;
@@ -39,7 +40,6 @@ function saveStoredTokens(tokens: PasswordResetTokenRecord[]): void {
 export interface PasswordResetRequestResult {
   success: boolean;
   message: string;
-  debugToken?: string; // Exposed only for demonstration/local testing
 }
 
 /**
@@ -70,7 +70,30 @@ export async function requestPasswordReset(email: string, role: 'ADMIN' | 'STAFF
     };
   }
 
-  // Generate 256-bit cryptographically secure single-use token
+  const genericMessage = 'If an authorized account is associated with this email, recovery instructions have been dispatched.';
+
+  // Cloud mode: recovery is delivered by Supabase Auth by email. No token is ever returned to the browser.
+  if (supabaseService.isConfigured()) {
+    try {
+      const client = supabaseService.getClient();
+      await client?.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: `${window.location.origin}${window.location.pathname}#/login`
+      });
+    } catch {
+      // Intentionally generic to prevent account enumeration.
+    }
+    recordSecurityEvent(
+      'MFA_CHALLENGE',
+      targetEmail,
+      role,
+      'INFO',
+      'Password recovery email requested via Supabase Auth'
+    );
+    return { success: true, message: genericMessage };
+  }
+
+  // Local mode has no outbound delivery channel, so a locally generated token must never be revealed
+  // to the requester. The token is stored hashed-by-possession only; completion is unavailable without delivery.
   const randomBytes = crypto.getRandomValues(new Uint8Array(32));
   const tokenHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
   const resetToken = `rst_${now}_${tokenHex}`;
@@ -97,8 +120,7 @@ export async function requestPasswordReset(email: string, role: 'ADMIN' | 'STAFF
 
   return {
     success: true,
-    message: 'If an authorized account is associated with this email, recovery instructions have been dispatched.',
-    debugToken: resetToken
+    message: genericMessage
   };
 }
 

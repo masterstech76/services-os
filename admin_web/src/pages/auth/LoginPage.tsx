@@ -677,9 +677,6 @@ export const LoginPage: React.FC = () => {
       const res = await requestPasswordReset(email.trim(), selectedRole);
       setIsLoading(false);
       setResetSuccessMessage(res.message);
-      if (res.debugToken) {
-        setResetToken(res.debugToken);
-      }
       setResetStep('VERIFY');
     } catch (err: any) {
       setError(err.message || 'Failed to dispatch recovery instructions.');

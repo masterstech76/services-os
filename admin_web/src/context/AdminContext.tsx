@@ -758,8 +758,10 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [addToast, session, currentRole]);
 
   const unlockSession = useCallback((pin?: string): boolean => {
-    const configuredPin = localStorage.getItem('servicepro_security_pin') || '1234';
-    if (pin === configuredPin || pin === '1234' || (session && pin === '9999')) {
+    // No default or master PIN exists: unlocking requires a PIN the operator configured.
+    // If none is configured, the only way to resume is to sign out and authenticate again.
+    const configuredPin = localStorage.getItem('servicepro_security_pin');
+    if (configuredPin && pin === configuredPin) {
       setIsSessionLocked(false);
       lastActivityRef.current = Date.now();
       recordSecurityEvent(
@@ -1214,6 +1216,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const logout = useCallback(() => {
+    setIsSessionLocked(false);
     setSession(null);
     localStorage.removeItem('servicepro_auth_session');
     if (supabaseService.isConfigured()) {
