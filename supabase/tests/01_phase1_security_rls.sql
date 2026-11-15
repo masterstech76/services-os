@@ -46,9 +46,7 @@ SELECT is(
   'authenticated role has zero USAGE privilege on private schema'
 );
 
--- 3. Seed isolated temporary test identities in auth.users & public.users via service_role context
-SELECT set_config('role', 'service_role', true);
-
+-- 3. Seed isolated temporary test identities in auth.users (as postgres) then switch to service_role
 INSERT INTO auth.users (id, email) VALUES
   ('11111111-1111-1111-1111-111111111111', 'pgtap-admin@servicepro.test'),
   ('22222222-2222-2222-2222-222222222222', 'pgtap-staff@servicepro.test'),
@@ -56,6 +54,8 @@ INSERT INTO auth.users (id, email) VALUES
   ('44444444-4444-4444-4444-444444444444', 'pgtap-tech@servicepro.test'),
   ('55555555-5555-5555-5555-555555555555', 'pgtap-tenantb-admin@servicepro.test')
 ON CONFLICT (id) DO NOTHING;
+
+SELECT set_config('role', 'service_role', true);
 
 -- Test atomic first-admin bootstrap (and second-attempt rejection)
 SELECT is(
@@ -93,7 +93,7 @@ SELECT ok(
 );
 
 -- Create Tenant B, Staff, Customer, and Technician for cross-tenant & role tests
-INSERT INTO public.tenants (id, name, slug) VALUES
+INSERT INTO public.tenants (id, business_name, slug) VALUES
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Tenant B', 'tenant-b')
 ON CONFLICT (id) DO NOTHING;
 

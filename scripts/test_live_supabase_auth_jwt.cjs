@@ -23,8 +23,8 @@ function resolveSupabaseConfig() {
   const raw = execSync('npx supabase status --output json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   const parsed = JSON.parse(raw);
   const url = parsed.API_URL || parsed.api_url;
-  const anonKey = parsed.ANON_KEY || parsed.anon_key;
-  const serviceKey = parsed.SERVICE_ROLE_KEY || parsed.service_role_key;
+  const anonKey = parsed.ANON_KEY || parsed.anon_key || parsed.PUBLISHABLE_KEY || parsed.publishable_key;
+  const serviceKey = parsed.SERVICE_ROLE_KEY || parsed.service_role_key || parsed.SECRET_KEY || parsed.secret_key;
   if (!url || !anonKey || !serviceKey) {
     throw new Error('Could not resolve local Supabase API_URL / ANON_KEY / SERVICE_ROLE_KEY from `npx supabase status --output json`.');
   }
@@ -88,7 +88,7 @@ async function main() {
     // 1. Provision isolated temporary Tenant, Admin, and Customer via service_role
     const { data: tenantRow, error: tErr } = await adminSvc
       .from('tenants')
-      .insert({ name: `Verify Tenant ${suffix}`, slug: `verify-tenant-${suffix}` })
+      .insert({ business_name: `Verify Tenant ${suffix}`, slug: `verify-tenant-${suffix}` })
       .select('id')
       .single();
     if (tErr) throw tErr;

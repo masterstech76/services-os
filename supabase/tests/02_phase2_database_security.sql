@@ -25,7 +25,7 @@ SELECT is(
 );
 
 -- Seed isolated synthetic fixtures inside rolled-back transaction
-INSERT INTO public.tenants (id, name, slug, is_active) VALUES
+INSERT INTO public.tenants (id, business_name, slug, is_active) VALUES
   ('10000000-0000-0000-0000-000000000001', 'Phase2 Tenant A', 'phase2-tenant-a', TRUE),
   ('20000000-0000-0000-0000-000000000002', 'Phase2 Tenant B', 'phase2-tenant-b', TRUE)
 ON CONFLICT (id) DO NOTHING;
