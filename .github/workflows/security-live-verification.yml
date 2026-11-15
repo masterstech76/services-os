@@ -38,6 +38,14 @@ jobs:
           node scripts/test_phase3_4_security.cjs
           node scripts/test_handover_cleanup.cjs
 
+      - name: Apply pending migrations (01-06) to isolated staging (rzmruyfeszkondbyxhnf)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          STAGING_DB_URL: ${{ secrets.STAGING_DB_URL }}
+        run: |
+          node -e "const u = new URL(process.env.SUPABASE_URL); if (u.hostname !== 'rzmruyfeszkondbyxhnf.supabase.co') throw new Error('Refusing non-staging db push');"
+          npx supabase db push --remote="$STAGING_DB_URL" --include-all --yes
+
       - name: Run staging-only live security verification suite (Static SQL/RLS, Remote pgTAP, Live GoTrue/JWT/MFA/RLS)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
