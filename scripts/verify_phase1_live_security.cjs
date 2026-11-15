@@ -141,8 +141,8 @@ if (!staticSqlOk || !staticPhase1Ok || !stagingEnvOk) {
 const pgTapOk = runStep(
   '04',
   'Remote Staging pgTAP Database & RLS Adversarial Suite',
-  'npx supabase test db --remote="$STAGING_DB_URL"',
-  'npx supabase test db --remote=<STAGING_DB_URL>'
+  'npx supabase test db --remote="$STAGING_DB_URL" --yes',
+  'npx supabase test db --remote=<STAGING_DB_URL> --yes'
 );
 const liveAuthOk = runStep(
   '05',
