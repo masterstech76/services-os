@@ -1,15 +1,16 @@
-import test from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import YAML from 'yaml';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MIGRATIONS_DIR = path.resolve(__dirname, '../src/database/migrations');
 
-test('Database Migrations Validation Suite', async (t) => {
-  await t.test('All migration files have matching down-migration rollback scripts', () => {
+describe('Database Migrations Validation Suite', () => {
+  it('All migration files have matching down-migration rollback scripts', () => {
     const files = fs.readdirSync(MIGRATIONS_DIR).sort();
     const upFiles = files.filter(f => f.endsWith('.sql') && !f.endsWith('.down.sql'));
     const downFiles = files.filter(f => f.endsWith('.down.sql'));
@@ -26,7 +27,7 @@ test('Database Migrations Validation Suite', async (t) => {
     }
   });
 
-  await t.test('All up-migrations are non-empty and syntactically structured', () => {
+  it('All up-migrations are non-empty and syntactically structured', () => {
     const files = fs.readdirSync(MIGRATIONS_DIR)
       .filter(f => f.endsWith('.sql') && !f.endsWith('.down.sql'));
 
@@ -41,7 +42,7 @@ test('Database Migrations Validation Suite', async (t) => {
     }
   });
 
-  await t.test('PostGIS spatial extension and columns are defined', () => {
+  it('PostGIS spatial extension and columns are defined', () => {
     const sql001 = fs.readFileSync(path.join(MIGRATIONS_DIR, '001_tenants_and_auth.sql'), 'utf-8');
     assert.ok(sql001.includes('CREATE EXTENSION IF NOT EXISTS "postgis"'), 'PostGIS extension must be declared in 001');
 
@@ -50,14 +51,14 @@ test('Database Migrations Validation Suite', async (t) => {
     assert.ok(sql002.includes('USING GIST (location)'), 'Spatial GIST index must be defined on location');
   });
 
-  await t.test('Double-entry ledger constraints are strictly enforced', () => {
+  it('Double-entry ledger constraints are strictly enforced', () => {
     const sql005 = fs.readFileSync(path.join(MIGRATIONS_DIR, '005_finance_and_ledger.sql'), 'utf-8');
     assert.ok(sql005.includes('CREATE TABLE IF NOT EXISTS ledger_entries'), 'Ledger entries table must exist');
     assert.ok(sql005.includes('chk_debit_credit_different'), 'Debit and credit accounts must be strictly different');
     assert.ok(sql005.includes('amount_cents BIGINT NOT NULL CHECK (amount_cents > 0)'), 'Ledger amounts must be positive');
   });
 
-  await t.test('Down migration 007 safely aborts with RAISE EXCEPTION if active financial data exists (DB-01, DB-02)', () => {
+  it('Down migration 007 safely aborts with RAISE EXCEPTION if active financial data exists (DB-01, DB-02)', () => {
     const down007 = fs.readFileSync(path.join(MIGRATIONS_DIR, '007_finance_invoices_patch.down.sql'), 'utf-8');
     
     assert.match(
@@ -71,5 +72,27 @@ test('Database Migrations Validation Suite', async (t) => {
       /RAISE\s+EXCEPTION[\s\S]*?Cannot roll back migration 007[\s\S]*?VOIDED or PENDING/,
       'Rollback script must explicitly abort if transactions in VOIDED or PENDING state exist'
     );
+  });
+
+  it('Down migration 008 safely aborts with RAISE EXCEPTION if cross-tenant duplicate idempotency keys exist (DB-01)', () => {
+    const down008 = fs.readFileSync(path.join(MIGRATIONS_DIR, '008_payout_tenant_idempotency_and_durability.down.sql'), 'utf-8');
+    assert.match(
+      down008,
+      /RAISE\s+EXCEPTION[\s\S]*?Cannot roll back migration 008[\s\S]*?cross-tenant duplicate idempotency_keys exist/,
+      'Rollback script for migration 008 must explicitly abort if duplicate idempotency keys exist'
+    );
+  });
+
+  it('docker-compose.yml environment interpolations are safely quoted against YAML parse errors', () => {
+    const composePath = path.resolve(__dirname, '../../docker-compose.yml');
+    assert.ok(fs.existsSync(composePath), 'docker-compose.yml must exist');
+    const composeContent = fs.readFileSync(composePath, 'utf-8');
+    
+    // Validate that YAML parser successfully parses the file without nested mapping errors
+    const parsed = YAML.parse(composeContent);
+    assert.ok(parsed.services, 'Parsed compose must contain services');
+    assert.ok(parsed.services.postgres, 'Parsed compose must define postgres');
+    assert.ok(parsed.services.backend, 'Parsed compose must define backend');
+    assert.ok(parsed.services.frontend, 'Parsed compose must define frontend');
   });
 });

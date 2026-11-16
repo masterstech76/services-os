@@ -25,7 +25,11 @@ import {
   Eye, 
   Sparkles,
   ArrowRight,
-  Plus
+  Plus,
+  AlertTriangle,
+  RefreshCw,
+  DollarSign,
+  ShieldCheck
 } from 'lucide-react';
 
 export const Page01MainDashboard: React.FC = () => {
@@ -33,17 +37,30 @@ export const Page01MainDashboard: React.FC = () => {
   const [performanceCycle, setPerformanceCycle] = useState<'weekly' | 'monthly'>('weekly');
   const [timeRange, setTimeRange] = useState<string>('Last 30 Days');
   const [serverMetrics, setServerMetrics] = useState<any>(null);
+  const [metricsLoading, setMetricsLoading] = useState<boolean>(true);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   // Load authoritative financial metrics from Fastify backend (WEB-01)
   useEffect(() => {
     let isMounted = true;
+    setMetricsLoading(true);
+    setMetricsError(null);
     apiClient.getFinancialOverview()
       .then(res => {
-        if (isMounted && res.success && res.data) {
+        if (!isMounted) return;
+        if (res.success && res.data) {
           setServerMetrics(res.data);
+          setMetricsError(null);
+        } else {
+          setMetricsError(res.error?.message || 'Server financial metrics unavailable');
         }
+        setMetricsLoading(false);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (!isMounted) return;
+        setMetricsError(err?.message || 'Failed to connect to financial metrics API');
+        setMetricsLoading(false);
+      });
     return () => { isMounted = false; };
   }, [timeRange]);
 
@@ -73,13 +90,17 @@ export const Page01MainDashboard: React.FC = () => {
   }, [bookings, timeRange]);
 
   const paidBookings = filteredBookings.filter(b => b.paymentStatus === 'Paid');
-  const totalJobs = serverMetrics?.totalInvoicesCount ? Number(serverMetrics.totalInvoicesCount) : filteredBookings.length;
-  const completedJobs = serverMetrics?.paidInvoicesCount ? Number(serverMetrics.paidInvoicesCount) : filteredBookings.filter(b => b.status === 'Completed').length;
+  const totalJobs = serverMetrics?.totalInvoicesCount 
+    ? Number(serverMetrics.totalInvoicesCount) 
+    : filteredBookings.length;
+  const completedJobs = serverMetrics?.paidInvoicesCount 
+    ? Number(serverMetrics.paidInvoicesCount) 
+    : filteredBookings.filter(b => b.status === 'Completed').length;
   const inProgressJobs = filteredBookings.filter(b => b.status === 'In Progress').length;
   const scheduledJobs = filteredBookings.filter(b => b.status === 'Scheduled').length;
   const grossRevenue = serverMetrics?.grossVolumeCents 
     ? (Number(serverMetrics.grossVolumeCents) / 100) 
-    : paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0);
+    : (metricsError ? paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0) : 0);
   const settledRevenue = serverMetrics?.settledVolumeCents
     ? (Number(serverMetrics.settledVolumeCents) / 100)
     : grossRevenue;
@@ -174,6 +195,45 @@ export const Page01MainDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Financial Metrics Live Authority Banner */}
+      {metricsLoading && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl text-xs text-blue-700 font-medium">
+          <RefreshCw className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
+          <span>Synchronizing authoritative financial ledger and revenue metrics from Fastify API...</span>
+        </div>
+      )}
+
+      {metricsError && (
+        <div className="flex items-center justify-between p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Metrics unavailable:</strong> {metricsError}. Retaining local estimates under fallback warning.
+            </span>
+          </div>
+          <button
+            onClick={() => setTimeRange(timeRange)}
+            className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg transition-colors cursor-pointer text-[11px]"
+          >
+            Retry Sync
+          </button>
+        </div>
+      )}
+
+      {!metricsLoading && !metricsError && serverMetrics && (
+        <div className="flex items-center justify-between p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl text-xs text-emerald-900 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              <strong>Server Verified Metrics Active:</strong> Double-entry ledger verified Gross Volume: <strong>${grossRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> | Settled: <strong>${settledRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</strong>
+            </span>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+            Authoritative Fastify
+          </span>
+        </div>
+      )}
 
       {/* 2. 4-KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

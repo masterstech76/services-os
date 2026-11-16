@@ -43,7 +43,11 @@ export const TurnstileWidget: React.FC<TurnstileWidgetProps> = ({
 
   const siteKey =
     (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ||
-    CLOUDFLARE_TEST_SITEKEY;
+    (import.meta.env.DEV ? CLOUDFLARE_TEST_SITEKEY : '');
+
+  if (import.meta.env.PROD && !siteKey) {
+    throw new Error('Missing VITE_TURNSTILE_SITE_KEY for production');
+  }
 
   useEffect(() => {
     let isMounted = true;
