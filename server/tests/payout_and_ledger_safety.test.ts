@@ -23,10 +23,10 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
       'Payout query must reference tenants.default_platform_commission_bps via tenant join'
     );
 
-    // Verify provider row is locked FOR UPDATE
-    assert.ok(
-      financesFile.includes('FROM provider_profiles\n           WHERE user_id = $1 AND tenant_id = $2\n           FOR UPDATE') ||
-      financesFile.includes('WHERE user_id = $1 AND tenant_id = $2\n           FOR UPDATE'),
+    // Verify provider row is locked FOR UPDATE (cross-platform regex)
+    assert.match(
+      financesFile,
+      /WHERE\s+user_id\s*=\s*\$1\s+AND\s+tenant_id\s*=\s*\$2\s+FOR\s+UPDATE/,
       'Provider profile must be locked FOR UPDATE to prevent concurrent double-payouts'
     );
   });
