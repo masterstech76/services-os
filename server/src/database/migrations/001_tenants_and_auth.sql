@@ -130,6 +130,7 @@ INSERT INTO permissions (id, domain, description) VALUES
     ('crm:customers:manage', 'crm', 'Manage customer profiles and courtesy credits'),
     ('crm:technicians:manage', 'crm', 'Manage technician roster, licenses and compliance'),
     ('crm:staff:manage', 'crm', 'Manage staff dispatchers and assigned shifts'),
+    ('support:manage', 'support', 'Manage customer support tickets and resolution'),
     ('system:installer:configure', 'system', 'Execute initial turnkey setup wizard'),
     ('system:settings:update', 'system', 'Update tenant branding, CMS and integrations')
 ON CONFLICT (id) DO NOTHING;
@@ -148,6 +149,7 @@ INSERT INTO role_permissions (role, permission_id) VALUES
     ('ADMIN', 'crm:customers:manage'),
     ('ADMIN', 'crm:technicians:manage'),
     ('ADMIN', 'crm:staff:manage'),
+    ('ADMIN', 'support:manage'),
     ('ADMIN', 'system:installer:configure'),
     ('ADMIN', 'system:settings:update'),
     -- Staff: Dispatch Operations
@@ -159,6 +161,7 @@ INSERT INTO role_permissions (role, permission_id) VALUES
     ('STAFF', 'dispatch:reassign:manual'),
     ('STAFF', 'crm:customers:manage'),
     ('STAFF', 'crm:technicians:manage'),
+    ('STAFF', 'support:manage'),
     -- Technician: Field Work Orders
     ('TECHNICIAN', 'booking:view:assigned'),
     ('TECHNICIAN', 'dispatch:offer:accept'),

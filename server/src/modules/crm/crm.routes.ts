@@ -44,7 +44,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
 
   // 1. List Customers (Admin/Staff)
   fastify.get('/customers', {
-    preHandler: [requirePermission('manage:customers')],
+    preHandler: [requirePermission('crm:customers:manage')],
     schema: {
       tags: ['CRM & Customers'],
       summary: 'List tenant customers with metrics and pagination',
@@ -75,7 +75,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
         c.user_id as id,
         c.full_name as "fullName",
         u.email,
-        u.phone_number as "phoneNumber",
+        u.phone as "phoneNumber",
         c.default_address_text as "defaultAddress",
         c.courtesy_credit_cents as "courtesyCreditCents",
         c.created_at as "createdAt",
@@ -91,12 +91,12 @@ export async function crmRoutes(fastify: FastifyInstance) {
     const params: any[] = [tenantId];
     if (search) {
       params.push(`%${search}%`);
-      countQuery += ` AND (c.full_name ILIKE $2 OR u.email ILIKE $2 OR u.phone_number ILIKE $2)`;
-      dataQuery += ` AND (c.full_name ILIKE $2 OR u.email ILIKE $2 OR u.phone_number ILIKE $2)`;
+      countQuery += ` AND (c.full_name ILIKE $2 OR u.email ILIKE $2 OR u.phone ILIKE $2)`;
+      dataQuery += ` AND (c.full_name ILIKE $2 OR u.email ILIKE $2 OR u.phone ILIKE $2)`;
     }
 
     dataQuery += `
-      GROUP BY c.user_id, c.full_name, u.email, u.phone_number, c.default_address_text, c.courtesy_credit_cents, c.created_at
+      GROUP BY c.user_id, c.full_name, u.email, u.phone, c.default_address_text, c.courtesy_credit_cents, c.created_at
       ORDER BY c.created_at DESC
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
@@ -120,7 +120,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
 
   // 2. Customer Dossier Detail
   fastify.get('/customers/:id', {
-    preHandler: [requirePermission('manage:customers')],
+    preHandler: [requirePermission('crm:customers:manage')],
     schema: {
       tags: ['CRM & Customers'],
       summary: 'Get 360-degree customer dossier',
@@ -136,7 +136,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
         c.user_id as id,
         c.full_name as "fullName",
         u.email,
-        u.phone_number as "phoneNumber",
+        u.phone as "phoneNumber",
         c.default_address_text as "defaultAddress",
         c.courtesy_credit_cents as "courtesyCreditCents",
         c.stripe_customer_id as "stripeCustomerId",
@@ -197,7 +197,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
 
   // 3. List Technicians (Admin/Staff)
   fastify.get('/technicians', {
-    preHandler: [requirePermission('manage:providers')],
+    preHandler: [requirePermission('crm:technicians:manage')],
     schema: {
       tags: ['CRM & Technicians'],
       summary: 'List tenant technicians with live duty status and metrics',
@@ -229,7 +229,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
         p.user_id as id,
         p.full_name as "fullName",
         u.email,
-        u.phone_number as "phoneNumber",
+        u.phone as "phoneNumber",
         p.trade_category as "tradeCategory",
         p.license_number as "licenseNumber",
         p.is_verified as "isVerified",
@@ -276,7 +276,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
     }
 
     dataQuery += `
-      GROUP BY p.user_id, p.full_name, u.email, u.phone_number, p.trade_category, p.license_number,
+      GROUP BY p.user_id, p.full_name, u.email, u.phone, p.trade_category, p.license_number,
                p.is_verified, p.verified_at, p.hourly_rate_cents, p.vehicle_make_model, p.vehicle_license_plate,
                pl.duty_status, pl.last_ping_at, pl.location
       ORDER BY p.is_verified DESC, p.created_at DESC
@@ -302,7 +302,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
 
   // 4. Technician Dossier Detail
   fastify.get('/technicians/:id', {
-    preHandler: [requirePermission('manage:providers')],
+    preHandler: [requirePermission('crm:technicians:manage')],
     schema: {
       tags: ['CRM & Technicians'],
       summary: 'Get technician profile dossier, vehicle, payout status and history',
@@ -318,7 +318,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
         p.user_id as id,
         p.full_name as "fullName",
         u.email,
-        u.phone_number as "phoneNumber",
+        u.phone as "phoneNumber",
         p.trade_category as "tradeCategory",
         p.license_number as "licenseNumber",
         p.is_verified as "isVerified",
@@ -382,7 +382,7 @@ export async function crmRoutes(fastify: FastifyInstance) {
 
   // 5. Verify / Unverify Technician (Admin Only)
   fastify.patch('/technicians/:id/verify', {
-    preHandler: [requirePermission('manage:providers')],
+    preHandler: [requirePermission('crm:technicians:manage')],
     schema: {
       tags: ['CRM & Technicians'],
       summary: 'Toggle verification status for technician compliance',

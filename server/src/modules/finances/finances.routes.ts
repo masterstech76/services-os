@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import Stripe from 'stripe';
 import { pool } from '../../database/pool.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate, requirePermission } from '../../middleware/rbac.js';
@@ -18,24 +19,43 @@ const payoutTriggerSchema = z.object({
 });
 
 export async function financeRoutes(fastify: FastifyInstance) {
-  // Public Inbound Stripe Webhook (Idempotent Event Processing)
+  // Public Inbound Stripe Webhook (Idempotent Event Processing & HMAC Signature Verification)
   fastify.post('/webhooks/stripe', {
     schema: {
       tags: ['Finances & Ledger'],
-      summary: 'Inbound Stripe webhook listener with idempotency verification',
+      summary: 'Inbound Stripe webhook listener with idempotency verification and signature verification',
     }
   }, async (request, reply) => {
     const requestId = request.id || `req_${Date.now()}`;
-    const payload = request.body as any;
+    const sig = request.headers['stripe-signature'] as string;
+    let event: any = request.body;
 
-    if (!payload || !payload.id || !payload.type) {
+    // Verify HMAC signature when STRIPE_WEBHOOK_SECRET is configured
+    if (env.STRIPE_WEBHOOK_SECRET) {
+      if (!sig) {
+        return reply.status(400).send(
+          errorResponse('MISSING_STRIPE_SIGNATURE', 'Missing Stripe signature header.', requestId)
+        );
+      }
+      try {
+        const stripe = new Stripe(env.STRIPE_SECRET_KEY || '');
+        const rawPayload = (request as any).rawBody || JSON.stringify(request.body);
+        event = stripe.webhooks.constructEvent(rawPayload, sig, env.STRIPE_WEBHOOK_SECRET);
+      } catch (sigErr: any) {
+        return reply.status(400).send(
+          errorResponse('INVALID_STRIPE_SIGNATURE', `Signature verification failed: ${sigErr.message}`, requestId)
+        );
+      }
+    }
+
+    if (!event || !event.id || !event.type) {
       return reply.status(400).send(
         errorResponse('INVALID_PAYLOAD', 'Missing Stripe event payload or id', requestId)
       );
     }
 
-    const eventId = payload.id;
-    const eventType = payload.type;
+    const eventId = event.id;
+    const eventType = event.type;
 
     // 1. Idempotency Check
     const existing = await pool.query(
@@ -50,7 +70,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
 
     // 2. Process Known Events
     if (eventType === 'payment_intent.succeeded') {
-      const paymentIntent = payload.data?.object;
+      const paymentIntent = event.data?.object;
       if (paymentIntent?.id) {
         await pool.query(
           `UPDATE payment_transactions 
@@ -60,7 +80,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
         );
       }
     } else if (eventType === 'charge.refunded') {
-      const charge = payload.data?.object;
+      const charge = event.data?.object;
       if (charge?.payment_intent) {
         await pool.query(
           `UPDATE payment_transactions 
@@ -75,7 +95,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
     await pool.query(
       `INSERT INTO webhook_events (id, provider, event_type, processed_at, payload)
        VALUES ($1, 'stripe', $2, NOW(), $3)`,
-      [eventId, eventType, JSON.stringify(payload)]
+      [eventId, eventType, JSON.stringify(event)]
     );
 
     return reply.status(200).send({ received: true });
@@ -84,7 +104,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
   // Protected Routes Group
   fastify.register(async (protectedRoutes) => {
     protectedRoutes.addHook('preHandler', authenticate);
-    protectedRoutes.addHook('preHandler', requirePermission('view:finances'));
+    protectedRoutes.addHook('preHandler', requirePermission('finance:dashboard:view'));
 
     // 1. Executive Financial Metrics Overview
     protectedRoutes.get('/overview', {
@@ -322,7 +342,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
 
     // 5. Trigger Provider Payout (Stripe Connect Express Transfer)
     protectedRoutes.post('/payouts', {
-      preHandler: [requirePermission('manage:finances')],
+      preHandler: [requirePermission('finance:payout:execute')],
       schema: {
         tags: ['Finances & Ledger'],
         summary: 'Initiate provider payout transfer with double-entry ledger posting',
@@ -361,7 +381,46 @@ export async function financeRoutes(fastify: FastifyInstance) {
         }
 
         const provider = provRes.rows[0];
-        const transferRef = `tr_sim_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+        // Fail closed in production if Stripe is not configured
+        if (!env.STRIPE_SECRET_KEY) {
+          if (process.env.NODE_ENV === 'production') {
+            await client.query('ROLLBACK');
+            return reply.status(422).send(
+              errorResponse('PAYMENT_GATEWAY_NOT_CONFIGURED', 'Live Stripe payout gateway is not configured on this server.', requestId)
+            );
+          }
+        }
+
+        // Real Stripe Connect Transfer when gateway configured
+        let transferRef: string;
+        if (env.STRIPE_SECRET_KEY) {
+          if (!provider.stripe_connect_account_id) {
+            await client.query('ROLLBACK');
+            return reply.status(422).send(
+              errorResponse('PROVIDER_PAYOUT_NOT_CONFIGURED', 'Technician does not have a linked Stripe Connect payout account.', requestId)
+            );
+          }
+
+          try {
+            const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+            const transfer = await stripe.transfers.create({
+              amount: amountCents,
+              currency: 'usd',
+              destination: provider.stripe_connect_account_id,
+              description: description || `Provider payout to ${provider.full_name}`
+            });
+            transferRef = transfer.id;
+          } catch (stripeErr: any) {
+            await client.query('ROLLBACK');
+            return reply.status(502).send(
+              errorResponse('STRIPE_TRANSFER_FAILED', `Stripe Connect payout transfer failed: ${stripeErr.message}`, requestId)
+            );
+          }
+        } else {
+          // Dev sandbox reference only when keys omitted in test mode
+          transferRef = `tr_sandbox_unsettled_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        }
 
         // Create provider payout record
         const payoutRes = await client.query(

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import { apiClient } from '../../services/apiClient';
 import { downloadCSV } from '../../utils/exportUtils';
 import { 
   DollarSign, 
@@ -56,15 +57,38 @@ export const Page29TechnicianPayouts: React.FC = () => {
   const totalReadyPlatformTake = totalReadyGross * (commissionRate / 100);
   const totalReadyNet = totalReadyGross - totalReadyPlatformTake;
 
-  const handleReleaseBatch = () => {
-    const ids = readyPayouts.map(p => p.id);
-    setDisbursedIds(prev => [...prev, ...ids]);
-    addToast(`Successfully disbursed $${totalReadyNet.toFixed(2)} to ${readyPayouts.length} technicians via Stripe Connect!`, 'success');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleReleaseBatch = async () => {
+    setIsProcessing(true);
+    try {
+      for (const p of readyPayouts) {
+        const net = p.grossAmount * (techSplit / 100);
+        const amountCents = Math.round(net * 100);
+        await apiClient.triggerPayout(p.id, amountCents, `Batch payout to ${p.technicianName}`);
+      }
+      const ids = readyPayouts.map(p => p.id);
+      setDisbursedIds(prev => [...prev, ...ids]);
+      addToast(`Successfully disbursed $${totalReadyNet.toFixed(2)} to ${readyPayouts.length} technicians via Stripe Connect!`, 'success');
+    } catch (err: any) {
+      addToast(err?.message || 'Failed executing batch disbursals via payment gateway', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleDisburseSingle = (id: string, name: string, net: number) => {
-    setDisbursedIds(prev => [...prev, id]);
-    addToast(`Disbursed $${net.toFixed(2)} to ${name} via Stripe Connect ACH.`, 'success');
+  const handleDisburseSingle = async (id: string, name: string, net: number) => {
+    setIsProcessing(true);
+    try {
+      const amountCents = Math.round(net * 100);
+      await apiClient.triggerPayout(id, amountCents, `Weekly disbursal to ${name}`);
+      setDisbursedIds(prev => [...prev, id]);
+      addToast(`Disbursed $${net.toFixed(2)} to ${name} via Stripe Connect ACH.`, 'success');
+    } catch (err: any) {
+      addToast(err?.message || `Failed to disburse payout to ${name}`, 'error');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

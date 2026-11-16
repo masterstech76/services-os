@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import Stripe from 'stripe';
 import { pool } from '../../database/pool.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate } from '../../middleware/rbac.js';
+import { env } from '../../config/env.js';
 
 const createBookingSchema = z.object({
   serviceId: z.string().uuid(),
@@ -137,13 +139,43 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       );
 
       // H. Create Pre-Auth Payment Transaction Record
-      const dummyStripeIntentId = `pi_sim_${Date.now()}_${randomSuffix}`;
+      let stripeIntentId: string;
+      if (env.STRIPE_SECRET_KEY) {
+        try {
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: totalAmountCents,
+            currency: 'usd',
+            capture_method: 'manual', // Hold funds in escrow until completion
+            metadata: {
+              tenantId,
+              bookingRef,
+              customerId: userId,
+            }
+          });
+          stripeIntentId = paymentIntent.id;
+        } catch (stripeErr: any) {
+          await client.query('ROLLBACK');
+          return reply.status(502).send(
+            errorResponse('STRIPE_PREAUTH_FAILED', `Stripe pre-authorization hold failed: ${stripeErr.message}`, requestId)
+          );
+        }
+      } else {
+        if (process.env.NODE_ENV === 'production') {
+          await client.query('ROLLBACK');
+          return reply.status(422).send(
+            errorResponse('PAYMENT_GATEWAY_NOT_CONFIGURED', 'Live payment gateway (Stripe) is not configured on this server.', requestId)
+          );
+        }
+        stripeIntentId = `pi_sandbox_unsettled_${Date.now()}_${randomSuffix}`;
+      }
+
       await client.query(
         `INSERT INTO payment_transactions (
           tenant_id, invoice_id, stripe_payment_intent_id, idempotency_key,
           authorized_amount_cents, transaction_type, status
         ) VALUES ($1, $2, $3, $4, $5, 'PRE_AUTH', 'REQUIRES_CAPTURE')`,
-        [tenantId, invoiceId, dummyStripeIntentId, `idem_${booking.id}`, totalAmountCents]
+        [tenantId, invoiceId, stripeIntentId, `idem_${booking.id}`, totalAmountCents]
       );
 
       // I. Record Initial Timeline Audit Event
@@ -260,8 +292,20 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
     const res = await pool.query(queryText, params);
 
+    // Sanitize safety PIN: Customers can only see their own PIN; technicians and others do not receive it in list
+    const sanitizedRows = res.rows.map((row: any) => {
+      if (userRole === 'CUSTOMER' && row.customer_id === userId) {
+        return row;
+      }
+      if (userRole === 'ADMIN') {
+        return row;
+      }
+      const { customer_safety_pin, ...rest } = row;
+      return rest;
+    });
+
     return reply.status(200).send(
-      successResponse(res.rows, requestId, {
+      successResponse(sanitizedRows, requestId, {
         page: Number(page),
         limit: Number(limit),
         totalRecords,
@@ -281,6 +325,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
     const requestId = request.id || `req_${Date.now()}`;
     const { id } = request.params as any;
     const tenantId = request.tenantId;
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
 
     const bRes = await pool.query(
       `SELECT b.*, s.name as service_name, s.description as service_desc,
@@ -309,6 +355,23 @@ export async function bookingRoutes(fastify: FastifyInstance) {
     }
 
     const booking = bRes.rows[0];
+
+    // Ownership Authorization: Admin/Staff can view all; Customer only their own; Tech only if assigned
+    const isOwner = userRole === 'ADMIN' ||
+                    userRole === 'STAFF' ||
+                    (userRole === 'CUSTOMER' && booking.customer_id === userId) ||
+                    (userRole === 'TECHNICIAN' && booking.assigned_provider_id === userId);
+
+    if (!isOwner) {
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'You do not have permission to view this booking.', requestId)
+      );
+    }
+
+    // Mask Safety PIN: Only the customer who owns the booking (or ADMIN) should see it
+    if (userRole !== 'CUSTOMER' && userRole !== 'ADMIN') {
+      delete booking.customer_safety_pin;
+    }
 
     // Fetch Timeline Events
     const tlRes = await pool.query(
@@ -366,9 +429,11 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
     const { safetyPin } = parsed.data;
     const tenantId = request.tenantId;
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
 
     const bRes = await pool.query(
-      'SELECT id, customer_safety_pin, status FROM bookings WHERE id = $1 AND tenant_id = $2',
+      'SELECT id, customer_safety_pin, status, assigned_provider_id FROM bookings WHERE id = $1 AND tenant_id = $2',
       [id, tenantId]
     );
 
@@ -379,6 +444,35 @@ export async function bookingRoutes(fastify: FastifyInstance) {
     }
 
     const booking = bRes.rows[0];
+
+    // Authorization: Must be assigned technician, ADMIN, or STAFF
+    if (userRole === 'TECHNICIAN' && booking.assigned_provider_id !== userId) {
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'You are not the assigned provider for this booking.', requestId)
+      );
+    }
+    if (userRole === 'CUSTOMER') {
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'Only assigned technicians or dispatchers can verify arrival.', requestId)
+      );
+    }
+
+    // State check: cannot verify arrival if already cancelled or completed
+    const validPreArrivalStatuses = ['CONFIRMED', 'ASSIGNED', 'SCHEDULED', 'DISPATCHED', 'EN_ROUTE'];
+    if (booking.status === 'ON_SITE') {
+      return reply.status(200).send(
+        successResponse({
+          verified: true,
+          status: 'ON_SITE',
+          verifiedAt: new Date().toISOString()
+        }, requestId)
+      );
+    }
+    if (!validPreArrivalStatuses.includes(booking.status)) {
+      return reply.status(400).send(
+        errorResponse('INVALID_STATE', `Cannot verify arrival for booking in ${booking.status} status.`, requestId)
+      );
+    }
 
     if (booking.customer_safety_pin !== safetyPin) {
       return reply.status(400).send(
@@ -399,7 +493,7 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       `INSERT INTO booking_timeline_events (
         booking_id, tenant_id, from_status, to_status, actor_id, event_title, event_details
       ) VALUES ($1, $2, $3, 'ON_SITE', $4, 'On-Site Arrival & PIN Verified', 'Customer confirmed presence via safety PIN verification.')`,
-      [id, tenantId, booking.status, request.user!.id]
+      [id, tenantId, booking.status, userId]
     );
 
     return reply.status(200).send(
@@ -431,6 +525,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
     const { beforePhotos, afterPhotos, customerSignatureUrl, workSummaryNotes } = parsed.data;
     const tenantId = request.tenantId;
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
 
     const client = await pool.connect();
     try {
@@ -455,10 +551,32 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       const booking = bRes.rows[0];
 
-      // A. Save Work Order Proofs & Signatures
+      // Authorization: Must be assigned technician, ADMIN, or STAFF
+      if (userRole === 'TECHNICIAN' && booking.assigned_provider_id !== userId) {
+        await client.query('ROLLBACK');
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'You are not the assigned provider for this work order.', requestId)
+        );
+      }
+      if (userRole === 'CUSTOMER') {
+        await client.query('ROLLBACK');
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'Customers cannot sign-off provider work orders directly.', requestId)
+        );
+      }
+
+      // State check: Must be in ON_SITE status to complete work order
+      if (booking.status !== 'ON_SITE') {
+        await client.query('ROLLBACK');
+        return reply.status(400).send(
+          errorResponse('INVALID_STATE', `Work order must be in ON_SITE status to complete (current status: ${booking.status}).`, requestId)
+        );
+      }
+
+      // A. Save Work Order Proofs & Signatures (using canonical column name work_summary_notes)
       await client.query(
         `INSERT INTO work_order_proofs (
-          booking_id, before_photos_urls, after_photos_urls, customer_signature_url, workSummaryNotes
+          booking_id, before_photos_urls, after_photos_urls, customer_signature_url, work_summary_notes
         ) VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (booking_id) DO UPDATE SET
           before_photos_urls = EXCLUDED.before_photos_urls,
@@ -474,8 +592,26 @@ export async function bookingRoutes(fastify: FastifyInstance) {
         [id]
       );
 
-      // C. Capture Invoice Payment
+      // C. Capture Invoice Payment & Release Escrow Hold
       if (booking.invoice_id) {
+        if (env.STRIPE_SECRET_KEY) {
+          const txRes = await client.query(
+            `SELECT stripe_payment_intent_id FROM payment_transactions WHERE invoice_id = $1 AND status = 'REQUIRES_CAPTURE'`,
+            [booking.invoice_id]
+          );
+          if (txRes.rows.length > 0 && txRes.rows[0].stripe_payment_intent_id.startsWith('pi_')) {
+            try {
+              const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+              await stripe.paymentIntents.capture(txRes.rows[0].stripe_payment_intent_id);
+            } catch (stripeErr: any) {
+              await client.query('ROLLBACK');
+              return reply.status(502).send(
+                errorResponse('STRIPE_CAPTURE_FAILED', `Failed capturing escrow funds with Stripe: ${stripeErr.message}`, requestId)
+              );
+            }
+          }
+        }
+
         await client.query(
           `UPDATE invoices SET status = 'PAID', paid_at = NOW() WHERE id = $1`,
           [booking.invoice_id]
@@ -542,6 +678,128 @@ export async function bookingRoutes(fastify: FastifyInstance) {
           completed: true,
           status: 'COMPLETED',
           completedAt: new Date().toISOString()
+        }, requestId)
+      );
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+
+  // 6. Cancel Booking Order
+  fastify.post('/:id/cancel', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Cancel a booking with authorization checks and escrow void/release',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        properties: {
+          reason: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const { id } = request.params as any;
+    const { reason } = (request.body as any) || {};
+    const tenantId = request.tenantId;
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const bRes = await client.query(
+        `SELECT b.id, b.status, b.customer_id, b.assigned_provider_id, i.id as invoice_id
+         FROM bookings b
+         LEFT JOIN invoices i ON i.booking_id = b.id
+         WHERE b.id = $1 AND b.tenant_id = $2
+         FOR UPDATE OF b`,
+        [id, tenantId]
+      );
+
+      if (bRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return reply.status(404).send(
+          errorResponse('BOOKING_NOT_FOUND', 'Booking record not found.', requestId)
+        );
+      }
+
+      const booking = bRes.rows[0];
+
+      // Authorization: Admin, Staff, or the customer who booked it
+      const canCancel = userRole === 'ADMIN' ||
+                        userRole === 'STAFF' ||
+                        (userRole === 'CUSTOMER' && booking.customer_id === userId);
+
+      if (!canCancel) {
+        await client.query('ROLLBACK');
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'You do not have permission to cancel this booking.', requestId)
+        );
+      }
+
+      // If already cancelled, return idempotent response
+      if (booking.status === 'CANCELLED') {
+        await client.query('COMMIT');
+        return reply.status(200).send(
+          successResponse({
+            id: booking.id,
+            status: 'CANCELLED',
+            message: 'Booking is already cancelled.'
+          }, requestId)
+        );
+      }
+
+      // Cannot cancel completed jobs
+      if (booking.status === 'COMPLETED') {
+        await client.query('ROLLBACK');
+        return reply.status(400).send(
+          errorResponse('INVALID_STATE', 'Cannot cancel an already completed work order. Open a dispute or refund request instead.', requestId)
+        );
+      }
+
+      // Update booking status
+      await client.query(
+        `UPDATE bookings SET status = 'CANCELLED', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+
+      // Void or cancel related invoice and release escrow authorization
+      if (booking.invoice_id) {
+        await client.query(
+          `UPDATE invoices SET status = 'VOID', updated_at = NOW() WHERE id = $1`,
+          [booking.invoice_id]
+        );
+
+        await client.query(
+          `UPDATE payment_transactions 
+           SET status = 'VOIDED'
+           WHERE invoice_id = $1 AND status = 'REQUIRES_CAPTURE'`,
+          [booking.invoice_id]
+        );
+      }
+
+      // Record timeline audit event
+      const cancellationReason = reason ? `Cancellation reason: ${reason}` : 'Cancelled by customer / admin.';
+      await client.query(
+        `INSERT INTO booking_timeline_events (
+          booking_id, tenant_id, from_status, to_status, actor_id, event_title, event_details
+        ) VALUES ($1, $2, $3, 'CANCELLED', $4, 'Booking Cancelled', $5)`,
+        [id, tenantId, booking.status, userId, cancellationReason]
+      );
+
+      await client.query('COMMIT');
+
+      return reply.status(200).send(
+        successResponse({
+          id,
+          status: 'CANCELLED',
+          cancelledAt: new Date().toISOString()
         }, requestId)
       );
     } catch (err: any) {

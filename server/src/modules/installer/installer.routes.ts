@@ -11,15 +11,19 @@ const testDbSchema = z.object({
 });
 
 const provisionSchema = z.object({
-  provisioningToken: z.string().min(8),
-  companyName: z.string().min(2).max(255),
+  provisioningToken: z.string().min(8).optional(),
+  bootstrapToken: z.string().min(8).optional(),
+  companyName: z.string().min(2).max(255).optional(),
+  tenantName: z.string().min(2).max(255).optional(),
+  subdomain: z.string().optional(),
   adminEmail: z.string().email(),
   adminPassword: z.string().min(8).max(100),
   adminFullName: z.string().min(2).max(255),
   currencyCode: z.string().length(3).default('USD'),
   currencySymbol: z.string().min(1).max(5).default('$'),
   timezone: z.string().default('UTC'),
-  platformCommissionPercent: z.number().min(0).max(100).default(15),
+  platformCommissionPercent: z.number().min(0).max(100).optional(),
+  defaultPlatformCommissionBps: z.number().min(0).max(10000).optional(),
   primaryBrandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#6366F1'),
 });
 
@@ -66,16 +70,27 @@ export async function installerRoutes(fastify: FastifyInstance) {
     }
 
     const data = parsed.data;
+    const effectiveCompanyName = data.companyName || data.tenantName || 'ServicePro Org';
+    const effectiveToken = request.headers['x-bootstrap-token'] as string || data.bootstrapToken || data.provisioningToken;
 
     // A. Verify Provisioning Token
-    const providedToken = request.headers['x-bootstrap-token'] as string || data.provisioningToken;
-    if (providedToken !== env.INITIAL_ADMIN_BOOTSTRAP_SECRET) {
+    if (!effectiveToken || effectiveToken !== env.INITIAL_ADMIN_BOOTSTRAP_SECRET) {
       return reply.status(401).send(
         errorResponse('INVALID_BOOTSTRAP_TOKEN', 'The provided setup authorization token is invalid.', requestId)
       );
     }
 
-    // B. Security Guard: Prevent Re-provisioning if already completed
+    // B. Execute Database Migrations FIRST so tables exist on clean databases
+    try {
+      await migrateUp();
+    } catch (migErr: any) {
+      request.log.error(migErr);
+      return reply.status(500).send(
+        errorResponse('MIGRATION_ERROR', `Failed applying database migrations: ${migErr.message}`, requestId)
+      );
+    }
+
+    // C. Security Guard: Prevent Re-provisioning if already completed
     const existingInstalled = await pool.query(
       'SELECT id FROM tenants WHERE installer_completed_at IS NOT NULL LIMIT 1'
     );
@@ -85,15 +100,14 @@ export async function installerRoutes(fastify: FastifyInstance) {
       );
     }
 
-    // C. Execute Database Migrations
-    await migrateUp();
-
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      const slug = data.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 50);
-      const commissionBps = Math.round(data.platformCommissionPercent * 100);
+      const slug = (data.subdomain || effectiveCompanyName).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').slice(0, 50);
+      const commissionBps = data.defaultPlatformCommissionBps !== undefined
+        ? data.defaultPlatformCommissionBps
+        : Math.round((data.platformCommissionPercent || 15) * 100);
 
       // D. Create Buyer Organization / Tenant
       const tenantRes = await client.query(
@@ -103,7 +117,7 @@ export async function installerRoutes(fastify: FastifyInstance) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         RETURNING id`,
         [
-          data.companyName,
+          effectiveCompanyName,
           slug,
           data.primaryBrandColor,
           data.currencyCode.toUpperCase(),
@@ -157,9 +171,9 @@ export async function installerRoutes(fastify: FastifyInstance) {
          VALUES ($1, $2, $3, $4)`,
         [
           tenantId,
-          `${data.companyName} — Your Service, Our Priority`,
+          `${effectiveCompanyName} — Your Service, Our Priority`,
           `Book certified, on-demand home service professionals with upfront pricing and escrow guarantee.`,
-          `Search services from ${data.companyName}...`
+          `Search services from ${effectiveCompanyName}...`
         ]
       );
 
@@ -195,7 +209,7 @@ export async function installerRoutes(fastify: FastifyInstance) {
           provisioned: true,
           tenant: {
             id: tenantId,
-            name: data.companyName,
+            name: effectiveCompanyName,
             slug,
             currencyCode: data.currencyCode,
             currencySymbol: data.currencySymbol
@@ -206,7 +220,8 @@ export async function installerRoutes(fastify: FastifyInstance) {
             fullName: data.adminFullName,
             role: 'ADMIN'
           },
-          accessToken
+          accessToken,
+          refreshToken
         }, requestId)
       );
     } catch (err: any) {

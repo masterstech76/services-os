@@ -2,6 +2,8 @@ package com.serviceos.app.data.network
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -13,7 +15,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object ApiClient {
-    private const val PREFS_NAME = "serviceos_api_prefs"
+    private const val PREFS_NAME = "serviceos_secure_prefs"
     private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_TENANT_ID = "tenant_id"
@@ -26,7 +28,20 @@ object ApiClient {
     @Synchronized
     fun init(context: Context, customBaseUrl: String? = null) {
         if (prefs == null) {
-            prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs = try {
+                val masterKey = MasterKey.Builder(context.applicationContext)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                EncryptedSharedPreferences.create(
+                    context.applicationContext,
+                    PREFS_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (e: Exception) {
+                context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            }
         }
         if (!customBaseUrl.isNullOrBlank()) {
             baseUrl = customBaseUrl.trimEnd('/')

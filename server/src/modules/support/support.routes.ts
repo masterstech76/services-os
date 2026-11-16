@@ -244,6 +244,15 @@ export async function supportRoutes(fastify: FastifyInstance) {
       );
     }
 
+    // Enforce ownership: Customers can only view their own tickets
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
+    if (userRole === 'CUSTOMER' && ticketRes.rows[0].customerId !== userId) {
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'You do not have permission to view this ticket.', requestId)
+      );
+    }
+
     const messagesRes = await pool.query(
       `SELECT 
         tm.id,
@@ -288,15 +297,23 @@ export async function supportRoutes(fastify: FastifyInstance) {
       );
     }
 
-    // Verify ticket exists
+    // Verify ticket exists and belongs to tenant
     const tCheck = await pool.query(
-      `SELECT id FROM support_tickets WHERE id = $1 AND tenant_id = $2`,
+      `SELECT id, customer_id FROM support_tickets WHERE id = $1 AND tenant_id = $2`,
       [ticketId, tenantId]
     );
 
     if (tCheck.rowCount === 0) {
       return reply.status(404).send(
         errorResponse('NOT_FOUND', 'Support ticket not found', requestId)
+      );
+    }
+
+    // Enforce ownership: Customers can only post replies to their own tickets
+    const userRole = request.user!.role;
+    if (userRole === 'CUSTOMER' && tCheck.rows[0].customer_id !== userId) {
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'You do not have permission to post to this ticket.', requestId)
       );
     }
 
@@ -322,7 +339,7 @@ export async function supportRoutes(fastify: FastifyInstance) {
 
   // 5. Update Ticket Status & Assignment (Admin/Staff)
   fastify.patch('/tickets/:id/status', {
-    preHandler: [requirePermission('manage:support')],
+    preHandler: [requirePermission('support:manage')],
     schema: {
       tags: ['Support Desk & CRM'],
       summary: 'Update ticket resolution status or assigned agent',
@@ -489,7 +506,7 @@ export async function supportRoutes(fastify: FastifyInstance) {
 
   // 8. Moderate Review (Admin)
   fastify.patch('/reviews/:id/moderate', {
-    preHandler: [requirePermission('manage:support')],
+    preHandler: [requirePermission('support:manage')],
     schema: {
       tags: ['Support Desk & CRM'],
       summary: 'Admin review moderation toggle',
@@ -569,7 +586,7 @@ export async function supportRoutes(fastify: FastifyInstance) {
 
   // 10. Update Tenant CMS Configs (Admin)
   fastify.put('/settings/cms', {
-    preHandler: [requirePermission('manage:settings')],
+    preHandler: [requirePermission('system:settings:update')],
     schema: {
       tags: ['Tenant CMS & Config'],
       summary: 'Update tenant white-label CMS marketing text and promos',

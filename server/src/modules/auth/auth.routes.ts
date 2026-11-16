@@ -64,6 +64,13 @@ export async function authRoutes(fastify: FastifyInstance) {
 
     const user = userRes.rows[0];
 
+    // Check account active state
+    if (!user.is_active) {
+      return reply.status(403).send(
+        errorResponse('ACCOUNT_INACTIVE', 'This account has been deactivated. Please contact support.', requestId)
+      );
+    }
+
     // Check account lockout
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
       return reply.status(423).send(
@@ -101,8 +108,8 @@ export async function authRoutes(fastify: FastifyInstance) {
     );
 
     if (mfaRes.rows.length > 0) {
-      // Return MFA required challenge
-      const mfaSessionToken = AuthService.generateAccessToken({
+      // Issue strictly scoped MFA challenge token (cannot be used for general API access)
+      const mfaSessionToken = AuthService.generateMfaChallengeToken({
         id: user.id,
         role: user.role,
         tenantId: user.tenant_id,
@@ -144,6 +151,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     return reply.status(200).send(
       successResponse({
         accessToken,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -174,7 +182,16 @@ export async function authRoutes(fastify: FastifyInstance) {
     const { mfaSessionToken, totpCode } = parsed.data;
 
     try {
-      const payload = AuthService.verifyAccessToken(mfaSessionToken);
+      const payload = AuthService.verifyMfaChallengeToken(mfaSessionToken);
+
+      // Verify user is active
+      const userRes = await pool.query('SELECT is_active FROM users WHERE id = $1', [payload.sub]);
+      if (userRes.rows.length === 0 || !userRes.rows[0].is_active) {
+        return reply.status(403).send(
+          errorResponse('ACCOUNT_INACTIVE', 'This account has been deactivated.', requestId)
+        );
+      }
+
       const valid = await AuthService.verifyTotpCode(payload.sub, totpCode);
 
       if (!valid) {
@@ -205,6 +222,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(200).send(
         successResponse({
           accessToken,
+          refreshToken,
           user: {
             id: payload.sub,
             email: payload.email,
@@ -216,7 +234,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       );
     } catch {
       return reply.status(401).send(
-        errorResponse('MFA_SESSION_EXPIRED', 'MFA session token expired. Please log in again.', requestId)
+        errorResponse('MFA_SESSION_EXPIRED', 'MFA session token expired or invalid. Please log in again.', requestId)
       );
     }
   });
@@ -233,7 +251,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
     if (!rawRefreshToken) {
       return reply.status(401).send(
-        errorResponse('MISSING_REFRESH_TOKEN', 'Valid refresh token session cookie required.', requestId)
+        errorResponse('MISSING_REFRESH_TOKEN', 'Valid refresh token session cookie or body required.', requestId)
       );
     }
 
@@ -258,6 +276,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     return reply.status(200).send(
       successResponse({
         accessToken: rotated.accessToken,
+        refreshToken: rotated.newRefreshToken,
         user: rotated.user,
         permissions
       }, requestId)

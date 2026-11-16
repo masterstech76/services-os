@@ -103,10 +103,38 @@ class ApiClient {
     });
 
     if (response.data['success'] == true) {
-      final tokens = response.data['data']['tokens'];
-      if (tokens != null) {
-        await _storage.write(key: 'serviceos_access_token', value: tokens['accessToken']);
-        await _storage.write(key: 'serviceos_refresh_token', value: tokens['refreshToken']);
+      final data = response.data['data'] as Map<String, dynamic>?;
+      if (data != null) {
+        final accessToken = data['accessToken'] ?? data['tokens']?['accessToken'];
+        final refreshToken = data['refreshToken'] ?? data['tokens']?['refreshToken'];
+        if (accessToken != null) {
+          await _storage.write(key: 'serviceos_access_token', value: accessToken.toString());
+        }
+        if (refreshToken != null) {
+          await _storage.write(key: 'serviceos_refresh_token', value: refreshToken.toString());
+        }
+      }
+    }
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> verifyMfa(String mfaSessionToken, String totpCode) async {
+    final response = await _dio.post('/auth/mfa/verify', data: {
+      'mfaSessionToken': mfaSessionToken,
+      'totpCode': totpCode,
+    });
+
+    if (response.data['success'] == true) {
+      final data = response.data['data'] as Map<String, dynamic>?;
+      if (data != null) {
+        final accessToken = data['accessToken'] ?? data['tokens']?['accessToken'];
+        final refreshToken = data['refreshToken'] ?? data['tokens']?['refreshToken'];
+        if (accessToken != null) {
+          await _storage.write(key: 'serviceos_access_token', value: accessToken.toString());
+        }
+        if (refreshToken != null) {
+          await _storage.write(key: 'serviceos_refresh_token', value: refreshToken.toString());
+        }
       }
     }
     return response.data;

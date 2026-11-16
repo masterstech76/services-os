@@ -14,16 +14,26 @@ export default fp(async function securityPlugin(fastify: FastifyInstance) {
     crossOriginEmbedderPolicy: false
   });
 
-  // 2. Cross-Origin Resource Sharing (CORS)
+  // 2. Strict Cross-Origin Resource Sharing (CORS)
+  const allowedOrigins = env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean);
+
   await fastify.register(cors, {
     origin: (origin, cb) => {
-      // Allow requests with no origin (like mobile apps, curl)
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return cb(null, true);
-      // In development allow localhost Vite
-      if (env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+
+      // Check strict origin whitelist
+      if (allowedOrigins.includes(origin)) {
         return cb(null, true);
       }
-      return cb(null, true); // Configurable per buyer deployment domain
+
+      // In non-production, permit local dev tooling
+      if (env.NODE_ENV !== 'production' && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+        return cb(null, true);
+      }
+
+      // Reject unauthorized origins with credentials
+      return cb(new Error('CORS request rejected: Origin not authorized'), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

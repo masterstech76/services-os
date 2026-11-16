@@ -325,7 +325,7 @@ export async function dispatchRoutes(fastify: FastifyInstance) {
 
   // 5. Emergency Dispatch Handover / Manual Reassignment (Admin/Dispatcher)
   fastify.post('/handover', {
-    preHandler: [requirePermission('manage:bookings')],
+    preHandler: [requirePermission('dispatch:reassign:manual')],
     schema: {
       tags: ['Bookings & Dispatch'],
       summary: 'Admin manual emergency technician handover / reassignment',

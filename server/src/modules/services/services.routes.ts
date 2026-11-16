@@ -87,23 +87,10 @@ export async function serviceRoutes(fastify: FastifyInstance) {
   });
 
   // 3. Query Services (with optional category & search filter)
-  fastify.get('/services', {
-    schema: {
-      tags: ['Services & Catalog'],
-      summary: 'Query service products catalog',
-      querystring: {
-        type: 'object',
-        properties: {
-          categorySlug: { type: 'string' },
-          search: { type: 'string' },
-          popularOnly: { type: 'boolean' }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  const queryServicesHandler = async (request: any, reply: any) => {
     const requestId = request.id || `req_${Date.now()}`;
     const tenantId = request.tenantId;
-    const { categorySlug, search, popularOnly } = request.query as any;
+    const { categoryId, categorySlug, search, popularOnly } = request.query as any;
 
     let queryText = `
       SELECT s.id, s.name, s.slug, s.description, s.base_price_cents,
@@ -116,7 +103,10 @@ export async function serviceRoutes(fastify: FastifyInstance) {
     const params: any[] = [tenantId];
     let paramIndex = 2;
 
-    if (categorySlug && categorySlug !== 'all') {
+    if (categoryId && categoryId !== 'all') {
+      queryText += ` AND s.category_id = $${paramIndex++}`;
+      params.push(categoryId);
+    } else if (categorySlug && categorySlug !== 'all') {
       queryText += ` AND c.slug = $${paramIndex++}`;
       params.push(categorySlug.toLowerCase());
     }
@@ -138,17 +128,29 @@ export async function serviceRoutes(fastify: FastifyInstance) {
     return reply.status(200).send(
       successResponse(res.rows, requestId)
     );
-  });
+  };
 
-  // 4. Create Service Catalog Item (Admin)
-  fastify.post('/services', {
-    preHandler: [requirePermission('system:settings:update')],
+  const servicesQuerySchema = {
     schema: {
       tags: ['Services & Catalog'],
-      summary: 'Create a new service catalog product',
-      security: [{ bearerAuth: [] }]
+      summary: 'Query service products catalog',
+      querystring: {
+        type: 'object',
+        properties: {
+          categoryId: { type: 'string' },
+          categorySlug: { type: 'string' },
+          search: { type: 'string' },
+          popularOnly: { type: 'boolean' }
+        }
+      }
     }
-  }, async (request, reply) => {
+  };
+
+  fastify.get('/', servicesQuerySchema, queryServicesHandler);
+  fastify.get('/services', servicesQuerySchema, queryServicesHandler);
+
+  // 4. Create Service Catalog Item (Admin)
+  const createServiceHandler = async (request: any, reply: any) => {
     const requestId = request.id || `req_${Date.now()}`;
     const parsed = createServiceSchema.safeParse(request.body);
 
@@ -198,5 +200,17 @@ export async function serviceRoutes(fastify: FastifyInstance) {
     } finally {
       client.release();
     }
-  });
+  };
+
+  const createServiceOpts = {
+    preHandler: [requirePermission('system:settings:update')],
+    schema: {
+      tags: ['Services & Catalog'],
+      summary: 'Create a new service catalog product',
+      security: [{ bearerAuth: [] }]
+    }
+  };
+
+  fastify.post('/', createServiceOpts, createServiceHandler);
+  fastify.post('/services', createServiceOpts, createServiceHandler);
 }

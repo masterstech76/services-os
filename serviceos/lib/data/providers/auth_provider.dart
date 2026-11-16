@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/network/api_client.dart';
 
 enum UserRole { customer, technician }
 
@@ -55,14 +56,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(phoneNumber: phone);
   }
 
-  Future<bool> verifyOtp(String code) async {
+  Future<bool> verifyOtp(String code, {String? mfaSessionToken}) async {
+    final trimmed = code.trim();
+    if (trimmed.length != 6 || int.tryParse(trimmed) == null) {
+      return false;
+    }
+
     state = state.copyWith(isLoading: true);
-    await Future.delayed(const Duration(milliseconds: 400));
-    state = state.copyWith(
-      isAuthenticated: true,
-      isLoading: false,
-    );
-    return true;
+    try {
+      if (mfaSessionToken != null && mfaSessionToken.isNotEmpty) {
+        final res = await ApiClient.instance.verifyMfa(mfaSessionToken, trimmed);
+        final success = res['success'] == true;
+        state = state.copyWith(
+          isAuthenticated: success,
+          isLoading: false,
+        );
+        return success;
+      }
+
+      state = state.copyWith(
+        isAuthenticated: true,
+        isLoading: false,
+      );
+      return true;
+    } catch (_) {
+      state = state.copyWith(
+        isAuthenticated: false,
+        isLoading: false,
+      );
+      return false;
+    }
   }
 
   void toggleBiometrics() {

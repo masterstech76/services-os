@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
     )),
     currency_code VARCHAR(3) DEFAULT 'USD' NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    CONSTRAINT uq_tenant_account_no UNIQUE (tenant_id, account_number)
+    CONSTRAINT uq_tenant_account_no UNIQUE (tenant_id, account_number),
+    CONSTRAINT uq_ledger_account_tenant UNIQUE (id, tenant_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ledger_accounts_lookup 
@@ -94,12 +95,14 @@ CREATE TABLE IF NOT EXISTS ledger_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE RESTRICT,
     transaction_id UUID REFERENCES payment_transactions(id) ON DELETE RESTRICT,
-    debit_account_id UUID NOT NULL REFERENCES ledger_accounts(id),
-    credit_account_id UUID NOT NULL REFERENCES ledger_accounts(id),
+    debit_account_id UUID NOT NULL,
+    credit_account_id UUID NOT NULL,
     amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
     description TEXT NOT NULL,
     posted_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    CONSTRAINT chk_debit_credit_different CHECK (debit_account_id <> credit_account_id)
+    CONSTRAINT chk_debit_credit_different CHECK (debit_account_id <> credit_account_id),
+    CONSTRAINT fk_ledger_debit_account_tenant FOREIGN KEY (debit_account_id, tenant_id) REFERENCES ledger_accounts(id, tenant_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_ledger_credit_account_tenant FOREIGN KEY (credit_account_id, tenant_id) REFERENCES ledger_accounts(id, tenant_id) ON DELETE RESTRICT
 );
 
 CREATE INDEX IF NOT EXISTS idx_ledger_entries_tenant_posted 
