@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../network/api_client.dart';
 
 import '../../features/onboarding/presentation/screens/splash_screen.dart';
 import '../../features/authentication/presentation/screens/login_screen.dart';
@@ -27,7 +28,19 @@ import '../../features/common/presentation/screens/common_utilities_screen.dart'
 /// Central GoRouter configuration mapping all 95 mobile views
 class AppRouter {
   static final GoRouter router = GoRouter(
-    initialLocation: '/customer/home',
+    initialLocation: '/splash',
+    redirect: (context, state) async {
+      final token = await ApiClient.instance.getAccessToken();
+      final isAuthenticated = token != null && token.isNotEmpty;
+      final isPublicRoute = state.matchedLocation == '/login' ||
+                            state.matchedLocation == '/splash' ||
+                            state.matchedLocation == '/role-gateway';
+
+      if (!isAuthenticated && !isPublicRoute) {
+        return '/login';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',

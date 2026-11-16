@@ -93,6 +93,12 @@ if (validated.NODE_ENV === 'production') {
   ) {
     throw new Error('[Security Exception] Refusing to start in production without a valid 32-byte hex APP_ENCRYPTION_KEY');
   }
+  if (validated.CAPTCHA_ENFORCED === 'true' && (!validated.CAPTCHA_SECRET_KEY || validated.CAPTCHA_SECRET_KEY.trim() === '')) {
+    throw new Error('[Security Exception] Refusing to start in production with CAPTCHA_ENFORCED=true without CAPTCHA_SECRET_KEY configured');
+  }
+  if (validated.STRIPE_SECRET_KEY && (!validated.STRIPE_WEBHOOK_SECRET || validated.STRIPE_WEBHOOK_SECRET.trim() === '')) {
+    throw new Error('[Security Exception] Refusing to start in production with STRIPE_SECRET_KEY without STRIPE_WEBHOOK_SECRET configured');
+  }
 }
 
 export const env = {

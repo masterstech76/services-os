@@ -271,6 +271,12 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // 3. MFA Setup (Initiates 2FA setup, generates secret & QR code URI)
   fastify.post('/mfa/setup', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    },
     preHandler: [authenticate],
     schema: {
       tags: ['Authentication'],
@@ -280,20 +286,41 @@ export async function authRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     const requestId = request.id || `req_${Date.now()}`;
     const user = request.user!;
+    const currentTotpCode = (request.body as any)?.currentTotpCode;
 
-    const setupData = await AuthService.setupMfa(user.id, user.email);
+    try {
+      const setupData = await AuthService.setupMfa(user.id, user.email, currentTotpCode);
 
-    return reply.status(200).send(
-      successResponse({
-        secret: setupData.secret,
-        otpAuthUrl: setupData.otpAuthUrl,
-        instructions: 'Scan the QR code or enter the secret key into Google Authenticator or 1Password, then confirm with a 6-digit code.'
-      }, requestId)
-    );
+      return reply.status(200).send(
+        successResponse({
+          secret: setupData.secret,
+          otpAuthUrl: setupData.otpAuthUrl,
+          instructions: 'Scan the QR code or enter the secret key into Google Authenticator or 1Password, then confirm with a 6-digit code.'
+        }, requestId)
+      );
+    } catch (err: any) {
+      if (err.message === 'CURRENT_MFA_REQUIRED') {
+        return reply.status(400).send(
+          errorResponse('CURRENT_MFA_REQUIRED', 'Active two-factor authentication is enabled on your account. Please provide your current 6-digit TOTP code in currentTotpCode to reconfigure MFA.', requestId)
+        );
+      }
+      if (err.message === 'INVALID_CURRENT_TOTP') {
+        return reply.status(401).send(
+          errorResponse('INVALID_CURRENT_TOTP', 'Current 6-digit verification code is invalid.', requestId)
+        );
+      }
+      throw err;
+    }
   });
 
   // 4. MFA Confirm (Verifies code and permanently enables 2FA with backup codes)
   fastify.post('/mfa/confirm', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    },
     preHandler: [authenticate],
     schema: {
       tags: ['Authentication'],

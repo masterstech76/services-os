@@ -14,8 +14,8 @@ test('Database Migrations Validation Suite', async (t) => {
     const upFiles = files.filter(f => f.endsWith('.sql') && !f.endsWith('.down.sql'));
     const downFiles = files.filter(f => f.endsWith('.down.sql'));
 
-    assert.equal(upFiles.length, 6, 'Expected exactly 6 up-migration domain files');
-    assert.equal(downFiles.length, 6, 'Expected exactly 6 down-migration rollback files');
+    assert.equal(upFiles.length, 7, 'Expected exactly 7 up-migration domain files');
+    assert.equal(downFiles.length, 7, 'Expected exactly 7 down-migration rollback files');
 
     for (const up of upFiles) {
       const expectedDown = up.replace('.sql', '.down.sql');
@@ -33,7 +33,7 @@ test('Database Migrations Validation Suite', async (t) => {
     for (const file of files) {
       const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8');
       assert.ok(sql.trim().length > 100, `Migration ${file} is suspiciously short`);
-      assert.ok(sql.includes('CREATE TABLE'), `Migration ${file} must declare tables`);
+      assert.ok(sql.includes('CREATE TABLE') || sql.includes('ALTER TABLE'), `Migration ${file} must declare or alter tables`);
       
       // Ensure no hardcoded personal or demo data exists in migrations
       assert.ok(!sql.includes('john@example.com'), `${file} contains demo email`);

@@ -76,6 +76,7 @@ export async function verifyCaptcha(request: FastifyRequest, reply: FastifyReply
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      signal: AbortSignal.timeout(5000), // 5-second bounded network timeout
     });
 
     if (!res.ok) {
@@ -101,7 +102,22 @@ export async function verifyCaptcha(request: FastifyRequest, reply: FastifyReply
         )
       );
     }
+
+    // Validate expected hostname if configured
+    const expectedHostname = process.env.CAPTCHA_EXPECTED_HOSTNAME;
+    if (expectedHostname && data.hostname && data.hostname !== expectedHostname) {
+      request.log.warn({ hostname: data.hostname, expected: expectedHostname }, 'Turnstile verification token hostname mismatch');
+      return reply.status(400).send(
+        errorResponse('CAPTCHA_VERIFICATION_FAILED', 'Anti-bot verification challenge origin mismatch.', requestId)
+      );
+    }
   } catch (err: any) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      request.log.error('Turnstile verification timed out after 5000ms');
+      return reply.status(504).send(
+        errorResponse('CAPTCHA_GATEWAY_TIMEOUT', 'Anti-bot verification gateway timed out. Please try again.', requestId)
+      );
+    }
     request.log.error({ err }, 'Turnstile verification network request failed');
     if (isEnforced) {
       return reply.status(502).send(

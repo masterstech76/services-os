@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS invoices (
     status VARCHAR(20) DEFAULT 'DRAFT' NOT NULL CHECK (status IN ('DRAFT', 'AUTHORIZED', 'PAID', 'REFUNDED', 'VOID')),
     issued_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     paid_at TIMESTAMPTZ,
-    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     CONSTRAINT uq_tenant_invoice_number UNIQUE (tenant_id, invoice_number)
 );
 
@@ -53,7 +52,7 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
     captured_amount_cents BIGINT DEFAULT 0 NOT NULL CHECK (captured_amount_cents >= 0),
     refunded_amount_cents BIGINT DEFAULT 0 NOT NULL CHECK (refunded_amount_cents >= 0),
     transaction_type VARCHAR(30) NOT NULL CHECK (transaction_type IN ('PRE_AUTH', 'CAPTURE', 'REFUND', 'PARTIAL_REFUND')),
-    status VARCHAR(30) NOT NULL CHECK (status IN ('REQUIRES_CAPTURE', 'SUCCEEDED', 'FAILED', 'REFUNDED', 'VOIDED')),
+    status VARCHAR(30) NOT NULL CHECK (status IN ('REQUIRES_CAPTURE', 'SUCCEEDED', 'FAILED', 'REFUNDED')),
     raw_response JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );

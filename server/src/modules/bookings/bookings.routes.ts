@@ -140,20 +140,27 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       // H. Create Pre-Auth Payment Transaction Record
       let stripeIntentId: string;
+      let clientSecret: string | null = null;
+      let initialPaymentStatus = 'REQUIRES_CAPTURE';
+
       if (env.STRIPE_SECRET_KEY) {
         try {
           const stripe = new Stripe(env.STRIPE_SECRET_KEY);
           const paymentIntent = await stripe.paymentIntents.create({
             amount: totalAmountCents,
             currency: 'usd',
-            capture_method: 'manual', // Hold funds in escrow until completion
+            capture_method: 'manual', // Hold funds until completion
             metadata: {
               tenantId,
               bookingRef,
               customerId: userId,
             }
+          }, {
+            idempotencyKey: `idem_pi_${booking.id}`
           });
           stripeIntentId = paymentIntent.id;
+          clientSecret = paymentIntent.client_secret;
+          initialPaymentStatus = paymentIntent.status === 'requires_capture' ? 'REQUIRES_CAPTURE' : 'REQUIRES_CAPTURE';
         } catch (stripeErr: any) {
           await client.query('ROLLBACK');
           return reply.status(502).send(
@@ -174,8 +181,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
         `INSERT INTO payment_transactions (
           tenant_id, invoice_id, stripe_payment_intent_id, idempotency_key,
           authorized_amount_cents, transaction_type, status
-        ) VALUES ($1, $2, $3, $4, $5, 'PRE_AUTH', 'REQUIRES_CAPTURE')`,
-        [tenantId, invoiceId, stripeIntentId, `idem_${booking.id}`, totalAmountCents]
+        ) VALUES ($1, $2, $3, $4, $5, 'PRE_AUTH', $6)`,
+        [tenantId, invoiceId, stripeIntentId, `idem_${booking.id}`, totalAmountCents, initialPaymentStatus]
       );
 
       // I. Record Initial Timeline Audit Event
@@ -194,6 +201,7 @@ export async function bookingRoutes(fastify: FastifyInstance) {
           bookingReference: booking.booking_reference,
           status: booking.status,
           safetyPin: booking.customer_safety_pin,
+          clientSecret: clientSecret || undefined,
           scheduledStart: booking.scheduled_start,
           serviceName: service.name,
           preAuthAmountCents: totalAmountCents,
@@ -544,7 +552,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
          FROM bookings b
          JOIN tenants t ON t.id = b.tenant_id
          LEFT JOIN invoices i ON i.booking_id = b.id
-         WHERE b.id = $1 AND b.tenant_id = $2`,
+         WHERE b.id = $1 AND b.tenant_id = $2
+         FOR UPDATE OF b`,
         [id, tenantId]
       );
 
@@ -795,7 +804,16 @@ export async function bookingRoutes(fastify: FastifyInstance) {
                 { idempotencyKey: `cancel_tx_${booking.invoice_id}` }
               );
             } catch (stripeErr: any) {
-              request.log.warn({ err: stripeErr }, 'Stripe PaymentIntent cancellation failed or already voided');
+              const isAlreadyCanceled = stripeErr.code === 'resource_already_canceled' ||
+                                        String(stripeErr.message || '').toLowerCase().includes('already been canceled') ||
+                                        String(stripeErr.message || '').toLowerCase().includes('already canceled');
+              if (!isAlreadyCanceled) {
+                await client.query('ROLLBACK');
+                return reply.status(502).send(
+                  errorResponse('STRIPE_CANCELLATION_FAILED', `Failed to release pre-authorization hold with Stripe: ${stripeErr.message}`, requestId)
+                );
+              }
+              request.log.warn({ err: stripeErr }, 'Stripe PaymentIntent was already voided/canceled');
             }
           }
         }

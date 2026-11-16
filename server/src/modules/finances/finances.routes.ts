@@ -51,13 +51,17 @@ export async function financeRoutes(fastify: FastifyInstance) {
       }
       try {
         const stripe = new Stripe(env.STRIPE_SECRET_KEY || '');
-        const rawPayload = (request as any).rawBody || JSON.stringify(request.body);
+        const rawPayload = (request as any).rawBody || (typeof request.body === 'string' ? request.body : JSON.stringify(request.body));
         event = stripe.webhooks.constructEvent(rawPayload, sig, env.STRIPE_WEBHOOK_SECRET);
       } catch (sigErr: any) {
         return reply.status(400).send(
           errorResponse('INVALID_STRIPE_SIGNATURE', `Signature verification failed: ${sigErr.message}`, requestId)
         );
       }
+    } else if (env.NODE_ENV === 'production') {
+      return reply.status(500).send(
+        errorResponse('STRIPE_WEBHOOK_UNCONFIGURED', 'STRIPE_WEBHOOK_SECRET is required to process inbound webhooks in production.', requestId)
+      );
     }
 
     if (!event || !event.id || !event.type) {
@@ -377,11 +381,12 @@ export async function financeRoutes(fastify: FastifyInstance) {
       try {
         await client.query('BEGIN');
 
-        // Check provider exists and has payout enabled
+        // Check provider exists and has payout enabled with exclusive lock to prevent double-payout races
         const provRes = await client.query(
           `SELECT user_id, full_name, stripe_connect_account_id, stripe_payouts_enabled
            FROM provider_profiles
-           WHERE user_id = $1 AND tenant_id = $2`,
+           WHERE user_id = $1 AND tenant_id = $2
+           FOR UPDATE`,
           [providerId, tenantId]
         );
 
@@ -413,12 +418,13 @@ export async function financeRoutes(fastify: FastifyInstance) {
           );
         }
 
-        // Check provider's settled earnings balance
+        // Check provider's settled earnings balance (joining tenants for platform commission terms)
         const balanceRes = await client.query(
           `SELECT 
-            COALESCE(SUM(CASE WHEN b.assigned_provider_id = $1 AND b.status = 'COMPLETED' THEN (i.total_amount_cents * (10000 - COALESCE(b.default_platform_commission_bps, 1500)) / 10000) ELSE 0 END), 0)::bigint as total_earned_cents,
-            COALESCE((SELECT SUM(amount_cents) FROM provider_payouts WHERE provider_id = $1 AND tenant_id = $2 AND status = 'PAID'), 0)::bigint as total_paid_cents
+            COALESCE(SUM(CASE WHEN b.assigned_provider_id = $1 AND b.status = 'COMPLETED' THEN (i.total_amount_cents * (10000 - COALESCE(t.default_platform_commission_bps, 1500)) / 10000) ELSE 0 END), 0)::bigint as total_earned_cents,
+            COALESCE((SELECT SUM(amount_cents) FROM provider_payouts WHERE provider_id = $1 AND tenant_id = $2 AND status IN ('PAID', 'PROCESSING')), 0)::bigint as total_paid_cents
            FROM bookings b
+           JOIN tenants t ON t.id = b.tenant_id
            JOIN invoices i ON i.booking_id = b.id AND i.status = 'PAID'
            WHERE b.assigned_provider_id = $1 AND b.tenant_id = $2`,
           [providerId, tenantId]
@@ -427,10 +433,11 @@ export async function financeRoutes(fastify: FastifyInstance) {
         const totalPaid = Number(balanceRes.rows[0]?.total_paid_cents || 0);
         const unpaidBalanceCents = Math.max(0, totalEarned - totalPaid);
 
-        if (process.env.NODE_ENV === 'production' && amountCents > unpaidBalanceCents) {
+        // Universal invariant: Payout must never exceed settled unpaid earnings in any environment
+        if (amountCents > unpaidBalanceCents) {
           await client.query('ROLLBACK');
           return reply.status(400).send(
-            errorResponse('INSUFFICIENT_PAYOUT_BALANCE', `Payout amount (${amountCents} cents) exceeds provider unpaid balance (${unpaidBalanceCents} cents).`, requestId)
+            errorResponse('INSUFFICIENT_PAYOUT_BALANCE', `Payout amount (${amountCents} cents) exceeds provider settled unpaid balance (${unpaidBalanceCents} cents).`, requestId)
           );
         }
 
@@ -443,6 +450,10 @@ export async function financeRoutes(fastify: FastifyInstance) {
             );
           }
         }
+
+        // Derive deterministic idempotency key for external transfer
+        const clientKey = request.headers['idempotency-key'] as string | undefined;
+        const stableOpId = clientKey ? `payout_${clientKey}` : `payout_op_${providerId}_${Date.now()}`;
 
         // Real Stripe Connect Transfer when gateway configured
         let transferRef: string;
@@ -462,7 +473,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
               destination: provider.stripe_connect_account_id,
               description: description || `Provider payout to ${provider.full_name}`
             }, {
-              idempotencyKey: `payout_tx_${providerId}_${amountCents}_${Date.now()}`
+              idempotencyKey: stableOpId
             });
             transferRef = transfer.id;
           } catch (stripeErr: any) {
@@ -476,11 +487,11 @@ export async function financeRoutes(fastify: FastifyInstance) {
           transferRef = `tr_sandbox_unsettled_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         }
 
-        // Create provider payout record
+        // Create provider payout record with PROCESSING status (reconciled upon settlement)
         const payoutRes = await client.query(
           `INSERT INTO provider_payouts (
             tenant_id, provider_id, stripe_transfer_id, amount_cents, currency, status, processed_at
-          ) VALUES ($1, $2, $3, $4, 'USD', 'PAID', NOW())
+          ) VALUES ($1, $2, $3, $4, 'USD', 'PROCESSING', NOW())
           RETURNING id, stripe_transfer_id, amount_cents, status, created_at`,
           [tenantId, providerId, transferRef, amountCents]
         );

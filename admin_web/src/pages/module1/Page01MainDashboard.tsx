@@ -32,24 +32,49 @@ export const Page01MainDashboard: React.FC = () => {
   const [performanceCycle, setPerformanceCycle] = useState<'weekly' | 'monthly'>('weekly');
   const [timeRange, setTimeRange] = useState<string>('Last 30 Days');
 
-  const totalJobs = bookings.length;
-  const completedJobs = bookings.filter(b => b.status === 'Completed').length;
-  const inProgressJobs = bookings.filter(b => b.status === 'In Progress').length;
-  const scheduledJobs = bookings.filter(b => b.status === 'Scheduled').length;
-  const paidBookings = bookings.filter(b => b.paymentStatus === 'Paid');
+  // Filter bookings truthfully based on the selected date range
+  const filteredBookings = React.useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+
+    if (timeRange === 'This Month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (timeRange === 'This Quarter') {
+      const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+      startDate = new Date(now.getFullYear(), quarterMonth, 1);
+    } else if (timeRange === 'Year to Date') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    } else {
+      // Default: Last 30 Days
+      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    return bookings.filter(b => {
+      const dateStr = b.scheduleDate || (b as any).scheduledStart || (b as any).createdAt;
+      if (!dateStr) return true;
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) || d >= startDate;
+    });
+  }, [bookings, timeRange]);
+
+  const totalJobs = filteredBookings.length;
+  const completedJobs = filteredBookings.filter(b => b.status === 'Completed').length;
+  const inProgressJobs = filteredBookings.filter(b => b.status === 'In Progress').length;
+  const scheduledJobs = filteredBookings.filter(b => b.status === 'Scheduled').length;
+  const paidBookings = filteredBookings.filter(b => b.paymentStatus === 'Paid');
   const grossRevenue = paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0);
   const commission = pricingConfig?.commissionRate || 15;
   const netCommission = (grossRevenue * (commission / 100));
 
-  // Generate truthful daily aggregates from live bookings
+  // Generate truthful daily aggregates from filtered live bookings
   const currentPerformanceData = React.useMemo(() => {
-    if (bookings.length === 0) return [];
+    if (filteredBookings.length === 0) return [];
 
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const counts = [0, 0, 0, 0, 0, 0, 0];
     const revenues = [0, 0, 0, 0, 0, 0, 0];
 
-    for (const b of bookings) {
+    for (const b of filteredBookings) {
       const dateStr = b.scheduleDate || (b as any).scheduledStart || (b as any).createdAt;
       const d = dateStr ? new Date(dateStr) : null;
       if (d && !isNaN(d.getTime())) {
@@ -69,7 +94,7 @@ export const Page01MainDashboard: React.FC = () => {
       lastPeriod: 0,
       revenue: revenues[idx]
     }));
-  }, [bookings]);
+  }, [filteredBookings]);
 
   // Service distribution derived from live categories
   const serviceDistribution = React.useMemo(() => {
@@ -301,14 +326,14 @@ export const Page01MainDashboard: React.FC = () => {
                         const current = payload.find((p: any) => p.dataKey === 'thisPeriod')?.value as number || 0;
                         const last = payload.find((p: any) => p.dataKey === 'lastPeriod')?.value as number || 0;
                         const rev = payload[0]?.payload?.revenue || 0;
-                        const growth = last > 0 ? (((current - last) / last) * 100).toFixed(1) : '0';
+                        const growth = last > 0 ? (((current - last) / last) * 100).toFixed(1) : null;
 
                         return (
                           <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-xl border border-slate-700/80 text-xs space-y-1.5 min-w-[200px]">
                             <div className="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
                               <span className="font-extrabold text-slate-200">{label}</span>
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                                +{growth}% Delta
+                                {growth !== null ? `+${growth}% Delta` : 'Live Work Orders'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-slate-200">

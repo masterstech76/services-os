@@ -22,24 +22,24 @@ describe('Booking Security, Safety PIN & Schema Integrity Suite', () => {
     );
   });
 
-  it('Invoices migration 005 defines updated_at and supports VOID status', () => {
+  it('Forward patch migration 007 adds invoices updated_at and supports VOIDED status', () => {
     const migrationSql = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/database/migrations/005_finance_and_ledger.sql'),
+      path.resolve(process.cwd(), 'src/database/migrations/007_finance_invoices_patch.sql'),
       'utf8'
     );
 
-    // Check invoices table has updated_at
+    // Check invoices table has updated_at patch
     assert.match(
       migrationSql,
-      /updated_at\s+TIMESTAMPTZ\s+DEFAULT\s+NOW\(\)\s+NOT\s+NULL/,
-      'invoices table must define updated_at column'
+      /ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+updated_at\s+TIMESTAMPTZ\s+DEFAULT\s+NOW\(\)/,
+      'Forward patch migration 007 must add updated_at column to invoices'
     );
 
-    // Check payment_transactions table status constraint allows VOIDED or FAILED
+    // Check payment_transactions table status constraint allows VOIDED
     assert.match(
       migrationSql,
       /'VOIDED'/,
-      'payment_transactions status CHECK constraint must allow VOIDED'
+      'Forward patch migration 007 must allow VOIDED in payment_transactions'
     );
   });
 });

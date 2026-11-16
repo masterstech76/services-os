@@ -174,6 +174,25 @@ export async function supportRoutes(fastify: FastifyInstance) {
     }
 
     const { subject, category, priority, bookingId, initialMessage } = parsed.data;
+
+    // Validate customer ownership of linked booking
+    if (bookingId) {
+      const bRes = await pool.query(
+        'SELECT id, customer_id FROM bookings WHERE id = $1 AND tenant_id = $2',
+        [bookingId, tenantId]
+      );
+      if (bRes.rows.length === 0) {
+        return reply.status(404).send(
+          errorResponse('BOOKING_NOT_FOUND', 'Specified booking does not exist in this organization.', requestId)
+        );
+      }
+      if (request.user!.role === 'CUSTOMER' && bRes.rows[0].customer_id !== userId) {
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'You can only link support tickets to your own bookings.', requestId)
+        );
+      }
+    }
+
     const ticketNumber = `TICK-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const client = await pool.connect();

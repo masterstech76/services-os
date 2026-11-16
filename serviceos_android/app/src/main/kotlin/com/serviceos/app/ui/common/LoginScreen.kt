@@ -3,26 +3,134 @@ package com.serviceos.app.ui.common
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.serviceos.app.data.network.ApiClient
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit = {}
 ) {
-    var phone by remember { mutableStateOf("") }
-    var otpCode by remember { mutableStateOf("") }
-    var step by remember { mutableStateOf(1) } // 1: Phone, 2: OTP
+    val coroutineScope = rememberCoroutineScope()
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var totpCode by remember { mutableStateOf("") }
+    var step by remember { mutableStateOf(1) } // 1: Email & Password, 2: MFA TOTP
+    var mfaSessionToken by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    fun handleLogin() {
+        val trimmedEmail = email.trim()
+        if (trimmedEmail.isBlank() || !trimmedEmail.contains("@")) {
+            errorMessage = "Please enter a valid email address."
+            return
+        }
+        if (password.length < 8) {
+            errorMessage = "Password must be at least 8 characters."
+            return
+        }
+
+        errorMessage = null
+        isLoading = true
+
+        coroutineScope.launch {
+            val result = ApiClient.login(trimmedEmail, password)
+            isLoading = false
+            result.onSuccess { res ->
+                val data = res.optJSONObject("data")
+                val status = data?.optString("status")
+
+                if (status == "MFA_REQUIRED") {
+                    val token = data.optString("mfaSessionToken")
+                    if (!token.isNullOrBlank()) {
+                        mfaSessionToken = token
+                        step = 2
+                        return@onSuccess
+                    }
+                }
+
+                // If access token was saved, advance
+                if (!ApiClient.getAccessToken().isNullOrBlank()) {
+                    onLoginSuccess()
+                } else {
+                    errorMessage = res.optJSONObject("error")?.optString("message") ?: "Login failed."
+                }
+            }.onFailure { err ->
+                errorMessage = err.message ?: "Authentication failed. Please verify your credentials."
+            }
+        }
+    }
+
+    fun handleVerifyMfa() {
+        val trimmedCode = totpCode.trim()
+        val token = mfaSessionToken
+
+        if (trimmedCode.length != 6) {
+            errorMessage = "Please enter the complete 6-digit TOTP code."
+            return
+        }
+        if (token.isNullOrBlank()) {
+            errorMessage = "MFA challenge expired. Please sign in again."
+            step = 1
+            return
+        }
+
+        errorMessage = null
+        isLoading = true
+
+        coroutineScope.launch {
+            val result = ApiClient.verifyMfa(token, trimmedCode)
+            isLoading = false
+            result.onSuccess {
+                if (!ApiClient.getAccessToken().isNullOrBlank()) {
+                    onLoginSuccess()
+                } else {
+                    errorMessage = "Failed to establish authenticated session."
+                }
+            }.onFailure { err ->
+                errorMessage = err.message ?: "Verification code invalid or expired."
+            }
+        }
+    }
+
+    fun handleBiometricFastSignIn() {
+        val refreshToken = ApiClient.getRefreshToken()
+        if (refreshToken.isNullOrBlank()) {
+            errorMessage = "No saved session found. Please sign in with email and password."
+            return
+        }
+
+        errorMessage = null
+        isLoading = true
+
+        coroutineScope.launch {
+            val result = ApiClient.refreshToken()
+            isLoading = false
+            result.onSuccess {
+                onLoginSuccess()
+            }.onFailure {
+                errorMessage = "Saved biometric session expired. Please enter password."
+            }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -43,7 +151,7 @@ fun LoginScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.Phone,
+                            imageVector = if (step == 1) Icons.Default.Shield else Icons.Default.Lock,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -51,50 +159,87 @@ fun LoginScreen(
                 }
 
                 Text(
-                    text = if (step == 1) "Enter Mobile Number" else "Verify 6-Digit Code",
+                    text = if (step == 1) "Sign In to ServiceOS" else "Two-Factor Verification",
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
                 )
 
                 Text(
                     text = if (step == 1)
-                        "We will send a one-time SMS verification code to sign into your ServiceOS account."
+                        "Enter your credentials to access your enterprise services account."
                     else
-                        "Enter the 6-digit code sent to +1 $phone",
+                        "Enter the 6-digit verification code from your authenticator app.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
 
+                if (!errorMessage.isNullOrBlank()) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = errorMessage ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
                 if (step == 1) {
                     OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text("Mobile Phone") },
-                        prefix = { Text("🇺🇸 +1 ") },
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email Address") },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
                 } else {
                     OutlinedTextField(
-                        value = otpCode,
-                        onValueChange = { otpCode = it },
-                        label = { Text("6-Digit Verification Code") },
+                        value = totpCode,
+                        onValueChange = { if (it.length <= 6) totpCode = it },
+                        label = { Text("6-Digit TOTP Code") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    TextButton(
+                        onClick = {
+                            step = 1
+                            mfaSessionToken = null
+                            totpCode = ""
+                        },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("← Back to Email Sign-In")
+                    }
                 }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = {
-                        if (step == 1) {
-                            if (phone.isNotBlank()) step = 2
-                        } else {
-                            if (otpCode.length >= 4) onLoginSuccess()
-                        }
+                        if (step == 1) handleLogin() else handleVerifyMfa()
                     },
+                    enabled = !isLoading,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White
@@ -104,22 +249,33 @@ fun LoginScreen(
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
-                    Text(
-                        text = if (step == 1) "Send Code →" else "Verify & Continue →",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (step == 1) "Sign In →" else "Verify & Continue →",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
                 }
 
-                OutlinedButton(
-                    onClick = onLoginSuccess,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                ) {
-                    Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Fast Sign-In with FaceID / Biometrics")
+                if (step == 1) {
+                    OutlinedButton(
+                        onClick = { handleBiometricFastSignIn() },
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Sign In with Saved Biometrics")
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/network/api_client.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -16,35 +17,151 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  final List<TextEditingController> _otpControllers = List.generate(4, (i) => TextEditingController());
-  final List<FocusNode> _otpFocusNodes = List.generate(4, (i) => FocusNode());
-  bool _codeSent = false;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final List<TextEditingController> _totpControllers = List.generate(6, (i) => TextEditingController());
+  final List<FocusNode> _totpFocusNodes = List.generate(6, (i) => FocusNode());
+
+  bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isMfaStep = false;
+  String? _mfaSessionToken;
+  String? _errorMessage;
 
   @override
   void dispose() {
-    _phoneController.dispose();
-    for (var c in _otpControllers) {
+    _emailController.dispose();
+    _passwordController.dispose();
+    for (var c in _totpControllers) {
       c.dispose();
     }
-    for (var f in _otpFocusNodes) {
+    for (var f in _totpFocusNodes) {
       f.dispose();
     }
     super.dispose();
   }
 
-  void _handleSendCode() {
-    if (_phoneController.text.trim().isEmpty) {
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Please enter a valid email address');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _errorMessage = 'Password must be at least 8 characters');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await ApiClient.instance.login(email, password);
+      if (!mounted) return;
+
+      if (res['success'] == true) {
+        final data = res['data'] as Map<String, dynamic>? ?? {};
+        if (data['status'] == 'MFA_REQUIRED') {
+          setState(() {
+            _isMfaStep = true;
+            _mfaSessionToken = data['mfaSessionToken']?.toString();
+            _isLoading = false;
+          });
+          _totpFocusNodes[0].requestFocus();
+          return;
+        }
+
+        widget.onLoginSuccess();
+      } else {
+        setState(() {
+          _errorMessage = res['error']?['message']?.toString() ?? 'Invalid credentials';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Authentication failed. Please check your credentials and try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleVerifyMfa() async {
+    final code = _totpControllers.map((c) => c.text.trim()).join();
+    if (code.length != 6) {
+      setState(() => _errorMessage = 'Please enter the complete 6-digit TOTP code');
+      return;
+    }
+
+    if (_mfaSessionToken == null || _mfaSessionToken!.isEmpty) {
+      setState(() => _errorMessage = 'MFA challenge expired. Please sign in again.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await ApiClient.instance.verifyMfa(_mfaSessionToken!, code);
+      if (!mounted) return;
+
+      if (res['success'] == true) {
+        widget.onLoginSuccess();
+      } else {
+        setState(() {
+          _errorMessage = res['error']?['message']?.toString() ?? 'Verification code invalid or expired';
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Verification failed. Please check the code and try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _handleBiometricFastSignIn() async {
+    final refresh = await ApiClient.instance.getRefreshToken();
+    if (refresh == null || refresh.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid mobile number')),
+        const SnackBar(content: Text('No saved biometric session found. Please sign in with email and password first.')),
       );
       return;
     }
+
     setState(() {
-      _codeSent = true;
+      _isLoading = true;
+      _errorMessage = null;
     });
-    _otpFocusNodes[0].requestFocus();
+
+    try {
+      final res = await ApiClient.instance.refreshToken();
+      if (!mounted) return;
+
+      if (res['success'] == true) {
+        widget.onLoginSuccess();
+      } else {
+        setState(() {
+          _errorMessage = 'Saved session expired. Please enter password.';
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Biometric sign-in unavailable. Please enter password.';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -64,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Sign In / Register',
+          _isMfaStep ? 'Two-Factor Authentication' : 'Sign In',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -98,7 +215,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.shield_rounded, color: Colors.white, size: 32),
+                  child: const Center(
+                    child: Icon(Icons.shield_rounded, color: Colors.white, size: 32),
+                  ),
                 ),
               ),
 
@@ -106,239 +225,237 @@ class _LoginScreenState extends State<LoginScreen> {
 
               Center(
                 child: Text(
-                  'Welcome to ServiceOS',
+                  _isMfaStep ? 'Verify 6-Digit Code' : 'Welcome to ServiceOS',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: textPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Center(
                 child: Text(
-                  'Enter your verified mobile phone number to receive a secure SMS authentication passcode.',
+                  _isMfaStep
+                      ? 'Enter the 6-digit TOTP code from your authenticator app'
+                      : 'Sign in to access your international home services account',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
                     color: textSecondary,
-                    height: 1.45,
+                    fontWeight: FontWeight.w500,
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Phone Number Input Section
-              Text(
-                'MOBILE PHONE NUMBER',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: textSecondary,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: surfaceColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _codeSent ? AppColors.verifiedEmerald : borderColor,
-                    width: _codeSent ? 1.5 : 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('🇺🇸', style: TextStyle(fontSize: 16)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '+1',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Enter mobile number',
-                          hintStyle: TextStyle(
-                            color: textSecondary.withOpacity(0.4),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    if (!_codeSent)
-                      TextButton(
-                        onPressed: _handleSendCode,
-                        child: Text(
-                          'Send Code',
-                          style: TextStyle(
-                            color: primaryBrand,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                      )
-                    else
-                      const Icon(Icons.check_circle_rounded, color: AppColors.verifiedEmerald, size: 20),
-                  ],
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // 4-Digit Passcode Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'ENTER 4-DIGIT PASSCODE',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: textSecondary,
-                      letterSpacing: 0.6,
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              if (!_isMfaStep) ...[
+                // Email Field
+                Text(
+                  'EMAIL ADDRESS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: textSecondary,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'name@example.com',
+                      hintStyle: TextStyle(color: textSecondary.withOpacity(0.5), fontSize: 14),
+                      icon: Icon(Icons.email_outlined, color: primaryBrand, size: 20),
+                      border: InputBorder.none,
                     ),
                   ),
-                  if (_codeSent)
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _codeSent = false;
-                          for (var c in _otpControllers) {
-                            c.clear();
-                          }
-                        });
-                      },
-                      child: Text(
-                        'Resend SMS',
-                        style: TextStyle(color: primaryBrand, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Password Field
+                Text(
+                  'PASSWORD',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: textSecondary,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: surfaceColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Enter account password',
+                      hintStyle: TextStyle(color: textSecondary.withOpacity(0.5), fontSize: 14),
+                      icon: Icon(Icons.lock_outline, color: primaryBrand, size: 20),
+                      border: InputBorder.none,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: textSecondary,
+                          size: 18,
+                        ),
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 8),
+                  ),
+                ),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(4, (index) {
-                  return Container(
-                    width: 68,
-                    height: 58,
+                const SizedBox(height: 20),
+
+                // Biometrics Shortcut
+                InkWell(
+                  onTap: _handleBiometricFastSignIn,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: surfaceColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _otpControllers[index].text.isNotEmpty ? primaryBrand : borderColor,
-                        width: _otpControllers[index].text.isNotEmpty ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _otpControllers[index].text.isNotEmpty
-                              ? primaryBrand.withOpacity(0.12)
-                              : Colors.transparent,
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                      color: primaryBrand.withOpacity(isDark ? 0.12 : 0.06),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: primaryBrand.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.fingerprint_rounded, color: primaryBrand, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Fast Sign-In with Saved Biometrics',
+                          style: TextStyle(
+                            color: primaryBrand,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ],
                     ),
-                    alignment: Alignment.center,
-                    child: TextField(
-                      controller: _otpControllers[index],
-                      focusNode: _otpFocusNodes[index],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: primaryBrand,
+                  ),
+                ),
+              ] else ...[
+                // 6-Digit TOTP Fields
+                Text(
+                  'AUTHENTICATOR CODE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: textSecondary,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (index) {
+                    return Container(
+                      width: 46,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _totpControllers[index].text.isNotEmpty ? primaryBrand : borderColor,
+                          width: _totpControllers[index].text.isNotEmpty ? 2 : 1,
+                        ),
                       ),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        counterText: '',
+                      alignment: Alignment.center,
+                      child: TextField(
+                        controller: _totpControllers[index],
+                        focusNode: _totpFocusNodes[index],
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        maxLength: 1,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: primaryBrand,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          counterText: '',
+                        ),
+                        onChanged: (val) {
+                          setState(() {});
+                          if (val.isNotEmpty && index < 5) {
+                            _totpFocusNodes[index + 1].requestFocus();
+                          } else if (val.isEmpty && index > 0) {
+                            _totpFocusNodes[index - 1].requestFocus();
+                          }
+                        },
                       ),
-                      onChanged: (val) {
-                        setState(() {});
-                        if (val.isNotEmpty && index < 3) {
-                          _otpFocusNodes[index + 1].requestFocus();
-                        } else if (val.isEmpty && index > 0) {
-                          _otpFocusNodes[index - 1].requestFocus();
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isMfaStep = false;
+                        _mfaSessionToken = null;
+                        for (var c in _totpControllers) {
+                          c.clear();
                         }
-                      },
-                    ),
-                  );
-                }),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Biometric Face ID / Fingerprint Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: primaryBrand.withOpacity(isDark ? 0.12 : 0.06),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: primaryBrand.withOpacity(0.2)),
+                      });
+                    },
+                    child: Text('← Back to Password', style: TextStyle(color: primaryBrand, fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.fingerprint_rounded, color: primaryBrand, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Fast Login with Biometrics & Passkeys',
-                      style: TextStyle(
-                        color: primaryBrand,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 28),
 
-              // Submit Action Button
+              // Submit Button
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -348,35 +465,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
-                    shadowColor: primaryBrand.withOpacity(0.4),
                   ),
-                  onPressed: () {
-                    final phone = _phoneController.text.trim();
-                    final otp = _otpControllers.map((c) => c.text.trim()).join();
-                    if (phone.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter your mobile phone number')),
-                      );
-                      return;
-                    }
-                    if (otp.length < 4) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter the 4-digit verification code')),
-                      );
-                      return;
-                    }
-                    widget.onLoginSuccess();
-                  },
-                  child: const Text(
-                    'Verify & Enter Application →',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                  ),
+                  onPressed: _isLoading ? null : (_isMfaStep ? _handleVerifyMfa : _handleLogin),
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                      : Text(
+                          _isMfaStep ? 'Verify TOTP & Sign In →' : 'Sign In to ServiceOS →',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                        ),
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // Role Switcher Button
               Center(
                 child: TextButton(
                   onPressed: widget.onSelectRole,
@@ -391,16 +492,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Security Trust Note
               Center(
                 child: Text(
-                  'Secure Mobile Authentication • Encrypted Session',
+                  'Authoritative Backend Authentication • Encrypted Token Storage',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: textSecondary.withOpacity(0.7),
+                    color: textSecondary.withOpacity(0.6),
                   ),
                 ),
               ),

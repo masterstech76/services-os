@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.serviceos.app.data.network.ApiClient
 import com.serviceos.app.ui.common.*
 import com.serviceos.app.ui.customer.*
 import com.serviceos.app.ui.technician.*
@@ -44,9 +45,12 @@ fun ServiceOSNavHost(
     navController: NavHostController,
     onThemeToggle: () -> Unit = {}
 ) {
+    val isAuthenticated = ApiClient.getAccessToken() != null
+    val startDestination = if (isAuthenticated) Screen.CustomerHome.route else Screen.Splash.route
+
     NavHost(
         navController = navController,
-        startDestination = Screen.CustomerHome.route
+        startDestination = startDestination
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(

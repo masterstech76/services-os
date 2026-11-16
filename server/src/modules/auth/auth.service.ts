@@ -116,13 +116,20 @@ export class AuthService {
     return decrypted;
   }
 
+  static hashBackupCode(code: string): string {
+    const key = this.getEncryptionKey();
+    return crypto.createHmac('sha256', key).update(code.trim().toUpperCase()).digest('hex');
+  }
+
   static generateBackupCodes(count: number = 8): { rawCodes: string[]; hashedCodes: string[] } {
     const rawCodes: string[] = [];
     const hashedCodes: string[] = [];
     for (let i = 0; i < count; i++) {
-      const code = crypto.randomBytes(4).toString('hex').toUpperCase();
-      rawCodes.push(code);
-      hashedCodes.push(this.hashToken(code));
+      // 10 random bytes = 80 bits of cryptographic entropy
+      const raw = crypto.randomBytes(10).toString('hex').toUpperCase();
+      const formatted = `${raw.slice(0, 5)}-${raw.slice(5, 10)}-${raw.slice(10, 15)}-${raw.slice(15, 20)}`;
+      rawCodes.push(formatted);
+      hashedCodes.push(this.hashBackupCode(formatted));
     }
     return { rawCodes, hashedCodes };
   }
@@ -256,30 +263,57 @@ export class AuthService {
     return authenticator.check(code, secret);
   }
 
-  static async setupMfa(userId: string, email: string): Promise<{ secret: string; otpAuthUrl: string }> {
+  static async setupMfa(userId: string, email: string, currentTotpCode?: string): Promise<{ secret: string; otpAuthUrl: string }> {
+    const existing = await pool.query<{ is_enabled: boolean; totp_secret_encrypted: string }>(
+      'SELECT is_enabled, totp_secret_encrypted FROM user_mfa_credentials WHERE user_id = $1',
+      [userId]
+    );
+
+    if (existing.rows.length > 0 && existing.rows[0].is_enabled) {
+      if (!currentTotpCode) {
+        throw new Error('CURRENT_MFA_REQUIRED');
+      }
+      const currentSecret = this.decryptTotpSecret(existing.rows[0].totp_secret_encrypted);
+      const isCurrentValid = authenticator.check(currentTotpCode, currentSecret);
+      if (!isCurrentValid) {
+        throw new Error('INVALID_CURRENT_TOTP');
+      }
+    }
+
     const secret = authenticator.generateSecret();
     const otpAuthUrl = authenticator.keyuri(email, 'ServicePro OS', secret);
     const encryptedSecret = this.encryptTotpSecret(secret);
 
-    await pool.query(
-      `INSERT INTO user_mfa_credentials (user_id, totp_secret_encrypted, is_enabled, backup_codes_hashed)
-       VALUES ($1, $2, FALSE, '[]'::jsonb)
-       ON CONFLICT (user_id) 
-       DO UPDATE SET totp_secret_encrypted = EXCLUDED.totp_secret_encrypted, is_enabled = FALSE`,
-      [userId, encryptedSecret]
-    );
+    if (existing.rows.length > 0 && existing.rows[0].is_enabled) {
+      // Zero-downtime: stage the replacement secret without disabling the active MFA factor
+      await pool.query(
+        'UPDATE user_mfa_credentials SET pending_totp_secret_encrypted = $1 WHERE user_id = $2',
+        [encryptedSecret, userId]
+      );
+    } else {
+      // First-time MFA setup
+      await pool.query(
+        `INSERT INTO user_mfa_credentials (user_id, totp_secret_encrypted, is_enabled, backup_codes_hashed)
+         VALUES ($1, $2, FALSE, '[]'::jsonb)
+         ON CONFLICT (user_id) 
+         DO UPDATE SET totp_secret_encrypted = EXCLUDED.totp_secret_encrypted, is_enabled = FALSE`,
+        [userId, encryptedSecret]
+      );
+    }
 
     return { secret, otpAuthUrl };
   }
 
   static async confirmMfa(userId: string, totpCode: string): Promise<{ success: boolean; backupCodes?: string[] }> {
-    const res = await pool.query<{ totp_secret_encrypted: string }>(
-      'SELECT totp_secret_encrypted FROM user_mfa_credentials WHERE user_id = $1',
+    const res = await pool.query<{ totp_secret_encrypted: string; pending_totp_secret_encrypted: string | null }>(
+      'SELECT totp_secret_encrypted, pending_totp_secret_encrypted FROM user_mfa_credentials WHERE user_id = $1',
       [userId]
     );
     if (res.rows.length === 0) return { success: false };
 
-    const secret = this.decryptTotpSecret(res.rows[0].totp_secret_encrypted);
+    const cred = res.rows[0];
+    const targetEncrypted = cred.pending_totp_secret_encrypted || cred.totp_secret_encrypted;
+    const secret = this.decryptTotpSecret(targetEncrypted);
     const isValid = authenticator.check(totpCode, secret);
     if (!isValid) {
       return { success: false };
@@ -289,19 +323,28 @@ export class AuthService {
 
     await pool.query(
       `UPDATE user_mfa_credentials
-       SET is_enabled = TRUE,
+       SET totp_secret_encrypted = $1,
+           pending_totp_secret_encrypted = NULL,
+           is_enabled = TRUE,
            confirmed_at = NOW(),
            backup_codes_hashed = $2::jsonb
-       WHERE user_id = $1`,
-      [userId, JSON.stringify(hashedCodes)]
+       WHERE user_id = $3`,
+      [targetEncrypted, JSON.stringify(hashedCodes), userId]
     );
 
     return { success: true, backupCodes: rawCodes };
   }
 
   static async verifyMfaRecovery(userId: string, backupCode: string): Promise<boolean> {
-    const cleanCode = backupCode.trim().toUpperCase();
-    const codeHash = this.hashToken(cleanCode);
+    const rawClean = backupCode.trim().toUpperCase();
+    const normalizedDigits = rawClean.replace(/[^0-9A-Z]/g, '');
+    const formatted = normalizedDigits.length === 20
+      ? `${normalizedDigits.slice(0, 5)}-${normalizedDigits.slice(5, 10)}-${normalizedDigits.slice(10, 15)}-${normalizedDigits.slice(15, 20)}`
+      : rawClean;
+
+    const codeHash1 = this.hashBackupCode(rawClean);
+    const codeHash2 = this.hashBackupCode(formatted);
+    const legacyHash = this.hashToken(rawClean);
 
     const client = await pool.connect();
     try {
@@ -321,13 +364,16 @@ export class AuthService {
         ? res.rows[0].backup_codes_hashed
         : [];
 
-      const matchIndex = storedHashes.indexOf(codeHash);
+      let matchIndex = storedHashes.indexOf(codeHash1);
+      if (matchIndex === -1) matchIndex = storedHashes.indexOf(codeHash2);
+      if (matchIndex === -1) matchIndex = storedHashes.indexOf(legacyHash);
+
       if (matchIndex === -1) {
         await client.query('ROLLBACK');
         return false;
       }
 
-      // One-time use: remove used backup code
+      // One-time atomic use: remove used backup code
       storedHashes.splice(matchIndex, 1);
 
       await client.query(

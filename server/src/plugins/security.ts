@@ -61,11 +61,15 @@ export default fp(async function securityPlugin(fastify: FastifyInstance) {
     timeWindow: '1 minute',
     allowList: ['127.0.0.1'],
     errorResponseBuilder: (request, context) => {
-      return errorResponse(
+      const err = errorResponse(
         'RATE_LIMIT_EXCEEDED',
         `Rate limit exceeded: Too many requests. Please try again after ${context.after}.`,
         request.id || `req_${Date.now()}`
       );
+      return {
+        statusCode: 429,
+        ...err
+      };
     }
   });
 

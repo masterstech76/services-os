@@ -42,6 +42,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          options.headers['x-client-platform'] = 'flutter';
           final token = await _storage.read(key: 'serviceos_access_token');
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -97,6 +98,10 @@ class ApiClient {
       _dio.options.headers.remove('x-tenant-id');
     }
   }
+
+  Future<String?> getAccessToken() => _storage.read(key: 'serviceos_access_token');
+  Future<String?> getRefreshToken() => _storage.read(key: 'serviceos_refresh_token');
+  Future<void> logout() => _storage.deleteAll();
 
   // ==========================================================================
   // AUTHENTICATION
