@@ -14,8 +14,8 @@ test('Database Migrations Validation Suite', async (t) => {
     const upFiles = files.filter(f => f.endsWith('.sql') && !f.endsWith('.down.sql'));
     const downFiles = files.filter(f => f.endsWith('.down.sql'));
 
-    assert.equal(upFiles.length, 7, 'Expected exactly 7 up-migration domain files');
-    assert.equal(downFiles.length, 7, 'Expected exactly 7 down-migration rollback files');
+    assert.ok(upFiles.length >= 8, `Expected at least 8 up-migration domain files, found ${upFiles.length}`);
+    assert.equal(upFiles.length, downFiles.length, 'Every up-migration domain file must have an exact matching down-migration rollback script');
 
     for (const up of upFiles) {
       const expectedDown = up.replace('.sql', '.down.sql');
@@ -55,5 +55,21 @@ test('Database Migrations Validation Suite', async (t) => {
     assert.ok(sql005.includes('CREATE TABLE IF NOT EXISTS ledger_entries'), 'Ledger entries table must exist');
     assert.ok(sql005.includes('chk_debit_credit_different'), 'Debit and credit accounts must be strictly different');
     assert.ok(sql005.includes('amount_cents BIGINT NOT NULL CHECK (amount_cents > 0)'), 'Ledger amounts must be positive');
+  });
+
+  await t.test('Down migration 007 safely aborts with RAISE EXCEPTION if active financial data exists (DB-01, DB-02)', () => {
+    const down007 = fs.readFileSync(path.join(MIGRATIONS_DIR, '007_finance_invoices_patch.down.sql'), 'utf-8');
+    
+    assert.match(
+      down007,
+      /RAISE\s+EXCEPTION[\s\S]*?Cannot roll back migration 007[\s\S]*?idempotency/,
+      'Rollback script must explicitly abort if idempotency records exist'
+    );
+
+    assert.match(
+      down007,
+      /RAISE\s+EXCEPTION[\s\S]*?Cannot roll back migration 007[\s\S]*?VOIDED or PENDING/,
+      'Rollback script must explicitly abort if transactions in VOIDED or PENDING state exist'
+    );
   });
 });

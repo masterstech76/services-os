@@ -61,7 +61,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
       }
     } else if (env.NODE_ENV === 'production') {
       return reply.status(500).send(
-        errorResponse('STRIPE_WEBHOOK_UNCONFIGURED', 'STRIPE_WEBHOOK_SECRET is required to process inbound webhooks in production.', requestId)
+        errorResponse('WEBHOOK_SECRET_MISSING', 'STRIPE_WEBHOOK_SECRET is required to process inbound webhooks in production.', requestId)
       );
     }
 
@@ -177,6 +177,61 @@ export async function financeRoutes(fastify: FastifyInstance) {
           `SELECT account_number as "accountNumber", account_name as "accountName", account_type as "accountType"
            FROM ledger_accounts
            WHERE tenant_id = $1
+           ORDER BY account_number ASC`,
+          [tenantId]
+        ),
+        pool.query(
+          `SELECT pt.id, pt.stripe_payment_intent_id as "paymentIntentId", pt.authorized_amount_cents as "authorizedAmountCents",
+                  pt.captured_amount_cents as "capturedAmountCents", pt.transaction_type as "transactionType",
+                  pt.status, pt.created_at as "createdAt", inv.invoice_number as "invoiceNumber"
+           FROM payment_transactions pt
+           JOIN invoices inv ON inv.id = pt.invoice_id
+           WHERE pt.tenant_id = $1
+           ORDER BY pt.created_at DESC LIMIT 10`,
+          [tenantId]
+        )
+      ]);
+
+      const metrics = grossRes.rows[0];
+
+      return reply.status(200).send(
+        successResponse({
+          grossVolumeCents: metrics.grossVolumeCents,
+          settledVolumeCents: metrics.settledVolumeCents,
+          totalInvoicesCount: metrics.totalInvoicesCount,
+          paidInvoicesCount: metrics.paidInvoicesCount,
+          accounts: accountsRes.rows,
+          recentTransactions: recentTxRes.rows,
+        }, requestId)
+      );
+    });
+
+    // 1b. Executive Financial Metrics Alias (WEB-01)
+    protectedRoutes.get('/metrics', {
+      schema: {
+        tags: ['Finances & Ledger'],
+        summary: 'Executive financial metrics alias',
+        security: [{ bearerAuth: [] }]
+      }
+    }, async (request, reply) => {
+      const requestId = request.id || `req_${Date.now()}`;
+      const tenantId = request.tenantId;
+
+      const [grossRes, accountsRes, recentTxRes] = await Promise.all([
+        pool.query(
+          `SELECT 
+            COALESCE(SUM(total_amount_cents), 0)::bigint as "grossVolumeCents",
+            COALESCE(SUM(CASE WHEN status = 'PAID' THEN total_amount_cents ELSE 0 END), 0)::bigint as "settledVolumeCents",
+            COUNT(id)::int as "totalInvoicesCount",
+            COUNT(CASE WHEN status = 'PAID' THEN 1 END)::int as "paidInvoicesCount"
+           FROM invoices 
+           WHERE tenant_id = $1`,
+          [tenantId]
+        ),
+        pool.query(
+          `SELECT account_number as "accountNumber", account_name as "accountName", account_type as "accountType"
+           FROM ledger_accounts 
+           WHERE tenant_id = $1 
            ORDER BY account_number ASC`,
           [tenantId]
         ),
@@ -385,13 +440,20 @@ export async function financeRoutes(fastify: FastifyInstance) {
       );
     });
 
-    // 5. Trigger Provider Payout (Stripe Connect Express Transfer)
+    // 5. Trigger Provider Payout with Pre-Reservation Durability and Two-Phase Stripe Reconciliation (PAY-02, PAY-03, PAY-04, PAY-05)
     protectedRoutes.post('/payouts', {
       preHandler: [requirePermission('finance:payout:execute')],
       schema: {
         tags: ['Finances & Ledger'],
-        summary: 'Initiate provider payout transfer with double-entry ledger posting',
-        security: [{ bearerAuth: [] }]
+        summary: 'Initiate technician payout transfer with durable idempotency reservation',
+        security: [{ bearerAuth: [] }],
+        headers: {
+          type: 'object',
+          properties: {
+            'idempotency-key': { type: 'string', description: 'Mandatory caller-generated idempotency key' }
+          },
+          required: ['idempotency-key']
+        }
       }
     }, async (request, reply) => {
       const requestId = request.id || `req_${Date.now()}`;
@@ -406,11 +468,71 @@ export async function financeRoutes(fastify: FastifyInstance) {
 
       const { providerId, amountCents, description } = parsed.data;
 
+      // PAY-02: Validate Idempotency-Key header FIRST before calculating balance
+      const clientKey = (request.headers['idempotency-key'] as string | undefined)?.trim();
+      if (!clientKey) {
+        return reply.status(400).send(
+          errorResponse('IDEMPOTENCY_KEY_REQUIRED', 'An Idempotency-Key header is strictly required for financial payout operations.', requestId)
+        );
+      }
+
+      const idempotencyKey = `payout_${clientKey}`;
+      const requestFingerprint = crypto.createHash('sha256').update(`${tenantId}:${providerId}:${amountCents}`).digest('hex');
+
+      // PAY-02: Check existing payout idempotency BEFORE balance calculation
+      const existingPayoutRes = await pool.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string; request_fingerprint?: string }>(
+        `SELECT id, stripe_transfer_id, amount_cents, status, request_fingerprint 
+         FROM provider_payouts 
+         WHERE idempotency_key = $1 AND tenant_id = $2`,
+        [idempotencyKey, tenantId]
+      );
+
+      if (existingPayoutRes.rows.length > 0) {
+        const ep = existingPayoutRes.rows[0];
+        // Reject key reuse with mismatched parameters (409 Conflict)
+        if (ep.request_fingerprint && ep.request_fingerprint !== requestFingerprint) {
+          return reply.status(409).send(
+            errorResponse('IDEMPOTENCY_KEY_MISMATCH', 'Idempotency key was previously used with different payout parameters (provider or amount).', requestId)
+          );
+        }
+
+        return reply.status(200).send(
+          successResponse({
+            payoutId: ep.id,
+            transferId: ep.stripe_transfer_id,
+            amountCents: parseInt(ep.amount_cents, 10),
+            status: ep.status,
+            message: 'Existing payout operation retrieved idempotently.'
+          }, requestId)
+        );
+      }
+
+      // PAY-05: Simulation gating: In production or staging, fail closed if Stripe key is missing
+      if (!env.STRIPE_SECRET_KEY) {
+        if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
+          return reply.status(422).send(
+            errorResponse('PAYMENT_GATEWAY_NOT_CONFIGURED', 'Live Stripe payout gateway is not configured on this server.', requestId)
+          );
+        }
+        if (process.env.NODE_ENV !== 'test' && process.env.ALLOW_PAYOUT_SIMULATION !== 'true') {
+          return reply.status(503).send(
+            errorResponse('PAYOUT_GATEWAY_UNAVAILABLE', 'Stripe Connect gateway credentials not configured. Payout processing is disabled in this environment.', requestId)
+          );
+        }
+      }
+
+      // PHASE 1 (PAY-03): Atomically validate provider, accounts, balance, and durably commit the payout record
       const client = await pool.connect();
+      let payoutId: string;
+      let providerName: string;
+      let stripeAccountId: string | null = null;
+      let techPayableId: string;
+      let bankAssetId: string;
+
       try {
         await client.query('BEGIN');
 
-        // Check provider exists and has payout enabled with exclusive lock to prevent double-payout races
+        // Check provider exists and has payout enabled with exclusive row lock
         const provRes = await client.query(
           `SELECT user_id, full_name, stripe_connect_account_id, stripe_payouts_enabled
            FROM provider_profiles
@@ -427,10 +549,10 @@ export async function financeRoutes(fastify: FastifyInstance) {
         }
 
         const provider = provRes.rows[0];
+        providerName = provider.full_name;
+        stripeAccountId = provider.stripe_connect_account_id;
 
-        // Verify standard ledger accounts exist before proceeding:
-        // Debit: 2020 (Technician Payable)
-        // Credit: 1010 (Operating Bank Account)
+        // Verify standard ledger accounts exist before proceeding
         const accRes = await client.query(
           `SELECT id, account_number FROM ledger_accounts 
            WHERE tenant_id = $1 AND account_number IN ('1010', '2020')`,
@@ -446,6 +568,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
             errorResponse('LEDGER_ACCOUNTS_MISSING', 'Standard ledger accounts (1010 Operating Bank / 2020 Technician Payable) are not provisioned for this tenant.', requestId)
           );
         }
+        techPayableId = techPayable.id;
+        bankAssetId = bankAsset.id;
 
         // Check provider's settled earnings balance (joining tenants for platform commission terms)
         const balanceRes = await client.query(
@@ -462,7 +586,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
         const totalPaid = Number(balanceRes.rows[0]?.total_paid_cents || 0);
         const unpaidBalanceCents = Math.max(0, totalEarned - totalPaid);
 
-        // Universal invariant: Payout must never exceed settled unpaid earnings in any environment
+        // Universal invariant: Payout must never exceed settled unpaid earnings
         if (amountCents > unpaidBalanceCents) {
           await client.query('ROLLBACK');
           return reply.status(400).send(
@@ -470,59 +594,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
           );
         }
 
-        // Fail closed in production if Stripe is not configured
-        if (!env.STRIPE_SECRET_KEY) {
-          if (process.env.NODE_ENV === 'production') {
-            await client.query('ROLLBACK');
-            return reply.status(422).send(
-              errorResponse('PAYMENT_GATEWAY_NOT_CONFIGURED', 'Live Stripe payout gateway is not configured on this server.', requestId)
-            );
-          }
-        }
-
-        // Caller must provide explicit idempotency key for financial payout operations
-        const clientKey = (request.headers['idempotency-key'] as string | undefined)?.trim();
-        if (!clientKey) {
-          await client.query('ROLLBACK');
-          return reply.status(400).send(
-            errorResponse('IDEMPOTENCY_KEY_REQUIRED', 'An Idempotency-Key header is strictly required for financial payout operations.', requestId)
-          );
-        }
-
-        const idempotencyKey = `payout_${clientKey}`;
-        const requestFingerprint = crypto.createHash('sha256').update(`${tenantId}:${providerId}:${amountCents}`).digest('hex');
-
-        const existingPayout = await client.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string; request_fingerprint?: string }>(
-          `SELECT id, stripe_transfer_id, amount_cents, status, request_fingerprint 
-           FROM provider_payouts 
-           WHERE idempotency_key = $1 AND tenant_id = $2`,
-          [idempotencyKey, tenantId]
-        );
-
-        if (existingPayout.rows.length > 0) {
-          const ep = existingPayout.rows[0];
-          // Reject key reuse with mismatched parameters (409 Conflict)
-          if (ep.request_fingerprint && ep.request_fingerprint !== requestFingerprint) {
-            await client.query('ROLLBACK');
-            return reply.status(409).send(
-              errorResponse('IDEMPOTENCY_KEY_MISMATCH', 'Idempotency key was previously used with different payout parameters (provider or amount).', requestId)
-            );
-          }
-
-          await client.query('ROLLBACK');
-          return reply.status(200).send(
-            successResponse({
-              payoutId: ep.id,
-              transferId: ep.stripe_transfer_id,
-              amountCents: parseInt(ep.amount_cents, 10),
-              providerName: provider.full_name,
-              status: ep.status,
-              message: 'Existing payout operation retrieved idempotently.'
-            }, requestId)
-          );
-        }
-
-        // Insert pending payout record to atomically reserve the payout operation with fingerprint
+        // Insert durable payout record in PROCESSING state
         const pendingPayoutRes = await client.query(
           `INSERT INTO provider_payouts (
             tenant_id, provider_id, amount_cents, currency, status, idempotency_key, request_fingerprint
@@ -530,42 +602,65 @@ export async function financeRoutes(fastify: FastifyInstance) {
           RETURNING id`,
           [tenantId, providerId, amountCents, idempotencyKey, requestFingerprint]
         );
-        const payoutId = pendingPayoutRes.rows[0].id;
+        payoutId = pendingPayoutRes.rows[0].id;
 
-        // Real Stripe Connect Transfer when gateway configured
-        let transferRef: string;
-        if (env.STRIPE_SECRET_KEY) {
-          if (!provider.stripe_connect_account_id) {
-            await client.query('ROLLBACK');
-            return reply.status(422).send(
-              errorResponse('PROVIDER_PAYOUT_NOT_CONFIGURED', 'Technician does not have a linked Stripe Connect payout account.', requestId)
-            );
-          }
+        // COMMIT Phase 1: Payout record is now durable in PostgreSQL
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
 
-          try {
-            const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-            const transfer = await stripe.transfers.create({
-              amount: amountCents,
-              currency: 'usd',
-              destination: provider.stripe_connect_account_id,
-              description: description || `Provider payout to ${provider.full_name}`
-            }, {
-              idempotencyKey: `payout_stripe_${payoutId}` // Stable, database-tracked UUID
-            });
-            transferRef = transfer.id;
-          } catch (stripeErr: any) {
-            await client.query('ROLLBACK');
-            return reply.status(502).send(
-              errorResponse('STRIPE_TRANSFER_FAILED', `Stripe Connect payout transfer failed: ${stripeErr.message}`, requestId)
-            );
-          }
-        } else {
-          // Dev sandbox reference only when keys omitted in test mode
-          transferRef = `tr_sandbox_unsettled_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      // PHASE 2 (PAY-03): Call Stripe Connect Transfer with durable database-backed idempotency key
+      let transferRef: string;
+      const isSimulated = !env.STRIPE_SECRET_KEY;
+
+      if (env.STRIPE_SECRET_KEY) {
+        if (!stripeAccountId) {
+          // Mark durable payout as FAILED since provider is missing Connect account
+          await pool.query(
+            `UPDATE provider_payouts SET status = 'FAILED' WHERE id = $1`,
+            [payoutId]
+          );
+          return reply.status(422).send(
+            errorResponse('PROVIDER_PAYOUT_NOT_CONFIGURED', 'Technician does not have a linked Stripe Connect payout account.', requestId)
+          );
         }
 
-        // Update provider payout record with transfer reference and processed_at
-        const payoutRes = await client.query(
+        try {
+          const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+          const transfer = await stripe.transfers.create({
+            amount: amountCents,
+            currency: 'usd',
+            destination: stripeAccountId,
+            description: description || `Provider payout to ${providerName}`
+          }, {
+            idempotencyKey: `payout_stripe_${payoutId}` // Stable, database-tracked UUID
+          });
+          transferRef = transfer.id;
+        } catch (stripeErr: any) {
+          // Stripe call failed: mark durable payout as FAILED so it cannot be double-processed
+          await pool.query(
+            `UPDATE provider_payouts SET status = 'FAILED' WHERE id = $1`,
+            [payoutId]
+          );
+          return reply.status(502).send(
+            errorResponse('STRIPE_TRANSFER_FAILED', `Stripe Connect payout transfer failed: ${stripeErr.message}`, requestId)
+          );
+        }
+      } else {
+        // PAY-05: Sandbox test simulation only
+        transferRef = `tr_test_simulated_${payoutId}`;
+      }
+
+      // PHASE 3 (PAY-03): Reconcile external transfer, post double-entry ledger entries, and audit log
+      const reconClient = await pool.connect();
+      try {
+        await reconClient.query('BEGIN');
+
+        const payoutRes = await reconClient.query(
           `UPDATE provider_payouts
            SET stripe_transfer_id = $1, processed_at = NOW(), status = 'PROCESSING'
            WHERE id = $2
@@ -573,24 +668,20 @@ export async function financeRoutes(fastify: FastifyInstance) {
           [transferRef, payoutId]
         );
 
-        // Post double-entry ledger entry:
-        // Debit: 2020 (Technician Payable)
-        // Credit: 1010 (Operating Bank Account)
-        await client.query(
+        await reconClient.query(
           `INSERT INTO ledger_entries (
             tenant_id, debit_account_id, credit_account_id, amount_cents, description
           ) VALUES ($1, $2, $3, $4, $5)`,
           [
-              tenantId,
-              techPayable.id,
-              bankAsset.id,
-              amountCents,
-              description || `Payout to ${provider.full_name} (${transferRef})`
-            ]
-          );
+            tenantId,
+            techPayableId,
+            bankAssetId,
+            amountCents,
+            description || `Payout to ${providerName} (${transferRef})`
+          ]
+        );
 
-        // Audit log
-        await client.query(
+        await reconClient.query(
           `INSERT INTO audit_logs (tenant_id, actor_id, actor_role, action, resource_type, resource_id, diff_payload)
            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
@@ -599,28 +690,29 @@ export async function financeRoutes(fastify: FastifyInstance) {
             request.user!.role,
             'PAYOUT_PROCESSED',
             'provider_payout',
-            payoutRes.rows[0].id,
-            JSON.stringify({ providerId, amountCents, transferRef })
+            payoutId,
+            JSON.stringify({ providerId, amountCents, transferRef, isSimulated })
           ]
         );
 
-        await client.query('COMMIT');
+        await reconClient.query('COMMIT');
 
         return reply.status(200).send(
           successResponse({
             payoutId: payoutRes.rows[0].id,
             transferId: transferRef,
             amountCents,
-            providerName: provider.full_name,
+            providerName,
             status: payoutRes.rows[0].status,
+            isSimulated,
             message: 'Provider payout initiated with PROCESSING status and posted to ledger.'
           }, requestId)
         );
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
+      } catch (reconErr) {
+        await reconClient.query('ROLLBACK');
+        throw reconErr;
       } finally {
-        client.release();
+        reconClient.release();
       }
     });
   });

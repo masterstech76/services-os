@@ -19,6 +19,7 @@ object ApiClient {
     private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_TENANT_ID = "tenant_id"
+    private const val KEY_USER_ROLE = "user_role"
     private const val DEFAULT_BASE_URL = "http://10.0.2.2:3000/api/v1"
 
     private var prefs: SharedPreferences? = null
@@ -55,6 +56,16 @@ object ApiClient {
             ?.apply()
     }
 
+    fun setUserRole(role: String?) {
+        if (role.isNullOrBlank()) {
+            prefs?.edit()?.remove(KEY_USER_ROLE)?.apply()
+        } else {
+            prefs?.edit()?.putString(KEY_USER_ROLE, role.uppercase())?.apply()
+        }
+    }
+
+    fun getUserRole(): String? = prefs?.getString(KEY_USER_ROLE, null)
+
     fun getAccessToken(): String? = prefs?.getString(KEY_ACCESS_TOKEN, null)
 
     fun getRefreshToken(): String? = prefs?.getString(KEY_REFRESH_TOKEN, null)
@@ -63,6 +74,7 @@ object ApiClient {
         prefs?.edit()
             ?.remove(KEY_ACCESS_TOKEN)
             ?.remove(KEY_REFRESH_TOKEN)
+            ?.remove(KEY_USER_ROLE)
             ?.apply()
     }
 
@@ -144,6 +156,10 @@ object ApiClient {
             val data = res.optJSONObject("data")
             val accessToken = data?.optString("accessToken")
             val refreshToken = data?.optString("refreshToken")
+            val role = data?.optJSONObject("user")?.optString("role")
+            if (!role.isNullOrBlank()) {
+                setUserRole(role)
+            }
             if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
                 setTokens(accessToken, refreshToken)
             }
@@ -161,6 +177,10 @@ object ApiClient {
             val data = res.optJSONObject("data")
             val accessToken = data?.optString("accessToken")
             val refreshToken = data?.optString("refreshToken")
+            val role = data?.optJSONObject("user")?.optString("role")
+            if (!role.isNullOrBlank()) {
+                setUserRole(role)
+            }
             if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
                 setTokens(accessToken, refreshToken)
             }
@@ -178,6 +198,10 @@ object ApiClient {
             val data = res.optJSONObject("data")
             val newAccess = data?.optString("accessToken")
             val newRefresh = data?.optString("refreshToken") ?: currentRefresh
+            val role = data?.optJSONObject("user")?.optString("role")
+            if (!role.isNullOrBlank()) {
+                setUserRole(role)
+            }
             if (!newAccess.isNullOrBlank()) {
                 setTokens(newAccess, newRefresh)
             }
@@ -194,13 +218,20 @@ object ApiClient {
     }
 
     suspend fun validateSession(): Result<JSONObject> {
-        val result = executeRequest("/auth/me", "GET")
+        var result = executeRequest("/auth/me", "GET")
         if (result.isFailure && getRefreshToken() != null) {
             val refreshResult = refreshToken()
             if (refreshResult.isSuccess) {
-                return executeRequest("/auth/me", "GET")
+                result = executeRequest("/auth/me", "GET")
             } else {
                 clearTokens()
+            }
+        }
+        result.onSuccess { res ->
+            val data = res.optJSONObject("data")
+            val role = data?.optJSONObject("user")?.optString("role")
+            if (!role.isNullOrBlank()) {
+                setUserRole(role)
             }
         }
         return result

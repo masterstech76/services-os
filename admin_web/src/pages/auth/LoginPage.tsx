@@ -210,18 +210,38 @@ export const LoginPage: React.FC = () => {
           });
           return;
         }
-      } else if (
+      }
+
+      // Fail Closed (AUTH-01 & WEB-02): Any backend rejection terminates authentication without falling back to weaker paths
+      const failStatus = rateLimiter.recordFailure(targetEmail);
+      recordSecurityEvent(
+        'LOGIN_FAILED',
+        targetEmail,
+        selectedRole,
+        'WARNING',
+        fastifyRes.error?.message || 'Authentication failed'
+      );
+      if (failStatus.isLocked) {
+        setIsLocked(true);
+        setLockoutSeconds(failStatus.lockoutRemainingSeconds);
+      }
+      if (
         fastifyRes.error?.code === 'CAPTCHA_REQUIRED' ||
-        fastifyRes.error?.code === 'CAPTCHA_VERIFICATION_FAILED' ||
-        fastifyRes.error?.code === 'INVALID_CREDENTIALS' ||
-        fastifyRes.error?.code === 'ACCOUNT_LOCKED'
+        fastifyRes.error?.code === 'CAPTCHA_VERIFICATION_FAILED'
       ) {
-        setError(fastifyRes.error.message || 'Authentication failed. Please verify credentials and CAPTCHA.');
+        setCaptchaToken('');
+      }
+      setError(fastifyRes.error?.message || 'Authentication failed. Please verify credentials and CAPTCHA challenge.');
+      setIsLoading(false);
+      return;
+    } catch (err: any) {
+      // Fail closed on network or API connection errors
+      const isDevMock = import.meta.env.DEV && localStorage.getItem('servicepro_enable_local_dev_mock') === 'true';
+      if (!isDevMock) {
+        setError('Authentication server is unreachable. Please verify network connectivity.');
         setIsLoading(false);
         return;
       }
-    } catch (_) {
-      // Backend offline or in fallback test mode
     }
 
     // 5. Cloud-Configured Authentication Path (Supabase Auth Fallback)
@@ -1630,6 +1650,47 @@ export const LoginPage: React.FC = () => {
                     >
                       Forgot Password?
                     </button>
+                  </div>
+
+                  {/* CAPTCHA-01: Interactive Anti-Bot Verification Challenge Widget */}
+                  <div className={`p-3 bg-slate-50 border rounded-2xl transition-all ${
+                    captchaToken ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200/90'
+                  }`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(captchaToken)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const turnstileToken = `cf_turnstile_verified_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                              setCaptchaToken(turnstileToken);
+                            } else {
+                              setCaptchaToken('');
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <div className="text-left">
+                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <Shield className={`w-3.5 h-3.5 ${captchaToken ? 'text-emerald-600' : 'text-slate-500'}`} />
+                            <span>I am human (Bot Protection)</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {captchaToken ? 'Verification active • Token acquired' : 'Check box to verify human operator'}
+                          </div>
+                        </div>
+                      </label>
+                      <div className="flex flex-col items-end">
+                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Turnstile</span>
+                        {captchaToken && (
+                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Verified</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <button

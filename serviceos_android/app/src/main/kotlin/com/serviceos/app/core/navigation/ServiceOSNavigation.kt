@@ -85,13 +85,46 @@ fun ServiceOSNavHost(
         }
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess = { navController.navigate(Screen.RoleGateway.route) }
+                onLoginSuccess = { role ->
+                    val destination = when (role.uppercase()) {
+                        "TECHNICIAN" -> Screen.TechDashboard.route
+                        "CUSTOMER" -> Screen.CustomerHome.route
+                        "ADMIN", "TENANT_ADMIN", "SYSTEM_ADMIN" -> Screen.RoleGateway.route
+                        else -> Screen.CustomerHome.route
+                    }
+                    navController.navigate(destination) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.RoleGateway.route) {
+            val role = ApiClient.getUserRole()?.uppercase()
             RoleGatewayScreen(
-                onSelectCustomer = { navController.navigate(Screen.CustomerHome.route) },
-                onSelectTechnician = { navController.navigate(Screen.TechDashboard.route) }
+                onSelectCustomer = {
+                    if (role == "TECHNICIAN") {
+                        // Technician accounts must stay within technician workspace
+                        navController.navigate(Screen.TechDashboard.route) {
+                            popUpTo(Screen.RoleGateway.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.CustomerHome.route) {
+                            popUpTo(Screen.RoleGateway.route) { inclusive = true }
+                        }
+                    }
+                },
+                onSelectTechnician = {
+                    if (role == "CUSTOMER") {
+                        // Customer accounts cannot access technician dispatch workspace
+                        navController.navigate(Screen.CustomerHome.route) {
+                            popUpTo(Screen.RoleGateway.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.TechDashboard.route) {
+                            popUpTo(Screen.RoleGateway.route) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 

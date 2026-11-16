@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: (role: String) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -66,9 +66,10 @@ fun LoginScreen(
                     }
                 }
 
-                // If access token was saved, advance
+                // If access token was saved, advance with authoritative role
                 if (!ApiClient.getAccessToken().isNullOrBlank()) {
-                    onLoginSuccess()
+                    val role = ApiClient.getUserRole() ?: "CUSTOMER"
+                    onLoginSuccess(role)
                 } else {
                     errorMessage = res.optJSONObject("error")?.optString("message") ?: "Login failed."
                 }
@@ -100,7 +101,8 @@ fun LoginScreen(
             isLoading = false
             result.onSuccess {
                 if (!ApiClient.getAccessToken().isNullOrBlank()) {
-                    onLoginSuccess()
+                    val role = ApiClient.getUserRole() ?: "CUSTOMER"
+                    onLoginSuccess(role)
                 } else {
                     errorMessage = "Failed to establish authenticated session."
                 }
@@ -124,7 +126,8 @@ fun LoginScreen(
             val result = ApiClient.refreshToken()
             isLoading = false
             result.onSuccess {
-                onLoginSuccess()
+                val role = ApiClient.getUserRole() ?: "CUSTOMER"
+                onLoginSuccess(role)
             }.onFailure {
                 errorMessage = "Saved session expired. Please enter password."
             }

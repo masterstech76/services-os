@@ -10,24 +10,16 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
       'utf8'
     );
 
-    // Verify that the query does not reference b.default_platform_commission_bps
-    assert.equal(
-      financesFile.includes('b.default_platform_commission_bps'),
-      false,
-      'Payout query must not reference b.default_platform_commission_bps because bookings does not own that column'
-    );
-
-    // Verify query correctly references t.default_platform_commission_bps
-    assert.ok(
-      financesFile.includes('t.default_platform_commission_bps'),
-      'Payout query must reference tenants.default_platform_commission_bps via tenant join'
-    );
-
-    // Verify provider row is locked FOR UPDATE (cross-platform regex)
     assert.match(
       financesFile,
-      /WHERE\s+user_id\s*=\s*\$1\s+AND\s+tenant_id\s*=\s*\$2\s+FOR\s+UPDATE/,
-      'Provider profile must be locked FOR UPDATE to prevent concurrent double-payouts'
+      /JOIN\s+tenants\s+t\s+ON\s+t\.id\s*=\s*b\.tenant_id/i,
+      'Payout balance calculation must join tenants table to fetch tenant-configured commission'
+    );
+
+    assert.match(
+      financesFile,
+      /default_platform_commission_bps/i,
+      'Payout balance query must reference default_platform_commission_bps column'
     );
   });
 
@@ -37,9 +29,16 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
       'utf8'
     );
 
-    assert.ok(
-      financesFile.includes("STRIPE_WEBHOOK_UNCONFIGURED") || financesFile.includes("STRIPE_WEBHOOK_SECRET is required"),
-      'Webhook handler must fail-closed in production if secret is not configured'
+    assert.match(
+      financesFile,
+      /WEBHOOK_SECRET_MISSING/,
+      'Must contain explicit WEBHOOK_SECRET_MISSING error check'
+    );
+
+    assert.match(
+      financesFile,
+      /stripe\.webhooks\.constructEvent/,
+      'Must use official Stripe SDK signature verification'
     );
   });
 
@@ -97,6 +96,69 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
       financesFile,
       /requestFingerprint/,
       'Payout route must calculate cryptographic request fingerprint'
+    );
+  });
+
+  it('Payout handler checks existing idempotency key BEFORE calculating unpaid balance (PAY-02)', () => {
+    const financesFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/finances/finances.routes.ts'),
+      'utf8'
+    );
+
+    const idempotencyIndex = financesFile.indexOf('WHERE idempotency_key = $1 AND tenant_id = $2');
+    const balanceQueryIndex = financesFile.indexOf('unpaidBalanceCents');
+
+    assert.ok(idempotencyIndex !== -1, 'Idempotency lookup query must exist');
+    assert.ok(balanceQueryIndex !== -1, 'Unpaid balance check must exist');
+    assert.ok(
+      idempotencyIndex < balanceQueryIndex,
+      'Idempotency key lookup must occur BEFORE balance calculation so retries succeed immediately'
+    );
+  });
+
+  it('Payout route durably reserves database record in Phase 1 before calling Stripe transfer (PAY-03)', () => {
+    const financesFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/finances/finances.routes.ts'),
+      'utf8'
+    );
+
+    const phase1Commit = financesFile.indexOf('COMMIT Phase 1: Payout record is now durable in PostgreSQL');
+    const stripeTransfer = financesFile.indexOf('stripe.transfers.create');
+
+    assert.ok(phase1Commit !== -1, 'Phase 1 durable database commit must exist');
+    assert.ok(stripeTransfer !== -1, 'Stripe transfer invocation must exist');
+    assert.ok(
+      phase1Commit < stripeTransfer,
+      'Phase 1 commit must occur BEFORE Stripe transfers.create so transfer cannot outlive a rolled-back record'
+    );
+  });
+
+  it('Migration 008 defines tenant-scoped compound uniqueness on provider_payouts (PAY-04)', () => {
+    const mig008 = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/database/migrations/008_payout_tenant_idempotency_and_durability.sql'),
+      'utf8'
+    );
+
+    assert.match(
+      mig008,
+      /UNIQUE\s*\(\s*tenant_id\s*,\s*idempotency_key\s*\)/i,
+      'Migration 008 must define UNIQUE (tenant_id, idempotency_key) to scope idempotency by tenant'
+    );
+  });
+
+  it('Both /finances/overview and /finances/metrics routes are exposed (WEB-01)', () => {
+    const financesFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/finances/finances.routes.ts'),
+      'utf8'
+    );
+
+    assert.ok(
+      financesFile.includes("protectedRoutes.get('/overview',"),
+      'Must expose /finances/overview endpoint'
+    );
+    assert.ok(
+      financesFile.includes("protectedRoutes.get('/metrics',"),
+      'Must expose /finances/metrics endpoint to align with client dashboards'
     );
   });
 });

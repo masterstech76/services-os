@@ -66,4 +66,35 @@ describe('Booking Security, Safety PIN & Schema Integrity Suite', () => {
       'Must only set status AUTHORIZED upon successful verification'
     );
   });
+
+  it('POST /:id/confirm-payment enforces booking ownership and operator authorization (PAY-01)', () => {
+    const routeFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/bookings/bookings.routes.ts'),
+      'utf8'
+    );
+
+    assert.match(
+      routeFile,
+      /isOwner\s*=\s*row\.customer_id\s*===\s*callerId/,
+      'Must check that caller is the owner of the booking'
+    );
+
+    assert.match(
+      routeFile,
+      /isPrivilegedOperator\s*=[\s\S]*?TENANT_ADMIN[\s\S]*?SYSTEM_ADMIN[\s\S]*?OPERATOR/,
+      'Must allow designated administrative operator roles to confirm payment'
+    );
+
+    assert.match(
+      routeFile,
+      /reply\.status\(403\)\.send\([\s\S]*?'FORBIDDEN'/,
+      'Must return 403 Forbidden when unauthorized user attempts payment confirmation'
+    );
+
+    assert.match(
+      routeFile,
+      /targetTxStatus\s*=\s*'SUCCEEDED'[\s\S]*?targetInvoiceStatus\s*=\s*'PAID'/,
+      'Must reconcile Stripe status succeeded as SUCCEEDED and PAID rather than capture-required'
+    );
+  });
 });

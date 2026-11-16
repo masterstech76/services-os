@@ -34,10 +34,10 @@ export const Page01MainDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState<string>('Last 30 Days');
   const [serverMetrics, setServerMetrics] = useState<any>(null);
 
-  // Load authoritative financial metrics from Fastify backend
+  // Load authoritative financial metrics from Fastify backend (WEB-01)
   useEffect(() => {
     let isMounted = true;
-    apiClient.request<any>('/finances/metrics')
+    apiClient.getFinancialOverview()
       .then(res => {
         if (isMounted && res.success && res.data) {
           setServerMetrics(res.data);

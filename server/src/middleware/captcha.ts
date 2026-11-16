@@ -25,8 +25,9 @@ export async function verifyCaptcha(request: FastifyRequest, reply: FastifyReply
     body['cf-turnstile-response']
   )?.trim();
 
-  // In non-production or test mode, permit designated test tokens
-  if (process.env.NODE_ENV !== 'production') {
+  // SEC-01: Permit designated test tokens strictly in automated test environment (NODE_ENV === 'test').
+  // Staging, preview, and production environments never accept bypass tokens.
+  if (process.env.NODE_ENV === 'test') {
     if (captchaToken === 'test-captcha-bypass-token' || captchaToken === 'test-captcha-valid') {
       return;
     }

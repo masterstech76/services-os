@@ -244,6 +244,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
     const requestId = request.id || `req_${Date.now()}`;
     const { id } = request.params as any;
     const tenantId = request.tenantId;
+    const callerId = request.user?.id;
+    const callerRole = request.user?.role;
 
     const client = await pool.connect();
     try {
@@ -251,8 +253,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       const bRes = await client.query(
         `SELECT b.id, b.status, b.customer_id, i.id as invoice_id, pt.id as tx_id, pt.stripe_payment_intent_id, pt.status as tx_status
          FROM bookings b
-         JOIN invoices i ON i.booking_id = b.id
-         JOIN payment_transactions pt ON pt.invoice_id = i.id
+         JOIN invoices i ON i.booking_id = b.id AND i.tenant_id = $2
+         JOIN payment_transactions pt ON pt.invoice_id = i.id AND pt.tenant_id = $2
          WHERE b.id = $1 AND b.tenant_id = $2
          FOR UPDATE OF b`,
         [id, tenantId]
@@ -265,34 +267,58 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       const row = bRes.rows[0];
 
-      if (row.tx_status === 'REQUIRES_CAPTURE') {
-        await client.query('COMMIT');
-        return reply.status(200).send(successResponse({ confirmed: true, status: 'REQUIRES_CAPTURE' }, requestId));
+      // Strict Authorization Guard: Caller must be the booking owner or an authorized operator
+      const isOwner = row.customer_id === callerId;
+      const isPrivilegedOperator = ['TENANT_ADMIN', 'SYSTEM_ADMIN', 'OPERATOR'].includes(callerRole || '');
+
+      if (!isOwner && !isPrivilegedOperator) {
+        await client.query('ROLLBACK');
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'You are not authorized to confirm payment for this booking.', requestId)
+        );
       }
+
+      // Idempotent return if already in a confirmed state
+      if (row.tx_status === 'REQUIRES_CAPTURE' || row.tx_status === 'SUCCEEDED') {
+        await client.query('COMMIT');
+        return reply.status(200).send(successResponse({ confirmed: true, status: row.tx_status }, requestId));
+      }
+
+      let targetTxStatus: 'REQUIRES_CAPTURE' | 'SUCCEEDED' = 'REQUIRES_CAPTURE';
+      let targetInvoiceStatus: 'AUTHORIZED' | 'PAID' = 'AUTHORIZED';
 
       if (env.STRIPE_SECRET_KEY && row.stripe_payment_intent_id?.startsWith('pi_')) {
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
         const pi = await stripe.paymentIntents.retrieve(row.stripe_payment_intent_id);
 
-        if (pi.status !== 'requires_capture' && pi.status !== 'succeeded') {
+        if (pi.status === 'succeeded') {
+          targetTxStatus = 'SUCCEEDED';
+          targetInvoiceStatus = 'PAID';
+        } else if (pi.status === 'requires_capture') {
+          targetTxStatus = 'REQUIRES_CAPTURE';
+          targetInvoiceStatus = 'AUTHORIZED';
+        } else {
           await client.query('ROLLBACK');
           return reply.status(400).send(
-            errorResponse('PAYMENT_NOT_AUTHORIZED', `Stripe PaymentIntent status is ${pi.status}; card hold is not yet authorized.`, requestId)
+            errorResponse('PAYMENT_NOT_AUTHORIZED', `Stripe PaymentIntent status is ${pi.status}; payment is not authorized.`, requestId)
           );
         }
       }
 
-      await client.query(
-        `UPDATE invoices SET status = 'AUTHORIZED', updated_at = NOW() WHERE id = $1`,
-        [row.invoice_id]
-      );
-      await client.query(
-        `UPDATE payment_transactions SET status = 'REQUIRES_CAPTURE' WHERE id = $1`,
-        [row.tx_id]
-      );
+      if (targetTxStatus === 'SUCCEEDED') {
+        await client.query(`UPDATE payment_transactions SET status = 'SUCCEEDED' WHERE id = $1`, [row.tx_id]);
+      } else {
+        await client.query(`UPDATE payment_transactions SET status = 'REQUIRES_CAPTURE' WHERE id = $1`, [row.tx_id]);
+      }
+
+      if (targetInvoiceStatus === 'PAID') {
+        await client.query(`UPDATE invoices SET status = 'PAID', updated_at = NOW() WHERE id = $1`, [row.invoice_id]);
+      } else {
+        await client.query(`UPDATE invoices SET status = 'AUTHORIZED', updated_at = NOW() WHERE id = $1`, [row.invoice_id]);
+      }
 
       await client.query('COMMIT');
-      return reply.status(200).send(successResponse({ confirmed: true, status: 'REQUIRES_CAPTURE' }, requestId));
+      return reply.status(200).send(successResponse({ confirmed: true, status: targetTxStatus }, requestId));
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
