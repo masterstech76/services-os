@@ -73,48 +73,56 @@ export async function financeRoutes(fastify: FastifyInstance) {
     const eventId = event.id;
     const eventType = event.type;
 
-    // 1. Idempotency Check
-    const existing = await pool.query(
-      `SELECT id FROM webhook_events WHERE id = $1`,
-      [eventId]
-    );
+    // 1. Transactional & Atomic Idempotency Event Claim
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    if (existing.rowCount && existing.rowCount > 0) {
-      // Already processed, return 200 OK immediately
-      return reply.status(200).send({ received: true, idempotent: true });
-    }
+      const claimRes = await client.query(
+        `INSERT INTO webhook_events (id, provider, event_type, processed_at, payload)
+         VALUES ($1, 'stripe', $2, NOW(), $3)
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id`,
+        [eventId, eventType, JSON.stringify(event)]
+      );
 
-    // 2. Process Known Events
-    if (eventType === 'payment_intent.succeeded') {
-      const paymentIntent = event.data?.object;
-      if (paymentIntent?.id) {
-        await pool.query(
-          `UPDATE payment_transactions 
-           SET status = 'SUCCEEDED', captured_amount_cents = authorized_amount_cents 
-           WHERE stripe_payment_intent_id = $1`,
-          [paymentIntent.id]
-        );
+      if (claimRes.rowCount === 0) {
+        // Event already claimed or processed concurrently
+        await client.query('ROLLBACK');
+        return reply.status(200).send({ received: true, idempotent: true });
       }
-    } else if (eventType === 'charge.refunded') {
-      const charge = event.data?.object;
-      if (charge?.payment_intent) {
-        await pool.query(
-          `UPDATE payment_transactions 
-           SET status = 'REFUNDED', refunded_amount_cents = $1 
-           WHERE stripe_payment_intent_id = $2`,
-          [charge.amount_refunded || 0, charge.payment_intent]
-        );
+
+      // 2. Process Known Events Atomically
+      if (eventType === 'payment_intent.succeeded') {
+        const paymentIntent = event.data?.object;
+        if (paymentIntent?.id) {
+          await client.query(
+            `UPDATE payment_transactions 
+             SET status = 'SUCCEEDED', captured_amount_cents = authorized_amount_cents 
+             WHERE stripe_payment_intent_id = $1`,
+            [paymentIntent.id]
+          );
+        }
+      } else if (eventType === 'charge.refunded') {
+        const charge = event.data?.object;
+        if (charge?.payment_intent) {
+          await client.query(
+            `UPDATE payment_transactions 
+             SET status = 'REFUNDED', refunded_amount_cents = $1 
+             WHERE stripe_payment_intent_id = $2`,
+            [charge.amount_refunded || 0, charge.payment_intent]
+          );
+        }
       }
+
+      await client.query('COMMIT');
+      return reply.status(200).send({ received: true });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    // 3. Record event in webhook_events
-    await pool.query(
-      `INSERT INTO webhook_events (id, provider, event_type, processed_at, payload)
-       VALUES ($1, 'stripe', $2, NOW(), $3)`,
-      [eventId, eventType, JSON.stringify(event)]
-    );
-
-    return reply.status(200).send({ received: true });
   });
 
   // Protected Routes Group
@@ -451,9 +459,41 @@ export async function financeRoutes(fastify: FastifyInstance) {
           }
         }
 
-        // Derive deterministic idempotency key for external transfer
-        const clientKey = request.headers['idempotency-key'] as string | undefined;
-        const stableOpId = clientKey ? `payout_${clientKey}` : `payout_op_${providerId}_${Date.now()}`;
+        // Check or derive stable server-tracked idempotency key
+        const clientKey = (request.headers['idempotency-key'] as string | undefined)?.trim();
+        const idempotencyKey = clientKey || `payout_op_${tenantId}_${providerId}_${amountCents}_${new Date().toISOString().slice(0, 10)}`;
+
+        const existingPayout = await client.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string }>(
+          `SELECT id, stripe_transfer_id, amount_cents, status 
+           FROM provider_payouts 
+           WHERE idempotency_key = $1 AND tenant_id = $2`,
+          [idempotencyKey, tenantId]
+        );
+
+        if (existingPayout.rows.length > 0) {
+          const ep = existingPayout.rows[0];
+          await client.query('ROLLBACK');
+          return reply.status(200).send(
+            successResponse({
+              payoutId: ep.id,
+              transferId: ep.stripe_transfer_id,
+              amountCents: parseInt(ep.amount_cents, 10),
+              providerName: provider.full_name,
+              status: ep.status,
+              message: 'Existing payout operation retrieved idempotently.'
+            }, requestId)
+          );
+        }
+
+        // Insert pending payout record to atomically reserve the payout operation
+        const pendingPayoutRes = await client.query(
+          `INSERT INTO provider_payouts (
+            tenant_id, provider_id, amount_cents, currency, status, idempotency_key
+          ) VALUES ($1, $2, $3, 'USD', 'PROCESSING', $4)
+          RETURNING id`,
+          [tenantId, providerId, amountCents, idempotencyKey]
+        );
+        const payoutId = pendingPayoutRes.rows[0].id;
 
         // Real Stripe Connect Transfer when gateway configured
         let transferRef: string;
@@ -473,7 +513,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
               destination: provider.stripe_connect_account_id,
               description: description || `Provider payout to ${provider.full_name}`
             }, {
-              idempotencyKey: stableOpId
+              idempotencyKey: `payout_stripe_${payoutId}` // Stable, database-tracked UUID
             });
             transferRef = transfer.id;
           } catch (stripeErr: any) {
@@ -487,13 +527,13 @@ export async function financeRoutes(fastify: FastifyInstance) {
           transferRef = `tr_sandbox_unsettled_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         }
 
-        // Create provider payout record with PROCESSING status (reconciled upon settlement)
+        // Update provider payout record with transfer reference and processed_at
         const payoutRes = await client.query(
-          `INSERT INTO provider_payouts (
-            tenant_id, provider_id, stripe_transfer_id, amount_cents, currency, status, processed_at
-          ) VALUES ($1, $2, $3, $4, 'USD', 'PROCESSING', NOW())
-          RETURNING id, stripe_transfer_id, amount_cents, status, created_at`,
-          [tenantId, providerId, transferRef, amountCents]
+          `UPDATE provider_payouts
+           SET stripe_transfer_id = $1, processed_at = NOW(), status = 'PROCESSING'
+           WHERE id = $2
+           RETURNING id, stripe_transfer_id, amount_cents, status, created_at`,
+          [transferRef, payoutId]
         );
 
         // Post double-entry ledger entry:
@@ -535,8 +575,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
             transferId: transferRef,
             amountCents,
             providerName: provider.full_name,
-            status: 'PAID',
-            message: 'Provider payout initiated and posted to ledger.'
+            status: payoutRes.rows[0].status,
+            message: 'Provider payout initiated with PROCESSING status and posted to ledger.'
           }, requestId)
         );
       } catch (err) {

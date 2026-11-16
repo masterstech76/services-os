@@ -193,6 +193,19 @@ object ApiClient {
         return result
     }
 
+    suspend fun validateSession(): Result<JSONObject> {
+        val result = executeRequest("/auth/me", "GET")
+        if (result.isFailure && getRefreshToken() != null) {
+            val refreshResult = refreshToken()
+            if (refreshResult.isSuccess) {
+                return executeRequest("/auth/me", "GET")
+            } else {
+                clearTokens()
+            }
+        }
+        return result
+    }
+
     // =========================================================================
     // CATALOG & BOOKING OPERATIONS
     // =========================================================================

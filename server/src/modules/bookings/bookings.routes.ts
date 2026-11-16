@@ -17,6 +17,7 @@ const createBookingSchema = z.object({
   accessInstructions: z.string().optional(),
   scheduledStart: z.string().datetime().optional(),
   priority: z.enum(['STANDARD', 'URGENT', 'EMERGENCY']).default('STANDARD'),
+  paymentMethodId: z.string().optional(),
 });
 
 const verifyPinSchema = z.object({
@@ -119,34 +120,16 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       const totalAmountCents = laborCents + diagnosticCents;
       const invoiceNo = `INV-${new Date().getFullYear()}-${randomSuffix}`;
 
-      const invRes = await client.query(
-        `INSERT INTO invoices (
-          tenant_id, booking_id, invoice_number, labor_subtotal_cents,
-          diagnostic_fee_cents, total_amount_cents, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'AUTHORIZED')
-        RETURNING id`,
-        [tenantId, booking.id, invoiceNo, laborCents, diagnosticCents, totalAmountCents]
-      );
-      const invoiceId = invRes.rows[0].id;
-
-      // G. Insert Invoice Line Items
-      await client.query(
-        `INSERT INTO invoice_items (invoice_id, description, item_type, quantity, unit_price_cents, total_cents)
-         VALUES 
-          ($1, $2, 'LABOR', 1, $3, $3),
-          ($1, 'Diagnostic Dispatch Callout', 'DIAGNOSTIC', 1, $4, $4)`,
-        [invoiceId, service.name, laborCents, diagnosticCents]
-      );
-
-      // H. Create Pre-Auth Payment Transaction Record
+      // H. Create Pre-Auth Payment Transaction Record with verified hold status
       let stripeIntentId: string;
       let clientSecret: string | null = null;
-      let initialPaymentStatus = 'REQUIRES_CAPTURE';
+      let initialPaymentStatus: 'REQUIRES_CAPTURE' | 'PENDING' = 'PENDING';
+      let invoiceStatus: 'AUTHORIZED' | 'DRAFT' = 'DRAFT';
 
       if (env.STRIPE_SECRET_KEY) {
         try {
           const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-          const paymentIntent = await stripe.paymentIntents.create({
+          const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
             amount: totalAmountCents,
             currency: 'usd',
             capture_method: 'manual', // Hold funds until completion
@@ -155,12 +138,27 @@ export async function bookingRoutes(fastify: FastifyInstance) {
               bookingRef,
               customerId: userId,
             }
-          }, {
-            idempotencyKey: `idem_pi_${booking.id}`
-          });
+          };
+
+          if (parsed.data.paymentMethodId) {
+            paymentIntentParams.payment_method = parsed.data.paymentMethodId;
+            paymentIntentParams.confirm = true;
+            paymentIntentParams.return_url = 'https://serviceproos.com/booking/complete';
+          }
+
+          const paymentIntent = await stripe.paymentIntents.create(
+            paymentIntentParams,
+            { idempotencyKey: `idem_pi_${booking.id}` }
+          );
+
           stripeIntentId = paymentIntent.id;
           clientSecret = paymentIntent.client_secret;
-          initialPaymentStatus = paymentIntent.status === 'requires_capture' ? 'REQUIRES_CAPTURE' : 'REQUIRES_CAPTURE';
+
+          // Only record as AUTHORIZED/REQUIRES_CAPTURE if Stripe confirmed the hold
+          if (paymentIntent.status === 'requires_capture') {
+            initialPaymentStatus = 'REQUIRES_CAPTURE';
+            invoiceStatus = 'AUTHORIZED';
+          }
         } catch (stripeErr: any) {
           await client.query('ROLLBACK');
           return reply.status(502).send(
@@ -176,6 +174,25 @@ export async function bookingRoutes(fastify: FastifyInstance) {
         }
         stripeIntentId = `pi_sandbox_unsettled_${Date.now()}_${randomSuffix}`;
       }
+
+      const invRes = await client.query(
+        `INSERT INTO invoices (
+          tenant_id, booking_id, invoice_number, labor_subtotal_cents,
+          diagnostic_fee_cents, total_amount_cents, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING id`,
+        [tenantId, booking.id, invoiceNo, laborCents, diagnosticCents, totalAmountCents, invoiceStatus]
+      );
+      const invoiceId = invRes.rows[0].id;
+
+      // G. Insert Invoice Line Items
+      await client.query(
+        `INSERT INTO invoice_items (invoice_id, description, item_type, quantity, unit_price_cents, total_cents)
+         VALUES 
+          ($1, $2, 'LABOR', 1, $3, $3),
+          ($1, 'Diagnostic Dispatch Callout', 'DIAGNOSTIC', 1, $4, $4)`,
+        [invoiceId, service.name, laborCents, diagnosticCents]
+      );
 
       await client.query(
         `INSERT INTO payment_transactions (
@@ -825,8 +842,8 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
         await client.query(
           `UPDATE payment_transactions 
-           SET status = 'FAILED'
-           WHERE invoice_id = $1 AND status = 'REQUIRES_CAPTURE'`,
+           SET status = 'VOIDED'
+           WHERE invoice_id = $1 AND status IN ('REQUIRES_CAPTURE', 'PENDING')`,
           [booking.invoice_id]
         );
       }

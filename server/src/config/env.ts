@@ -39,6 +39,8 @@ const envSchema = z.object({
   // Anti-Bot & Captcha Protection (Cloudflare Turnstile / hCaptcha)
   CAPTCHA_SECRET_KEY: z.string().optional(),
   CAPTCHA_ENFORCED: z.string().default('false'),
+  CAPTCHA_PROVIDER: z.enum(['turnstile', 'hcaptcha']).default('turnstile'),
+  CAPTCHA_MANDATORY_PRODUCTION: z.string().default('false'),
   
   // Turnkey Installer Setup (Supports both BOOTSTRAP_TOKEN and INITIAL_ADMIN_BOOTSTRAP_SECRET)
   BOOTSTRAP_TOKEN: z.string().min(16).default('turnkey_bootstrap_setup_token_enterprise'),
@@ -95,6 +97,11 @@ if (validated.NODE_ENV === 'production') {
   }
   if (validated.CAPTCHA_ENFORCED === 'true' && (!validated.CAPTCHA_SECRET_KEY || validated.CAPTCHA_SECRET_KEY.trim() === '')) {
     throw new Error('[Security Exception] Refusing to start in production with CAPTCHA_ENFORCED=true without CAPTCHA_SECRET_KEY configured');
+  }
+  if (validated.CAPTCHA_MANDATORY_PRODUCTION === 'true') {
+    if (validated.CAPTCHA_ENFORCED !== 'true' || !validated.CAPTCHA_SECRET_KEY || validated.CAPTCHA_SECRET_KEY.trim() === '') {
+      throw new Error('[Security Exception] Refusing to start in production: CAPTCHA_MANDATORY_PRODUCTION=true requires CAPTCHA_ENFORCED=true and a valid CAPTCHA_SECRET_KEY');
+    }
   }
   if (validated.STRIPE_SECRET_KEY && (!validated.STRIPE_WEBHOOK_SECRET || validated.STRIPE_WEBHOOK_SECRET.trim() === '')) {
     throw new Error('[Security Exception] Refusing to start in production with STRIPE_SECRET_KEY without STRIPE_WEBHOOK_SECRET configured');

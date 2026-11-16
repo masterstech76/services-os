@@ -134,10 +134,17 @@ class ApiClient {
   // ==========================================================================
   // AUTHENTICATION & INSTALLER
   // ==========================================================================
-  public async login(email: string, password: string, mfaCode?: string) {
+  public async login(email: string, password: string, mfaCode?: string, captchaToken?: string) {
+    const headers: Record<string, string> = {};
+    if (captchaToken) {
+      headers['cf-turnstile-response'] = captchaToken;
+      headers['x-captcha-token'] = captchaToken;
+    }
+
     const res = await this.request<any>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, mfaCode }),
+      headers,
+      body: JSON.stringify({ email, password, mfaCode, captchaToken }),
     });
     if (res.success && res.data?.accessToken) {
       this.setAccessToken(res.data.accessToken);

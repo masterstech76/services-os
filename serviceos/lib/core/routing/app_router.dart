@@ -30,15 +30,28 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) async {
-      final token = await ApiClient.instance.getAccessToken();
-      final isAuthenticated = token != null && token.isNotEmpty;
       final isPublicRoute = state.matchedLocation == '/login' ||
                             state.matchedLocation == '/splash' ||
                             state.matchedLocation == '/role-gateway';
 
-      if (!isAuthenticated && !isPublicRoute) {
+      if (isPublicRoute) return null;
+
+      // Validate live server session and user role
+      final user = await ApiClient.instance.validateSession();
+      if (user == null) {
         return '/login';
       }
+
+      final role = (user['role'] ?? '').toString().toUpperCase();
+
+      // Role-specific navigation enforcement
+      if (state.matchedLocation.startsWith('/technician') && role != 'TECHNICIAN' && role != 'ADMIN') {
+        return '/customer/home';
+      }
+      if (state.matchedLocation.startsWith('/admin') && role != 'ADMIN') {
+        return '/customer/home';
+      }
+
       return null;
     },
     routes: [

@@ -63,14 +63,19 @@ export async function verifyCaptcha(request: FastifyRequest, reply: FastifyReply
     return;
   }
 
-  // Verify against Cloudflare Turnstile API
+  // Verify against Cloudflare Turnstile or hCaptcha API
+  const provider = env.CAPTCHA_PROVIDER || 'turnstile';
+  const verifyUrl = provider === 'hcaptcha'
+    ? 'https://api.hcaptcha.com/siteverify'
+    : 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
   try {
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
     formData.append('response', captchaToken);
     formData.append('remoteip', request.ip);
 
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    const res = await fetch(verifyUrl, {
       method: 'POST',
       body: formData,
       headers: {

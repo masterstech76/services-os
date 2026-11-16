@@ -91,7 +91,6 @@ export const Page01MainDashboard: React.FC = () => {
     return orderedIndices.map(idx => ({
       name: days[idx],
       thisPeriod: counts[idx],
-      lastPeriod: 0,
       revenue: revenues[idx]
     }));
   }, [filteredBookings]);
@@ -258,11 +257,7 @@ export const Page01MainDashboard: React.FC = () => {
               <div className="flex items-center gap-3 text-xs font-semibold">
                 <span className="flex items-center gap-1.5 text-blue-700 font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block shadow-xs"></span>
-                  This Period
-                </span>
-                <span className="flex items-center gap-1.5 text-slate-400 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-300 inline-block"></span>
-                  Last Period
+                  Active Orders
                 </span>
               </div>
             </div>
@@ -298,10 +293,6 @@ export const Page01MainDashboard: React.FC = () => {
                       <stop offset="5%" stopColor="#2563EB" stopOpacity={0.35} />
                       <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
                     </linearGradient>
-                    <linearGradient id="realLastPeriodGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0.0} />
-                    </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                   <XAxis 
@@ -324,31 +315,22 @@ export const Page01MainDashboard: React.FC = () => {
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         const current = payload.find((p: any) => p.dataKey === 'thisPeriod')?.value as number || 0;
-                        const last = payload.find((p: any) => p.dataKey === 'lastPeriod')?.value as number || 0;
                         const rev = payload[0]?.payload?.revenue || 0;
-                        const growth = last > 0 ? (((current - last) / last) * 100).toFixed(1) : null;
 
                         return (
                           <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-xl border border-slate-700/80 text-xs space-y-1.5 min-w-[200px]">
                             <div className="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
                               <span className="font-extrabold text-slate-200">{label}</span>
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                                {growth !== null ? `+${growth}% Delta` : 'Live Work Orders'}
+                                Live Work Orders
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-slate-200">
                               <span className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                This Period:
+                                Scheduled Orders:
                               </span>
                               <span className="font-extrabold text-white">{current.toLocaleString()} Jobs</span>
-                            </div>
-                            <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                              <span className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                                Last Period:
-                              </span>
-                              <span className="font-bold">{last.toLocaleString()} Jobs</span>
                             </div>
                             <div className="pt-1.5 border-t border-slate-800 text-[11px] text-emerald-400 font-bold flex items-center justify-between">
                               <span>Escrow Volume:</span>
@@ -359,14 +341,6 @@ export const Page01MainDashboard: React.FC = () => {
                       }
                       return null;
                     }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="lastPeriod"
-                    stroke="#94A3B8"
-                    strokeWidth={2}
-                    strokeDasharray="4 4"
-                    fill="url(#realLastPeriodGradient)"
                   />
                   <Area
                     type="monotone"

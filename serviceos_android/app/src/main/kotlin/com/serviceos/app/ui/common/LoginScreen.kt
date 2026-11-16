@@ -111,7 +111,7 @@ fun LoginScreen(
         }
     }
 
-    fun handleBiometricFastSignIn() {
+    fun handleRestoreSavedSession() {
         val refreshToken = ApiClient.getRefreshToken()
         if (refreshToken.isNullOrBlank()) {
             errorMessage = "No saved session found. Please sign in with email and password."
@@ -127,7 +127,7 @@ fun LoginScreen(
             result.onSuccess {
                 onLoginSuccess()
             }.onFailure {
-                errorMessage = "Saved biometric session expired. Please enter password."
+                errorMessage = "Saved session expired. Please enter password."
             }
         }
     }
@@ -265,16 +265,16 @@ fun LoginScreen(
 
                 if (step == 1) {
                     OutlinedButton(
-                        onClick = { handleBiometricFastSignIn() },
+                        onClick = { handleRestoreSavedSession() },
                         enabled = !isLoading,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
                     ) {
-                        Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Sign In with Saved Biometrics")
+                        Text("Quick Sign-In with Saved Session")
                     }
                 }
             }

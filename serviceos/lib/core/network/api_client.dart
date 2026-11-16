@@ -167,6 +167,41 @@ class ApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>?> validateSession() async {
+    final token = await getAccessToken();
+    if (token == null || token.isEmpty) {
+      final refresh = await getRefreshToken();
+      if (refresh != null && refresh.isNotEmpty) {
+        final refreshed = await refreshToken();
+        if (refreshed['success'] != true) {
+          await logout();
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+
+    try {
+      final me = await getMe();
+      if (me['success'] == true && me['data']?['user'] != null) {
+        return me['data']['user'] as Map<String, dynamic>;
+      }
+    } catch (_) {
+      try {
+        final refreshed = await refreshToken();
+        if (refreshed['success'] == true) {
+          final me = await getMe();
+          if (me['success'] == true && me['data']?['user'] != null) {
+            return me['data']['user'] as Map<String, dynamic>;
+          }
+        }
+      } catch (_) {}
+      await logout();
+    }
+    return null;
+  }
+
   // ==========================================================================
   // CATALOG & SERVICES
   // ==========================================================================

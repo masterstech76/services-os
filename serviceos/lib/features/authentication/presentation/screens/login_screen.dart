@@ -129,11 +129,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _handleBiometricFastSignIn() async {
+  Future<void> _handleRestoreSavedSession() async {
     final refresh = await ApiClient.instance.getRefreshToken();
     if (refresh == null || refresh.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No saved biometric session found. Please sign in with email and password first.')),
+        const SnackBar(content: Text('No saved session found. Please sign in with email and password first.')),
       );
       return;
     }
@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Biometric sign-in unavailable. Please enter password.';
+        _errorMessage = 'Session restoration unavailable. Please enter password.';
         _isLoading = false;
       });
     }
@@ -351,9 +351,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // Biometrics Shortcut
+                // Saved Session Shortcut
                 InkWell(
-                  onTap: _handleBiometricFastSignIn,
+                  onTap: _handleRestoreSavedSession,
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
                     width: double.infinity,
@@ -366,10 +366,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.fingerprint_rounded, color: primaryBrand, size: 20),
+                        Icon(Icons.lock_reset_rounded, color: primaryBrand, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Fast Sign-In with Saved Biometrics',
+                          'Quick Sign-In with Saved Session',
                           style: TextStyle(
                             color: primaryBrand,
                             fontSize: 12,
