@@ -36,6 +36,10 @@ const envSchema = z.object({
   // Sensitive Data Encryption at Rest (AES-256-GCM - 32 bytes hex)
   APP_ENCRYPTION_KEY: z.string().default('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'),
   
+  // Anti-Bot & Captcha Protection (Cloudflare Turnstile / hCaptcha)
+  CAPTCHA_SECRET_KEY: z.string().optional(),
+  CAPTCHA_ENFORCED: z.string().default('false'),
+  
   // Turnkey Installer Setup (Supports both BOOTSTRAP_TOKEN and INITIAL_ADMIN_BOOTSTRAP_SECRET)
   BOOTSTRAP_TOKEN: z.string().min(16).default('turnkey_bootstrap_setup_token_enterprise'),
   INITIAL_ADMIN_BOOTSTRAP_SECRET: z.string().min(16).optional(),
@@ -82,6 +86,12 @@ if (validated.NODE_ENV === 'production') {
   }
   if (INSECURE_DEFAULTS.includes(effectiveBootstrapToken)) {
     throw new Error('[Security Exception] Refusing to start in production with default insecure BOOTSTRAP_TOKEN');
+  }
+  if (
+    INSECURE_DEFAULTS.includes(validated.APP_ENCRYPTION_KEY) ||
+    !/^[0-9a-f]{64}$/i.test(validated.APP_ENCRYPTION_KEY)
+  ) {
+    throw new Error('[Security Exception] Refusing to start in production without a valid 32-byte hex APP_ENCRYPTION_KEY');
   }
 }
 

@@ -23,8 +23,10 @@ declare module 'fastify' {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function tenantResolver(request: FastifyRequest, reply: FastifyReply) {
-  // Allow health and installer routes without tenant resolution
+  // Allow health, docs, and installer routes without tenant resolution
   if (
     request.url.startsWith('/health') ||
     request.url.startsWith('/docs') ||
@@ -35,42 +37,99 @@ export async function tenantResolver(request: FastifyRequest, reply: FastifyRepl
 
   const requestId = request.id || `req_${Date.now()}`;
   
-  // 1. Resolve tenant ID from header or user claim
-  const headerTenantId = request.headers['x-tenant-id'] as string;
+  // 1. Resolve candidate tenant identifier from header, token, or host
+  const headerTenantId = request.headers['x-tenant-id'] as string | undefined;
   const tokenTenantId = (request.user as any)?.tenantId;
-  const candidateId = headerTenantId || tokenTenantId;
+  const candidate = (headerTenantId?.trim() || tokenTenantId?.trim());
 
   try {
-    let queryText = 'SELECT id, name, slug, currency_code, currency_symbol, timezone, default_platform_commission_bps FROM tenants WHERE is_active = TRUE';
-    const params: any[] = [];
+    if (candidate) {
+      const isCandidateUuid = UUID_REGEX.test(candidate);
+      const query = isCandidateUuid
+        ? 'SELECT id, name, slug, currency_code, currency_symbol, timezone, default_platform_commission_bps FROM tenants WHERE id = $1 AND is_active = TRUE'
+        : 'SELECT id, name, slug, currency_code, currency_symbol, timezone, default_platform_commission_bps FROM tenants WHERE slug = $1 AND is_active = TRUE';
 
-    if (candidateId) {
-      queryText += ' AND id = $1';
-      params.push(candidateId);
-    } else {
-      // Default to the first active tenant in the installation
-      queryText += ' ORDER BY created_at ASC LIMIT 1';
+      const res = await pool.query(query, [candidate]);
+
+      if (res.rows.length === 0) {
+        return reply.status(404).send(
+          errorResponse('TENANT_NOT_FOUND', `Organization tenant '${candidate}' not found or inactive.`, requestId)
+        );
+      }
+
+      const row = res.rows[0];
+      request.tenantId = row.id;
+      request.tenant = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        currencyCode: row.currency_code,
+        currencySymbol: row.currency_symbol,
+        timezone: row.timezone,
+        commissionBps: row.default_platform_commission_bps,
+      };
+      return;
     }
 
-    const res = await pool.query(queryText, params);
+    // 2. Resolve via Host / domain if header is omitted
+    const rawHost = (request.headers.host || '').split(':')[0].toLowerCase();
+    if (rawHost && rawHost !== 'localhost' && rawHost !== '127.0.0.1') {
+      const domainRes = await pool.query(
+        'SELECT id, name, slug, currency_code, currency_symbol, timezone, default_platform_commission_bps FROM tenants WHERE (custom_domain = $1 OR slug = $2) AND is_active = TRUE',
+        [rawHost, rawHost.split('.')[0]]
+      );
+      if (domainRes.rows.length > 0) {
+        const row = domainRes.rows[0];
+        request.tenantId = row.id;
+        request.tenant = {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          currencyCode: row.currency_code,
+          currencySymbol: row.currency_symbol,
+          timezone: row.timezone,
+          commissionBps: row.default_platform_commission_bps,
+        };
+        return;
+      }
+    }
 
-    if (res.rows.length === 0) {
+    // 3. Fallback check: if there is exactly one active tenant in the installation, resolve it;
+    // if multiple exist, require explicit tenant identification.
+    const allActiveRes = await pool.query(
+      'SELECT id, name, slug, currency_code, currency_symbol, timezone, default_platform_commission_bps FROM tenants WHERE is_active = TRUE ORDER BY created_at ASC'
+    );
+
+    if (allActiveRes.rows.length === 0) {
       return reply.status(404).send(
-        errorResponse('TENANT_NOT_FOUND', 'Active organization/tenant profile not found.', requestId)
+        errorResponse('TENANT_NOT_FOUND', 'No active organization found on this server. Please execute turnkey setup wizard.', requestId)
       );
     }
 
-    const row = res.rows[0];
-    request.tenantId = row.id;
-    request.tenant = {
-      id: row.id,
-      name: row.name,
-      slug: row.slug,
-      currencyCode: row.currency_code,
-      currencySymbol: row.currency_symbol,
-      timezone: row.timezone,
-      commissionBps: row.default_platform_commission_bps,
-    };
+    if (allActiveRes.rows.length === 1) {
+      // Single-tenant deployment: safe to bind the single organization
+      const row = allActiveRes.rows[0];
+      request.tenantId = row.id;
+      request.tenant = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        currencyCode: row.currency_code,
+        currencySymbol: row.currency_symbol,
+        timezone: row.timezone,
+        commissionBps: row.default_platform_commission_bps,
+      };
+      return;
+    }
+
+    // Multi-tenant deployment without tenant identifier
+    return reply.status(400).send(
+      errorResponse(
+        'TENANT_IDENTIFIER_REQUIRED',
+        'Multiple active organizations exist. Please provide x-tenant-id header or access via organization domain.',
+        requestId
+      )
+    );
   } catch (err: any) {
     request.log.error(err);
     return reply.status(500).send(

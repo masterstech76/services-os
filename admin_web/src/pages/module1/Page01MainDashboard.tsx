@@ -41,19 +41,35 @@ export const Page01MainDashboard: React.FC = () => {
   const commission = pricingConfig?.commissionRate || 15;
   const netCommission = (grossRevenue * (commission / 100));
 
-  // Generate real daily points if bookings exist, else empty
+  // Generate truthful daily aggregates from live bookings
   const currentPerformanceData = React.useMemo(() => {
     if (bookings.length === 0) return [];
-    return [
-      { name: 'Mon', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Tue', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Wed', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Thu', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Fri', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Sat', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue },
-      { name: 'Sun', thisPeriod: bookings.length, lastPeriod: Math.max(0, bookings.length - 1), revenue: grossRevenue }
-    ];
-  }, [bookings, grossRevenue]);
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    const revenues = [0, 0, 0, 0, 0, 0, 0];
+
+    for (const b of bookings) {
+      const dateStr = b.scheduleDate || (b as any).scheduledStart || (b as any).createdAt;
+      const d = dateStr ? new Date(dateStr) : null;
+      if (d && !isNaN(d.getTime())) {
+        const dayIdx = d.getDay();
+        counts[dayIdx] += 1;
+        if (b.paymentStatus === 'Paid') {
+          revenues[dayIdx] += (b.estimate || 0);
+        }
+      }
+    }
+
+    // Standard business ordering Mon through Sun
+    const orderedIndices = [1, 2, 3, 4, 5, 6, 0];
+    return orderedIndices.map(idx => ({
+      name: days[idx],
+      thisPeriod: counts[idx],
+      lastPeriod: 0,
+      revenue: revenues[idx]
+    }));
+  }, [bookings]);
 
   // Service distribution derived from live categories
   const serviceDistribution = React.useMemo(() => {

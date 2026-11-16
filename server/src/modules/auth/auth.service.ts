@@ -81,8 +81,16 @@ export class AuthService {
     return payload;
   }
 
+  private static getEncryptionKey(): Buffer {
+    const rawKey = env.APP_ENCRYPTION_KEY;
+    if (!rawKey || !/^[0-9a-f]{64}$/i.test(rawKey)) {
+      throw new Error('INVALID_APP_ENCRYPTION_KEY: Must be a 64-character hex string (32 bytes).');
+    }
+    return Buffer.from(rawKey, 'hex');
+  }
+
   static encryptTotpSecret(secret: string): string {
-    const key = Buffer.from(env.APP_ENCRYPTION_KEY.padEnd(64, '0').slice(0, 64), 'hex');
+    const key = this.getEncryptionKey();
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     let encrypted = cipher.update(secret, 'utf8', 'hex');
@@ -94,15 +102,29 @@ export class AuthService {
   static decryptTotpSecret(encryptedPayload: string): string {
     const parts = encryptedPayload.split(':');
     if (parts.length !== 3) {
-      return encryptedPayload; // Fallback for raw unencrypted secrets in test fixtures
+      throw new Error('INVALID_ENCRYPTED_PAYLOAD_FORMAT: Expected iv:authTag:ciphertext');
     }
     const [ivHex, authTagHex, encryptedText] = parts;
-    const key = Buffer.from(env.APP_ENCRYPTION_KEY.padEnd(64, '0').slice(0, 64), 'hex');
+    if (!/^[0-9a-f]{24}$/i.test(ivHex) || !/^[0-9a-f]{32}$/i.test(authTagHex) || !/^[0-9a-f]+$/i.test(encryptedText)) {
+      throw new Error('CORRUPTED_ENCRYPTION_METADATA');
+    }
+    const key = this.getEncryptionKey();
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
     decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
+  }
+
+  static generateBackupCodes(count: number = 8): { rawCodes: string[]; hashedCodes: string[] } {
+    const rawCodes: string[] = [];
+    const hashedCodes: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+      rawCodes.push(code);
+      hashedCodes.push(this.hashToken(code));
+    }
+    return { rawCodes, hashedCodes };
   }
 
   static async createSession(userId: string, tenantId: string, ipAddress?: string, userAgent?: string): Promise<string> {
@@ -232,5 +254,94 @@ export class AuthService {
     const rawOrEncrypted = res.rows[0].totp_secret_encrypted;
     const secret = this.decryptTotpSecret(rawOrEncrypted);
     return authenticator.check(code, secret);
+  }
+
+  static async setupMfa(userId: string, email: string): Promise<{ secret: string; otpAuthUrl: string }> {
+    const secret = authenticator.generateSecret();
+    const otpAuthUrl = authenticator.keyuri(email, 'ServicePro OS', secret);
+    const encryptedSecret = this.encryptTotpSecret(secret);
+
+    await pool.query(
+      `INSERT INTO user_mfa_credentials (user_id, totp_secret_encrypted, is_enabled, backup_codes_hashed)
+       VALUES ($1, $2, FALSE, '[]'::jsonb)
+       ON CONFLICT (user_id) 
+       DO UPDATE SET totp_secret_encrypted = EXCLUDED.totp_secret_encrypted, is_enabled = FALSE`,
+      [userId, encryptedSecret]
+    );
+
+    return { secret, otpAuthUrl };
+  }
+
+  static async confirmMfa(userId: string, totpCode: string): Promise<{ success: boolean; backupCodes?: string[] }> {
+    const res = await pool.query<{ totp_secret_encrypted: string }>(
+      'SELECT totp_secret_encrypted FROM user_mfa_credentials WHERE user_id = $1',
+      [userId]
+    );
+    if (res.rows.length === 0) return { success: false };
+
+    const secret = this.decryptTotpSecret(res.rows[0].totp_secret_encrypted);
+    const isValid = authenticator.check(totpCode, secret);
+    if (!isValid) {
+      return { success: false };
+    }
+
+    const { rawCodes, hashedCodes } = this.generateBackupCodes(8);
+
+    await pool.query(
+      `UPDATE user_mfa_credentials
+       SET is_enabled = TRUE,
+           confirmed_at = NOW(),
+           backup_codes_hashed = $2::jsonb
+       WHERE user_id = $1`,
+      [userId, JSON.stringify(hashedCodes)]
+    );
+
+    return { success: true, backupCodes: rawCodes };
+  }
+
+  static async verifyMfaRecovery(userId: string, backupCode: string): Promise<boolean> {
+    const cleanCode = backupCode.trim().toUpperCase();
+    const codeHash = this.hashToken(cleanCode);
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const res = await client.query<{ backup_codes_hashed: string[] }>(
+        'SELECT backup_codes_hashed FROM user_mfa_credentials WHERE user_id = $1 AND is_enabled = TRUE FOR UPDATE',
+        [userId]
+      );
+
+      if (res.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      const storedHashes: string[] = Array.isArray(res.rows[0].backup_codes_hashed)
+        ? res.rows[0].backup_codes_hashed
+        : [];
+
+      const matchIndex = storedHashes.indexOf(codeHash);
+      if (matchIndex === -1) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      // One-time use: remove used backup code
+      storedHashes.splice(matchIndex, 1);
+
+      await client.query(
+        'UPDATE user_mfa_credentials SET backup_codes_hashed = $1::jsonb WHERE user_id = $2',
+        [JSON.stringify(storedHashes), userId]
+      );
+
+      await client.query('COMMIT');
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }

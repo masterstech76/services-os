@@ -4,6 +4,7 @@ import { pool } from '../../database/pool.js';
 import { AuthService } from './auth.service.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate } from '../../middleware/rbac.js';
+import { verifyCaptcha } from '../../middleware/captcha.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,9 +17,30 @@ const mfaVerifySchema = z.object({
   totpCode: z.string().length(6),
 });
 
+const mfaConfirmSchema = z.object({
+  totpCode: z.string().length(6),
+});
+
+const mfaRecoverySchema = z.object({
+  mfaSessionToken: z.string().min(10),
+  backupCode: z.string().min(6).max(16),
+});
+
+function isMobile(platformHeader?: string | string[]): boolean {
+  const platform = String(platformHeader || '').toLowerCase();
+  return ['android', 'flutter', 'ios'].includes(platform);
+}
+
 export async function authRoutes(fastify: FastifyInstance) {
-  // 1. User Login Route
+  // 1. User Login Route (Tiered rate limit: 5 req/min + Anti-bot CAPTCHA)
   fastify.post('/login', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    },
+    preHandler: [verifyCaptcha],
     schema: {
       tags: ['Authentication'],
       summary: 'Authenticate with email and password',
@@ -137,7 +159,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     const userAgent = request.headers['user-agent'];
     const refreshToken = await AuthService.createSession(user.id, user.tenant_id, ipAddress, userAgent);
 
-    // Set refresh token in HTTP-only cookie
+    // Set refresh token in HTTP-only cookie (Web clients)
     reply.setCookie('refresh_token', refreshToken, {
       path: '/api/v1/auth',
       httpOnly: true,
@@ -147,11 +169,12 @@ export async function authRoutes(fastify: FastifyInstance) {
     });
 
     const permissions = await AuthService.getUserPermissions(user.role);
+    const mobileClient = isMobile(request.headers['x-client-platform']);
 
     return reply.status(200).send(
       successResponse({
         accessToken,
-        refreshToken,
+        ...(mobileClient ? { refreshToken } : {}),
         user: {
           id: user.id,
           email: user.email,
@@ -163,8 +186,14 @@ export async function authRoutes(fastify: FastifyInstance) {
     );
   });
 
-  // 2. MFA Verification Route
+  // 2. MFA Verification Route (Rate limited: 5 req/min)
   fastify.post('/mfa/verify', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    },
     schema: {
       tags: ['Authentication'],
       summary: 'Verify two-factor TOTP authentication code',
@@ -218,11 +247,12 @@ export async function authRoutes(fastify: FastifyInstance) {
       });
 
       const permissions = await AuthService.getUserPermissions(payload.role);
+      const mobileClient = isMobile(request.headers['x-client-platform']);
 
       return reply.status(200).send(
         successResponse({
           accessToken,
-          refreshToken,
+          ...(mobileClient ? { refreshToken } : {}),
           user: {
             id: payload.sub,
             email: payload.email,
@@ -239,7 +269,152 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // 3. Refresh Token Session Rotation Route
+  // 3. MFA Setup (Initiates 2FA setup, generates secret & QR code URI)
+  fastify.post('/mfa/setup', {
+    preHandler: [authenticate],
+    schema: {
+      tags: ['Authentication'],
+      summary: 'Initiate TOTP MFA setup and retrieve authenticator URI',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const user = request.user!;
+
+    const setupData = await AuthService.setupMfa(user.id, user.email);
+
+    return reply.status(200).send(
+      successResponse({
+        secret: setupData.secret,
+        otpAuthUrl: setupData.otpAuthUrl,
+        instructions: 'Scan the QR code or enter the secret key into Google Authenticator or 1Password, then confirm with a 6-digit code.'
+      }, requestId)
+    );
+  });
+
+  // 4. MFA Confirm (Verifies code and permanently enables 2FA with backup codes)
+  fastify.post('/mfa/confirm', {
+    preHandler: [authenticate],
+    schema: {
+      tags: ['Authentication'],
+      summary: 'Confirm and activate TOTP MFA with first 6-digit code',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const parsed = mfaConfirmSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        errorResponse('VALIDATION_ERROR', 'A valid 6-digit numeric TOTP code is required.', requestId)
+      );
+    }
+
+    const { totpCode } = parsed.data;
+    const user = request.user!;
+
+    const result = await AuthService.confirmMfa(user.id, totpCode);
+
+    if (!result.success) {
+      return reply.status(400).send(
+        errorResponse('INVALID_TOTP_CODE', 'Verification code failed. Please check the time on your authenticator device and try again.', requestId)
+      );
+    }
+
+    return reply.status(200).send(
+      successResponse({
+        enabled: true,
+        backupCodes: result.backupCodes,
+        warning: 'Store these single-use emergency backup recovery codes in a secure location.'
+      }, requestId)
+    );
+  });
+
+  // 5. MFA Recovery Route (Fallback when user lost TOTP authenticator device)
+  fastify.post('/mfa/recovery', {
+    config: {
+      rateLimit: {
+        max: 5,
+        timeWindow: '1 minute'
+      }
+    },
+    schema: {
+      tags: ['Authentication'],
+      summary: 'Recover account using a single-use emergency backup code',
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const parsed = mfaRecoverySchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        errorResponse('VALIDATION_ERROR', 'Invalid recovery payload. Both mfaSessionToken and backupCode are required.', requestId)
+      );
+    }
+
+    const { mfaSessionToken, backupCode } = parsed.data;
+
+    try {
+      const payload = AuthService.verifyMfaChallengeToken(mfaSessionToken);
+
+      // Verify user is active
+      const userRes = await pool.query('SELECT is_active FROM users WHERE id = $1', [payload.sub]);
+      if (userRes.rows.length === 0 || !userRes.rows[0].is_active) {
+        return reply.status(403).send(
+          errorResponse('ACCOUNT_INACTIVE', 'This account has been deactivated.', requestId)
+        );
+      }
+
+      const valid = await AuthService.verifyMfaRecovery(payload.sub, backupCode);
+
+      if (!valid) {
+        return reply.status(401).send(
+          errorResponse('INVALID_BACKUP_CODE', 'Emergency backup code is invalid or has already been used.', requestId)
+        );
+      }
+
+      const accessToken = AuthService.generateAccessToken({
+        id: payload.sub,
+        role: payload.role,
+        tenantId: payload.tenantId,
+        email: payload.email,
+      });
+
+      const refreshToken = await AuthService.createSession(payload.sub, payload.tenantId, request.ip, request.headers['user-agent']);
+
+      reply.setCookie('refresh_token', refreshToken, {
+        path: '/api/v1/auth',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60,
+      });
+
+      const permissions = await AuthService.getUserPermissions(payload.role);
+      const mobileClient = isMobile(request.headers['x-client-platform']);
+
+      return reply.status(200).send(
+        successResponse({
+          accessToken,
+          ...(mobileClient ? { refreshToken } : {}),
+          user: {
+            id: payload.sub,
+            email: payload.email,
+            role: payload.role,
+            tenantId: payload.tenantId,
+          },
+          permissions,
+          recovered: true
+        }, requestId)
+      );
+    } catch {
+      return reply.status(401).send(
+        errorResponse('MFA_SESSION_EXPIRED', 'MFA session token expired or invalid. Please log in again.', requestId)
+      );
+    }
+  });
+
+  // 6. Refresh Token Session Rotation Route
   fastify.post('/refresh', {
     schema: {
       tags: ['Authentication'],
@@ -272,18 +447,19 @@ export async function authRoutes(fastify: FastifyInstance) {
     });
 
     const permissions = await AuthService.getUserPermissions(rotated.user.role);
+    const mobileClient = isMobile(request.headers['x-client-platform']);
 
     return reply.status(200).send(
       successResponse({
         accessToken: rotated.accessToken,
-        refreshToken: rotated.newRefreshToken,
+        ...(mobileClient ? { refreshToken: rotated.newRefreshToken } : {}),
         user: rotated.user,
         permissions
       }, requestId)
     );
   });
 
-  // 4. Logout Route
+  // 7. Logout Route
   fastify.post('/logout', {
     schema: {
       tags: ['Authentication'],
@@ -304,7 +480,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     );
   });
 
-  // 5. Current Authenticated User & Permissions
+  // 8. Current Authenticated User & Permissions
   fastify.get('/me', {
     preHandler: [authenticate],
     schema: {

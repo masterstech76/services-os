@@ -6,6 +6,7 @@ import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import { FastifyInstance } from 'fastify';
 import { env } from '../config/env.js';
+import { errorResponse } from '../types/envelope.js';
 
 export default fp(async function securityPlugin(fastify: FastifyInstance) {
   // 1. Security Headers (Helmet)
@@ -37,7 +38,15 @@ export default fp(async function securityPlugin(fastify: FastifyInstance) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id', 'idempotency-key']
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-tenant-id',
+      'idempotency-key',
+      'x-client-platform',
+      'x-captcha-token',
+      'cf-turnstile-response'
+    ]
   });
 
   // 3. HTTP-Only Cookie Support (for Refresh Token rotation)
@@ -51,6 +60,13 @@ export default fp(async function securityPlugin(fastify: FastifyInstance) {
     max: 100,
     timeWindow: '1 minute',
     allowList: ['127.0.0.1'],
+    errorResponseBuilder: (request, context) => {
+      return errorResponse(
+        'RATE_LIMIT_EXCEEDED',
+        `Rate limit exceeded: Too many requests. Please try again after ${context.after}.`,
+        request.id || `req_${Date.now()}`
+      );
+    }
   });
 
   // 5. Multipart File Uploads (Work order photos, signatures)

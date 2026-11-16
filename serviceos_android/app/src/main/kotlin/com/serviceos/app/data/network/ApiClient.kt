@@ -19,32 +19,32 @@ object ApiClient {
     private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_REFRESH_TOKEN = "refresh_token"
     private const val KEY_TENANT_ID = "tenant_id"
-    private const val DEFAULT_TENANT_ID = "00000000-0000-0000-0000-000000000001"
     private const val DEFAULT_BASE_URL = "http://10.0.2.2:3000/api/v1"
 
     private var prefs: SharedPreferences? = null
     private var baseUrl: String = DEFAULT_BASE_URL
+    private var tenantId: String? = null
 
     @Synchronized
-    fun init(context: Context, customBaseUrl: String? = null) {
+    fun init(context: Context, customBaseUrl: String? = null, customTenantId: String? = null) {
         if (prefs == null) {
-            prefs = try {
-                val masterKey = MasterKey.Builder(context.applicationContext)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build()
-                EncryptedSharedPreferences.create(
-                    context.applicationContext,
-                    PREFS_NAME,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-                )
-            } catch (e: Exception) {
-                context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            }
+            val masterKey = MasterKey.Builder(context.applicationContext)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            // Fail closed: enforce AES-256 encrypted storage, do not fall back to plaintext SharedPreferences
+            prefs = EncryptedSharedPreferences.create(
+                context.applicationContext,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
         }
         if (!customBaseUrl.isNullOrBlank()) {
             baseUrl = customBaseUrl.trimEnd('/')
+        }
+        if (!customTenantId.isNullOrBlank() && customTenantId != "00000000-0000-0000-0000-000000000001") {
+            tenantId = customTenantId
         }
     }
 
@@ -57,6 +57,8 @@ object ApiClient {
 
     fun getAccessToken(): String? = prefs?.getString(KEY_ACCESS_TOKEN, null)
 
+    fun getRefreshToken(): String? = prefs?.getString(KEY_REFRESH_TOKEN, null)
+
     fun clearTokens() {
         prefs?.edit()
             ?.remove(KEY_ACCESS_TOKEN)
@@ -64,7 +66,11 @@ object ApiClient {
             ?.apply()
     }
 
-    fun getTenantId(): String = prefs?.getString(KEY_TENANT_ID, DEFAULT_TENANT_ID) ?: DEFAULT_TENANT_ID
+    fun setTenantId(id: String?) {
+        tenantId = if (id.isNullOrBlank() || id == "00000000-0000-0000-0000-000000000001") null else id
+    }
+
+    fun getTenantId(): String? = tenantId ?: prefs?.getString(KEY_TENANT_ID, null)
 
     private suspend fun executeRequest(
         endpoint: String,
@@ -79,7 +85,12 @@ object ApiClient {
                 readTimeout = 15000
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Accept", "application/json")
-                setRequestProperty("x-tenant-id", getTenantId())
+                setRequestProperty("x-client-platform", "android")
+
+                val currentTenantId = getTenantId()
+                if (!currentTenantId.isNullOrBlank()) {
+                    setRequestProperty("x-tenant-id", currentTenantId)
+                }
 
                 val token = getAccessToken()
                 if (!token.isNullOrBlank()) {
@@ -93,6 +104,17 @@ object ApiClient {
             }
 
             val statusCode = connection.responseCode
+
+            // Automatic 401 token refresh handling
+            if (statusCode == 401 && endpoint != "/auth/login" && endpoint != "/auth/refresh") {
+                val refreshResult = refreshToken()
+                if (refreshResult.isSuccess) {
+                    return@withContext executeRequest(endpoint, method, bodyJson)
+                } else {
+                    clearTokens()
+                }
+            }
+
             val stream = if (statusCode in 200..299) connection.inputStream else connection.errorStream
             val responseString = BufferedReader(InputStreamReader(stream, "UTF-8")).use { it.readText() }
 
@@ -110,7 +132,7 @@ object ApiClient {
     }
 
     // =========================================================================
-    // API OPERATIONS
+    // AUTHENTICATION OPERATIONS
     // =========================================================================
     suspend fun login(email: String, password: String): Result<JSONObject> {
         val body = JSONObject().apply {
@@ -119,14 +141,61 @@ object ApiClient {
         }
         val result = executeRequest("/auth/login", "POST", body)
         result.onSuccess { res ->
-            val tokens = res.optJSONObject("data")?.optJSONObject("tokens")
-            if (tokens != null) {
-                setTokens(tokens.getString("accessToken"), tokens.getString("refreshToken"))
+            val data = res.optJSONObject("data")
+            val accessToken = data?.optString("accessToken")
+            val refreshToken = data?.optString("refreshToken")
+            if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
+                setTokens(accessToken, refreshToken)
             }
         }
         return result
     }
 
+    suspend fun verifyMfa(mfaSessionToken: String, totpCode: String): Result<JSONObject> {
+        val body = JSONObject().apply {
+            put("mfaSessionToken", mfaSessionToken)
+            put("totpCode", totpCode)
+        }
+        val result = executeRequest("/auth/mfa/verify", "POST", body)
+        result.onSuccess { res ->
+            val data = res.optJSONObject("data")
+            val accessToken = data?.optString("accessToken")
+            val refreshToken = data?.optString("refreshToken")
+            if (!accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()) {
+                setTokens(accessToken, refreshToken)
+            }
+        }
+        return result
+    }
+
+    suspend fun refreshToken(): Result<JSONObject> {
+        val currentRefresh = getRefreshToken() ?: return Result.failure(Exception("No refresh token stored"))
+        val body = JSONObject().apply {
+            put("refreshToken", currentRefresh)
+        }
+        val result = executeRequest("/auth/refresh", "POST", body)
+        result.onSuccess { res ->
+            val data = res.optJSONObject("data")
+            val newAccess = data?.optString("accessToken")
+            val newRefresh = data?.optString("refreshToken") ?: currentRefresh
+            if (!newAccess.isNullOrBlank()) {
+                setTokens(newAccess, newRefresh)
+            }
+        }
+        return result
+    }
+
+    suspend fun logout(): Result<JSONObject> {
+        val currentRefresh = getRefreshToken()
+        val body = if (currentRefresh != null) JSONObject().apply { put("refreshToken", currentRefresh) } else null
+        val result = executeRequest("/auth/logout", "POST", body)
+        clearTokens()
+        return result
+    }
+
+    // =========================================================================
+    // CATALOG & BOOKING OPERATIONS
+    // =========================================================================
     suspend fun fetchCategories(): Result<JSONArray> {
         val result = executeRequest("/services/categories", "GET")
         return result.map { it.optJSONArray("data") ?: JSONArray() }
@@ -145,14 +214,19 @@ object ApiClient {
     }
 
     suspend fun createBooking(bookingJson: JSONObject): Result<JSONObject> {
-        val result = executeRequest("/bookings", "POST", bookingJson)
-        return result.map { it.optJSONObject("data") ?: JSONObject() }
+        return executeRequest("/bookings", "POST", bookingJson)
+    }
+
+    suspend fun cancelBooking(bookingId: String, reason: String?): Result<JSONObject> {
+        val body = JSONObject().apply {
+            if (reason != null) put("reason", reason)
+        }
+        return executeRequest("/bookings/$bookingId/cancel", "POST", body)
     }
 
     suspend fun verifyArrivalPin(bookingId: String, pin: String): Result<JSONObject> {
         val body = JSONObject().apply { put("safetyPin", pin) }
-        val result = executeRequest("/bookings/$bookingId/verify-arrival", "POST", body)
-        return result.map { it.optJSONObject("data") ?: JSONObject() }
+        return executeRequest("/bookings/$bookingId/verify-arrival", "POST", body)
     }
 
     suspend fun sendLocationPing(lat: Double, lng: Double, heading: Double? = null, dutyStatus: String? = null): Result<Boolean> {

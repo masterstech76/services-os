@@ -19,6 +19,18 @@ const payoutTriggerSchema = z.object({
 });
 
 export async function financeRoutes(fastify: FastifyInstance) {
+  // Capture raw body buffer for Stripe webhook HMAC signature verification
+  fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+    try {
+      (req as any).rawBody = body;
+      const json = JSON.parse((body as Buffer).toString('utf8'));
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   // Public Inbound Stripe Webhook (Idempotent Event Processing & HMAC Signature Verification)
   fastify.post('/webhooks/stripe', {
     schema: {
@@ -382,6 +394,46 @@ export async function financeRoutes(fastify: FastifyInstance) {
 
         const provider = provRes.rows[0];
 
+        // Verify standard ledger accounts exist before proceeding:
+        // Debit: 2020 (Technician Payable)
+        // Credit: 1010 (Operating Bank Account)
+        const accRes = await client.query(
+          `SELECT id, account_number FROM ledger_accounts 
+           WHERE tenant_id = $1 AND account_number IN ('1010', '2020')`,
+          [tenantId]
+        );
+
+        const techPayable = accRes.rows.find(a => a.account_number === '2020');
+        const bankAsset = accRes.rows.find(a => a.account_number === '1010');
+
+        if (!techPayable || !bankAsset) {
+          await client.query('ROLLBACK');
+          return reply.status(422).send(
+            errorResponse('LEDGER_ACCOUNTS_MISSING', 'Standard ledger accounts (1010 Operating Bank / 2020 Technician Payable) are not provisioned for this tenant.', requestId)
+          );
+        }
+
+        // Check provider's settled earnings balance
+        const balanceRes = await client.query(
+          `SELECT 
+            COALESCE(SUM(CASE WHEN b.assigned_provider_id = $1 AND b.status = 'COMPLETED' THEN (i.total_amount_cents * (10000 - COALESCE(b.default_platform_commission_bps, 1500)) / 10000) ELSE 0 END), 0)::bigint as total_earned_cents,
+            COALESCE((SELECT SUM(amount_cents) FROM provider_payouts WHERE provider_id = $1 AND tenant_id = $2 AND status = 'PAID'), 0)::bigint as total_paid_cents
+           FROM bookings b
+           JOIN invoices i ON i.booking_id = b.id AND i.status = 'PAID'
+           WHERE b.assigned_provider_id = $1 AND b.tenant_id = $2`,
+          [providerId, tenantId]
+        );
+        const totalEarned = Number(balanceRes.rows[0]?.total_earned_cents || 0);
+        const totalPaid = Number(balanceRes.rows[0]?.total_paid_cents || 0);
+        const unpaidBalanceCents = Math.max(0, totalEarned - totalPaid);
+
+        if (process.env.NODE_ENV === 'production' && amountCents > unpaidBalanceCents) {
+          await client.query('ROLLBACK');
+          return reply.status(400).send(
+            errorResponse('INSUFFICIENT_PAYOUT_BALANCE', `Payout amount (${amountCents} cents) exceeds provider unpaid balance (${unpaidBalanceCents} cents).`, requestId)
+          );
+        }
+
         // Fail closed in production if Stripe is not configured
         if (!env.STRIPE_SECRET_KEY) {
           if (process.env.NODE_ENV === 'production') {
@@ -409,6 +461,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
               currency: 'usd',
               destination: provider.stripe_connect_account_id,
               description: description || `Provider payout to ${provider.full_name}`
+            }, {
+              idempotencyKey: `payout_tx_${providerId}_${amountCents}_${Date.now()}`
             });
             transferRef = transfer.id;
           } catch (stripeErr: any) {
@@ -431,24 +485,14 @@ export async function financeRoutes(fastify: FastifyInstance) {
           [tenantId, providerId, transferRef, amountCents]
         );
 
-        // Fetch accounts for ledger posting:
+        // Post double-entry ledger entry:
         // Debit: 2020 (Technician Payable)
         // Credit: 1010 (Operating Bank Account)
-        const accRes = await client.query(
-          `SELECT id, account_number FROM ledger_accounts 
-           WHERE tenant_id = $1 AND account_number IN ('1010', '2020')`,
-          [tenantId]
-        );
-
-        const techPayable = accRes.rows.find(a => a.account_number === '2020');
-        const bankAsset = accRes.rows.find(a => a.account_number === '1010');
-
-        if (techPayable && bankAsset) {
-          await client.query(
-            `INSERT INTO ledger_entries (
-              tenant_id, debit_account_id, credit_account_id, amount_cents, description
-            ) VALUES ($1, $2, $3, $4, $5)`,
-            [
+        await client.query(
+          `INSERT INTO ledger_entries (
+            tenant_id, debit_account_id, credit_account_id, amount_cents, description
+          ) VALUES ($1, $2, $3, $4, $5)`,
+          [
               tenantId,
               techPayable.id,
               bankAsset.id,
@@ -456,7 +500,6 @@ export async function financeRoutes(fastify: FastifyInstance) {
               description || `Payout to ${provider.full_name} (${transferRef})`
             ]
           );
-        }
 
         // Audit log
         await client.query(

@@ -21,7 +21,7 @@ class ApiClient {
         : 'http://10.0.2.2:3000/api/v1',
   );
 
-  String _tenantId = '00000000-0000-0000-0000-000000000001';
+  String? _tenantId = const String.fromEnvironment('TENANT_ID', defaultValue: '');
 
   ApiClient._() {
     _dio = Dio(
@@ -32,7 +32,9 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'x-tenant-id': _tenantId,
+          'x-client-platform': 'flutter',
+          if (_tenantId != null && _tenantId!.isNotEmpty && _tenantId != '00000000-0000-0000-0000-000000000001')
+            'x-tenant-id': _tenantId!,
         },
       ),
     );
@@ -87,9 +89,13 @@ class ApiClient {
     );
   }
 
-  void setTenantId(String tenantId) {
+  void setTenantId(String? tenantId) {
     _tenantId = tenantId;
-    _dio.options.headers['x-tenant-id'] = tenantId;
+    if (tenantId != null && tenantId.isNotEmpty && tenantId != '00000000-0000-0000-0000-000000000001') {
+      _dio.options.headers['x-tenant-id'] = tenantId;
+    } else {
+      _dio.options.headers.remove('x-tenant-id');
+    }
   }
 
   // ==========================================================================

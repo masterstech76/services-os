@@ -26,13 +26,17 @@ export interface ApiResponse<T = any> {
 
 class ApiClient {
   private baseUrl: string;
-  private tenantId: string = '00000000-0000-0000-0000-000000000001';
+  private tenantId: string | null = null;
 
   constructor() {
     this.baseUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+    const envTenant = (import.meta as any).env?.VITE_TENANT_ID;
+    if (envTenant && envTenant !== '00000000-0000-0000-0000-000000000001') {
+      this.tenantId = envTenant;
+    }
   }
 
-  public setTenantId(tenantId: string) {
+  public setTenantId(tenantId: string | null) {
     this.tenantId = tenantId;
   }
 
@@ -41,15 +45,9 @@ class ApiClient {
     return localStorage.getItem('servicepro_access_token');
   }
 
-  public getRefreshToken(): string | null {
-    if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem('servicepro_refresh_token');
-  }
-
-  public setTokens(accessToken: string, refreshToken: string) {
+  public setAccessToken(accessToken: string) {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('servicepro_access_token', accessToken);
-      localStorage.setItem('servicepro_refresh_token', refreshToken);
     }
   }
 
@@ -69,9 +67,12 @@ class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'x-tenant-id': this.tenantId,
       ...(options.headers as Record<string, string>),
     };
+
+    if (this.tenantId) {
+      headers['x-tenant-id'] = this.tenantId;
+    }
 
     const token = this.getAccessToken();
     if (token) {
@@ -81,26 +82,31 @@ class ApiClient {
     try {
       let res = await fetch(url, {
         ...options,
+        credentials: 'include', // Transmit and receive HttpOnly SameSite=Lax refresh cookies
         headers,
       });
 
-      // Handle 401 token refresh rotation
-      if (res.status === 401 && this.getRefreshToken()) {
+      // Handle 401 token refresh rotation via HttpOnly cookie
+      if (res.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+        const refreshHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (this.tenantId) {
+          refreshHeaders['x-tenant-id'] = this.tenantId;
+        }
+
         const refreshRes = await fetch(`${this.baseUrl}/auth/refresh`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-tenant-id': this.tenantId,
-          },
-          body: JSON.stringify({ refreshToken: this.getRefreshToken() }),
+          credentials: 'include',
+          headers: refreshHeaders,
         });
 
         if (refreshRes.ok) {
           const refreshData = await refreshRes.json();
           if (refreshData.success && refreshData.data?.accessToken) {
-            this.setTokens(refreshData.data.accessToken, refreshData.data.refreshToken);
+            this.setAccessToken(refreshData.data.accessToken);
             headers['Authorization'] = `Bearer ${refreshData.data.accessToken}`;
-            res = await fetch(url, { ...options, headers });
+            res = await fetch(url, { ...options, credentials: 'include', headers });
           }
         } else {
           this.clearTokens();
@@ -133,8 +139,8 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password, mfaCode }),
     });
-    if (res.success && res.data?.tokens) {
-      this.setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+    if (res.success && res.data?.accessToken) {
+      this.setAccessToken(res.data.accessToken);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('servicepro_user_role', res.data.user.role);
         localStorage.setItem('servicepro_user_email', res.data.user.email);
@@ -148,14 +154,14 @@ class ApiClient {
   }
 
   public async logout() {
-    const refreshToken = this.getRefreshToken();
-    if (refreshToken) {
+    try {
       await this.request('/auth/logout', {
         method: 'POST',
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
       });
+    } finally {
+      this.clearTokens();
     }
-    this.clearTokens();
   }
 
   public async testDatabaseConnection(databaseUrl: string) {

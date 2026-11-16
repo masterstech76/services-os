@@ -56,29 +56,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(phoneNumber: phone);
   }
 
-  Future<bool> verifyOtp(String code, {String? mfaSessionToken}) async {
+  /// Verifies a 6-digit TOTP code against the authoritative backend server.
+  /// Requires a valid [mfaSessionToken]. Local-only bypass is strictly prohibited.
+  Future<bool> verifyOtp(String code, {required String mfaSessionToken}) async {
     final trimmed = code.trim();
     if (trimmed.length != 6 || int.tryParse(trimmed) == null) {
       return false;
     }
 
+    if (mfaSessionToken.trim().isEmpty) {
+      return false;
+    }
+
     state = state.copyWith(isLoading: true);
     try {
-      if (mfaSessionToken != null && mfaSessionToken.isNotEmpty) {
-        final res = await ApiClient.instance.verifyMfa(mfaSessionToken, trimmed);
-        final success = res['success'] == true;
-        state = state.copyWith(
-          isAuthenticated: success,
-          isLoading: false,
-        );
-        return success;
-      }
-
+      final res = await ApiClient.instance.verifyMfa(mfaSessionToken.trim(), trimmed);
+      final success = res['success'] == true;
       state = state.copyWith(
-        isAuthenticated: true,
+        isAuthenticated: success,
         isLoading: false,
       );
-      return true;
+      return success;
     } catch (_) {
       state = state.copyWith(
         isAuthenticated: false,

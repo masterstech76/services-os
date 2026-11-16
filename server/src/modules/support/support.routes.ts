@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { pool } from '../../database/pool.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate, requirePermission } from '../../middleware/rbac.js';
+import { AuthService } from '../auth/auth.service.js';
 
 const ticketQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -101,11 +102,25 @@ export async function supportRoutes(fastify: FastifyInstance) {
 
     const params: any[] = [tenantId];
 
-    // If customer role, only show own tickets
+    // Role-based filtering and access gating
     if (userRole === 'CUSTOMER') {
       params.push(userId);
       countQuery += ` AND customer_id = $${params.length}`;
       dataQuery += ` AND t.customer_id = $${params.length}`;
+    } else if (userRole === 'ADMIN') {
+      // Admin has tenant-wide ticket access
+    } else if (userRole === 'STAFF') {
+      const perms = await AuthService.getUserPermissions(userRole);
+      if (!perms.includes('support:manage')) {
+        return reply.status(403).send(
+          errorResponse('FORBIDDEN', 'Staff user lacks support:manage permission', requestId)
+        );
+      }
+    } else {
+      // Other roles (e.g. TECHNICIAN) cannot access customer tickets
+      return reply.status(403).send(
+        errorResponse('FORBIDDEN', 'Technicians do not have access to customer support desk', requestId)
+      );
     }
 
     if (status) {
@@ -244,12 +259,16 @@ export async function supportRoutes(fastify: FastifyInstance) {
       );
     }
 
-    // Enforce ownership: Customers can only view their own tickets
+    // Enforce role-based ticket access
     const userRole = request.user!.role;
     const userId = request.user!.id;
-    if (userRole === 'CUSTOMER' && ticketRes.rows[0].customerId !== userId) {
+    const isCustomerOwner = userRole === 'CUSTOMER' && ticketRes.rows[0].customerId === userId;
+    const isAdmin = userRole === 'ADMIN';
+    const isSupportStaff = userRole === 'STAFF' && (await AuthService.getUserPermissions(userRole)).includes('support:manage');
+
+    if (!isCustomerOwner && !isAdmin && !isSupportStaff) {
       return reply.status(403).send(
-        errorResponse('FORBIDDEN', 'You do not have permission to view this ticket.', requestId)
+        errorResponse('FORBIDDEN', 'You do not have authorization to view this support ticket.', requestId)
       );
     }
 
@@ -309,11 +328,15 @@ export async function supportRoutes(fastify: FastifyInstance) {
       );
     }
 
-    // Enforce ownership: Customers can only post replies to their own tickets
+    // Enforce role-based reply access
     const userRole = request.user!.role;
-    if (userRole === 'CUSTOMER' && tCheck.rows[0].customer_id !== userId) {
+    const isCustomerOwner = userRole === 'CUSTOMER' && tCheck.rows[0].customer_id === userId;
+    const isAdmin = userRole === 'ADMIN';
+    const isSupportStaff = userRole === 'STAFF' && (await AuthService.getUserPermissions(userRole)).includes('support:manage');
+
+    if (!isCustomerOwner && !isAdmin && !isSupportStaff) {
       return reply.status(403).send(
-        errorResponse('FORBIDDEN', 'You do not have permission to post to this ticket.', requestId)
+        errorResponse('FORBIDDEN', 'You do not have authorization to post to this support ticket.', requestId)
       );
     }
 
