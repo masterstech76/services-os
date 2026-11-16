@@ -1,0 +1,53 @@
+import fp from 'fastify-plugin';
+import helmet from '@fastify/helmet';
+import cors from '@fastify/cors';
+import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
+import { FastifyInstance } from 'fastify';
+import { env } from '../config/env.js';
+
+export default fp(async function securityPlugin(fastify: FastifyInstance) {
+  // 1. Security Headers (Helmet)
+  await fastify.register(helmet, {
+    contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
+    crossOriginEmbedderPolicy: false
+  });
+
+  // 2. Cross-Origin Resource Sharing (CORS)
+  await fastify.register(cors, {
+    origin: (origin, cb) => {
+      // Allow requests with no origin (like mobile apps, curl)
+      if (!origin) return cb(null, true);
+      // In development allow localhost Vite
+      if (env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+        return cb(null, true);
+      }
+      return cb(null, true); // Configurable per buyer deployment domain
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id', 'idempotency-key']
+  });
+
+  // 3. HTTP-Only Cookie Support (for Refresh Token rotation)
+  await fastify.register(cookie, {
+    secret: env.JWT_REFRESH_SECRET,
+    hook: 'onRequest'
+  });
+
+  // 4. Rate Limiting Protection (Anti-Brute-Force & Anti-DDoS)
+  await fastify.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    allowList: ['127.0.0.1'],
+  });
+
+  // 5. Multipart File Uploads (Work order photos, signatures)
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB maximum file size
+      files: 5
+    }
+  });
+});

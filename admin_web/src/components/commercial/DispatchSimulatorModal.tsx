@@ -24,24 +24,25 @@ interface DispatchSimulatorModalProps {
 }
 
 export const DispatchSimulatorModal: React.FC<DispatchSimulatorModalProps> = ({ isOpen, onClose }) => {
-  const { agencyName } = useAdmin();
+  const { agencyName, bookings, pricingConfig } = useAdmin();
   const [activeStep, setActiveStep] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
-  // Steps in the Tri-Party Lifecycle:
-  // 0: Standby / Idle
-  // 1: Customer requests emergency repair ($149 + $20 diagnostic = $169 escrow pre-auth)
-  // 2: PostGIS radar matches nearest technician within 2.4 miles
-  // 3: Technician accepts 60s broadcast offer
-  // 4: Arrival verified via 250m geofence & safety PIN verified
-  // 5: Repair completed, photos verified, escrow released: $126.65 to Tech, $22.35 (15%) to Platform
+  const sampleBooking = bookings[0];
+  const escrowHold = sampleBooking ? sampleBooking.estimate : 0.0;
+  const commissionRate = (pricingConfig?.commissionRate || 15) / 100;
+  const platformTake = escrowHold * commissionRate;
+  const techNet = escrowHold - platformTake;
+  const orderNo = sampleBooking ? sampleBooking.jobNo : 'SVC-PENDING';
+  const serviceName = sampleBooking ? sampleBooking.serviceName : 'Field Service Order';
+
   const steps = [
     { title: 'Standby / Ready', desc: 'PostGIS engine listening for broadcast triggers' },
-    { title: '1. Customer Escrow Pre-Auth', desc: 'Customer books service with $187.50 escrow hold' },
-    { title: '2. PostGIS Radar Match', desc: 'Nearest certified technician detected 2.4 mi away' },
+    { title: '1. Customer Escrow Pre-Auth', desc: `Customer books service with $${escrowHold.toFixed(2)} escrow hold` },
+    { title: '2. PostGIS Radar Match', desc: 'Nearest certified technician detected on radar' },
     { title: '3. 60s Broadcast Accepted', desc: 'Nearest certified technician accepts dispatch' },
     { title: '4. Arrival & PIN Check', desc: 'Geofence confirmed + 4-digit PIN verified on-site' },
-    { title: '5. Escrow Release & Split', desc: 'Work order approved: 85% to Tech, 15% Platform Take-Rate' }
+    { title: '5. Escrow Release & Split', desc: 'Work order approved: Escrow release to Tech & Platform' }
   ];
 
   useEffect(() => {
@@ -167,15 +168,15 @@ export const DispatchSimulatorModal: React.FC<DispatchSimulatorModalProps> = ({ 
               {activeStep >= 1 && (
                 <div className="space-y-3 text-xs">
                   <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-1">
-                    <span className="text-[9px] font-black uppercase text-indigo-400">Service Order #SVC-1001</span>
-                    <h4 className="font-bold text-white">Emergency Drain Cleaning</h4>
+                    <span className="text-[9px] font-black uppercase text-indigo-400">Service Order #{orderNo}</span>
+                    <h4 className="font-bold text-white">{serviceName}</h4>
                     <span className="text-slate-400 block text-[10px]">Primary Service Location</span>
                   </div>
 
                   <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
                     <div className="flex justify-between text-slate-300">
                       <span>Escrow Pre-Auth Hold:</span>
-                      <span className="font-bold text-emerald-400">$187.50</span>
+                      <span className="font-bold text-emerald-400">${escrowHold.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-slate-400 text-[10px]">
                       <span>Stripe Status:</span>
@@ -244,10 +245,10 @@ export const DispatchSimulatorModal: React.FC<DispatchSimulatorModalProps> = ({ 
 
                   {activeStep >= 5 && (
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1 text-[11px]">
-                      <span className="text-[9px] font-bold text-emerald-400 uppercase block">Platform Take-Rate (15%)</span>
+                      <span className="text-[9px] font-bold text-emerald-400 uppercase block">Platform Take-Rate ({Math.round(commissionRate * 100)}%)</span>
                       <div className="flex justify-between font-bold text-emerald-400">
                         <span>Net Platform Revenue:</span>
-                        <span>+$28.12</span>
+                        <span>+${platformTake.toFixed(2)}</span>
                       </div>
                     </div>
                   )}
@@ -284,15 +285,15 @@ export const DispatchSimulatorModal: React.FC<DispatchSimulatorModalProps> = ({ 
                 <div className="space-y-3 text-xs">
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1">
                     <span className="text-[9px] font-black uppercase text-emerald-400">Offer Accepted</span>
-                    <h4 className="font-bold text-white">Guaranteed Payout: $159.38</h4>
-                    <span className="text-slate-400 block text-[10px]">Ford Transit 250 • En Route</span>
+                    <h4 className="font-bold text-white">Guaranteed Payout: ${techNet.toFixed(2)}</h4>
+                    <span className="text-slate-400 block text-[10px]">Fleet Vehicle • En Route</span>
                   </div>
 
                   {activeStep >= 4 && (
                     <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1 text-[11px]">
                       <div className="flex justify-between text-slate-300">
                         <span>Geofence Check:</span>
-                        <span className="font-bold text-emerald-400">Verified (120m away) ✓</span>
+                        <span className="font-bold text-emerald-400">Verified on-site ✓</span>
                       </div>
                       <div className="flex justify-between text-slate-300">
                         <span>Dual Photo Proof:</span>
@@ -305,7 +306,7 @@ export const DispatchSimulatorModal: React.FC<DispatchSimulatorModalProps> = ({ 
                     <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-center space-y-1">
                       <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto" />
                       <span className="font-extrabold text-white block">Escrow Paid Out</span>
-                      <span className="text-xs font-black text-emerald-400">+$159.38 Transferred to Tech Wallet</span>
+                      <span className="text-xs font-black text-emerald-400">+${techNet.toFixed(2)} Transferred to Tech Wallet</span>
                     </div>
                   )}
                 </div>

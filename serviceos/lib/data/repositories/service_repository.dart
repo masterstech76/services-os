@@ -79,16 +79,16 @@ class ServiceRepository implements IServiceRepository {
   @override
   Future<List<ServiceItemModel>> getServicesByCategory(String categorySlug) async {
     final categories = await getCategories();
+    if (categories.isEmpty) return [];
     if (categorySlug.toLowerCase() == 'all') {
       return categories.expand((c) => c.services).toList();
     }
 
-    final matched = categories.firstWhere(
+    final matched = categories.where(
       (c) => c.slug.toLowerCase() == categorySlug.toLowerCase(),
-      orElse: () => categories.first,
     );
-
-    return matched.services;
+    if (matched.isEmpty) return [];
+    return matched.first.services;
   }
 
   @override

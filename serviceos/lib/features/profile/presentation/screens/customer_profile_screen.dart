@@ -218,11 +218,11 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem(_name.isNotEmpty ? '14' : '0', 'Services Booked', textPrimary, textSecondary),
+              _buildStatItem('0', 'Services Booked', textPrimary, textSecondary),
               Container(height: 32, width: 1, color: borderColor),
-              _buildStatItem(_name.isNotEmpty ? '\$240' : '\$0.00', 'Total Saved', AppColors.verifiedEmerald, textSecondary),
+              _buildStatItem('\$0.00', 'Total Saved', AppColors.verifiedEmerald, textSecondary),
               Container(height: 32, width: 1, color: borderColor),
-              _buildStatItem(_name.isNotEmpty ? '5.0 ★' : '—', 'Customer Score', AppColors.ratingAmber, textSecondary),
+              _buildStatItem('—', 'Customer Score', AppColors.ratingAmber, textSecondary),
             ],
           ),
         ),

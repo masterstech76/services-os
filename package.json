@@ -1,21 +1,16 @@
 {
-  "name": "servicepro-os-workspace",
+  "name": "servicepro-os-enterprise-workspace",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "ServicePro OS — Enterprise On-Demand Home Services Management & Dispatch Platform",
   "scripts": {
-    "dev": "npm --prefix admin_web run dev",
-    "build": "npm --prefix admin_web run build",
-    "lint": "npm --prefix admin_web run lint",
-    "typecheck": "npm --prefix admin_web run build",
-    "test": "node admin_web/verify_all_49_pages_production.cjs",
-    "test:commercial": "node admin_web/verify_commercial_turnkey_suite.cjs",
-    "verify-env": "node scripts/validate_migrations.cjs",
-    "verify:security-live": "node scripts/verify_phase1_live_security.cjs",
-    "verify:data-env": "node scripts/validate_data_environments.cjs",
-    "handover:cleanup": "node scripts/handover_cleanup.cjs",
-    "validate-mobile": "node scripts/validate_dart_codebase.cjs"
-  },
-  "devDependencies": {
-    "supabase": "3.1.0"
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix admin_web run dev",
+    "build": "npm --prefix server run build && npm --prefix admin_web run build",
+    "build:server": "npm --prefix server run build",
+    "build:web": "npm --prefix admin_web run build",
+    "test": "npm --prefix server test",
+    "db:migrate": "npm --prefix server run db:migrate",
+    "db:verify": "npm --prefix server run db:verify"
   }
 }

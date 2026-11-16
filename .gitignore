@@ -1,7 +1,17 @@
 # Dependencies
-/node_modules
+node_modules/
+**/node_modules/
 /.pnp
 .pnp.js
+
+# Build Outputs
+dist/
+**/dist/
+build/
+**/build/
+.gradle/
+**/build/
+**/bin/
 
 # Testing
 /coverage
@@ -11,9 +21,6 @@
 # Next.js
 /.next/
 /out/
-
-# Production
-/build
 
 # Misc
 .DS_Store
@@ -40,7 +47,6 @@ next-env.d.ts
 # Scratch and temporary developer files
 /scratch/
 *.zip
-
 
 # Supabase CLI local temporary cache
 /supabase/.temp/

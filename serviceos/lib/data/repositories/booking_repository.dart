@@ -49,14 +49,14 @@ class BookingRepository implements IBookingRepository {
             final s = row['services'] as Map<String, dynamic>? ?? {};
             final totalCents = (row['total_authorized_cents'] as num?)?.toDouble() ??
                 (row['labor_cost_cents'] as num?)?.toDouble() ??
-                14900;
+                0.0;
             final laborCents = (row['labor_cost_cents'] as num?)?.toDouble() ?? totalCents;
             final partsCents = (row['parts_total_cents'] as num?)?.toDouble() ?? 0;
             final feeCents = (row['platform_fee_cents'] as num?)?.toDouble() ?? (totalCents * 0.15);
             final netCents = (row['net_payout_cents'] as num?)?.toDouble() ?? (totalCents * 0.85);
 
             return BookingModel(
-              id: row['id'] as String? ?? row['booking_reference'] as String? ?? 'SO-00000',
+              id: row['id'] as String? ?? row['booking_reference'] as String? ?? '',
               serviceTitle: s['name'] as String? ?? 'Service Order',
               category: 'Home Service',
               basePrice: laborCents / 100,
@@ -68,7 +68,7 @@ class BookingRepository implements IBookingRepository {
               customerAddress: row['address_text'] as String? ?? '',
               safetyPin: row['safety_pin'] as String? ?? '',
               technicianId: row['provider_id'] as String? ?? '',
-              technicianName: 'Assigned Pro',
+              technicianName: row['technician_name'] as String? ?? '',
               scheduledAt: DateTime.tryParse(row['scheduled_start'] as String? ?? '') ?? DateTime.now(),
             );
           }).toList();

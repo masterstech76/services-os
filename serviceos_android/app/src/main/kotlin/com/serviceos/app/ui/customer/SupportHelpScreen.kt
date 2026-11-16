@@ -21,7 +21,9 @@ import com.serviceos.app.core.theme.ErrorRed
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SupportHelpScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    promoCode: String? = null,
+    promoDescription: String? = null
 ) {
     Scaffold(
         topBar = {
@@ -100,16 +102,29 @@ fun SupportHelpScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Coupon Code: FIRST50 ($50 OFF)",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Valid on your first on-demand booking over $100.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    if (promoCode != null) {
+                        Text(
+                            text = "Coupon Code: $promoCode",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = promoDescription ?: "Active promotional coupon applied to account.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    } else {
+                        Text(
+                            text = "No Active Promotional Credits",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = "Promotional coupons or referral credits will appear here when issued.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
         }

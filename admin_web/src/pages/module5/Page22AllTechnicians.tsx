@@ -70,25 +70,37 @@ export const Page22AllTechnicians: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Field Force</div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">18 Active</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">14 Currently Online</div>
+          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">
+            {technicians.filter(t => t.status !== 'Offline').length} Active
+          </div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+            {technicians.filter(t => t.status === 'Available' || t.status === 'On Job').length} Currently Online
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average Customer Rating</div>
-          <div className="text-2xl font-extrabold text-amber-600 mt-0.5">★ 4.88 / 5.0</div>
-          <div className="text-[10px] text-slate-400 font-bold mt-0.5">1,240 verified reviews</div>
+          <div className="text-2xl font-extrabold text-amber-600 mt-0.5">
+            {technicians.length > 0 ? `★ ${(technicians.reduce((a, t) => a + (t.rating || 0), 0) / technicians.length).toFixed(2)} / 5.0` : '★ 0.00 / 5.0'}
+          </div>
+          <div className="text-[10px] text-slate-400 font-bold mt-0.5">
+            {technicians.length > 0 ? `${technicians.reduce((a, t) => a + (t.jobsCompleted || 0), 0)} verified jobs` : '0 verified jobs'}
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">On-Time Arrival Rate</div>
-          <div className="text-2xl font-extrabold text-emerald-600 mt-0.5">98.4%</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">SLA gold tier</div>
+          <div className="text-2xl font-extrabold text-emerald-600 mt-0.5">
+            {technicians.length > 0 ? `${(technicians.reduce((a, t) => a + (t.onTimeRate || 0), 0) / technicians.length).toFixed(1)}%` : '0.0%'}
+          </div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">SLA performance tier</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Completed Jobs</div>
-          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">3,892</div>
+          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">
+            {technicians.reduce((a, t) => a + (t.jobsCompleted || 0), 0)}
+          </div>
           <div className="text-[10px] text-slate-400 font-bold mt-0.5">Platform lifetime</div>
         </div>
       </div>

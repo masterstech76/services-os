@@ -3,10 +3,12 @@ import '../../../../core/theme/app_theme.dart';
 
 class TechJobExecutionScreen extends StatefulWidget {
   final VoidCallback onJobCompleted;
+  final String workOrderNumber;
 
   const TechJobExecutionScreen({
     super.key,
     required this.onJobCompleted,
+    this.workOrderNumber = '',
   });
 
   @override
@@ -30,7 +32,10 @@ class _TechJobExecutionScreenState extends State<TechJobExecutionScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.nightCanvas : AppColors.dayCanvas,
       appBar: AppBar(
-        title: const Text('Active Work Order #SO-88219', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+        title: Text(
+          widget.workOrderNumber.isNotEmpty ? 'Active Work Order #${widget.workOrderNumber}' : 'Active Work Order',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -104,7 +109,7 @@ class _TechJobExecutionScreenState extends State<TechJobExecutionScreen> {
               _buildStepCard(
                 stepNum: 3,
                 title: 'Extra Replacement Parts',
-                subtitle: _hasExtraPart ? 'Heavy-Duty PVC P-Trap (+$38.50 Approved ✓)' : 'Optional line item with 1-tap customer push approval',
+                subtitle: _hasExtraPart ? 'Extra Replacement Part (Approved ✓)' : 'Optional line item with customer push approval',
                 isCompleted: _hasExtraPart,
                 surfaceColor: surfaceColor,
                 textPrimary: textPrimary,
@@ -113,7 +118,7 @@ class _TechJobExecutionScreenState extends State<TechJobExecutionScreen> {
                     ? null
                     : OutlinedButton(
                         onPressed: () => setState(() => _hasExtraPart = true),
-                        child: const Text('+ Add Part ($38.50)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        child: const Text('+ Add Part', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                       ),
               ),
 

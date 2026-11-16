@@ -84,6 +84,7 @@ export const FacebookProfilePage: React.FC = () => {
     technicians, 
     staffMembers, 
     bookings,
+    invoices,
     activeProfileTarget, 
     setActiveProfileTarget,
     navigateToPage,
@@ -899,38 +900,24 @@ export const FacebookProfilePage: React.FC = () => {
             </div>
 
             <div className="space-y-2.5 text-xs">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div>
-                  <div className="font-extrabold text-slate-900">#INV-2026-092 • Heat Pump</div>
-                  <div className="text-[10px] text-slate-500">Nov 14, 2026 • Stripe ACH Transfer</div>
+              {invoices.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-center text-slate-500 text-xs">
+                  No billing transactions found. Invoices generated upon completed bookings will appear here.
                 </div>
-                <div className="text-right">
-                  <span className="font-black text-emerald-700">$3,450.00</span>
-                  <span className="block text-[9px] font-bold text-emerald-600">PAID IN FULL</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div>
-                  <div className="font-extrabold text-slate-900">#INV-2026-081 • PRV Pressure Check</div>
-                  <div className="text-[10px] text-slate-500">Nov 11, 2026 • Credit Card</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-slate-900">$189.00</span>
-                  <span className="block text-[9px] font-bold text-emerald-600">PAID IN FULL</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                <div>
-                  <div className="font-extrabold text-slate-900">#INV-2026-074 • Electrical Subpanel</div>
-                  <div className="text-[10px] text-slate-500">Oct 28, 2026 • Bank Wire</div>
-                </div>
-                <div className="text-right">
-                  <span className="font-black text-slate-900">$420.00</span>
-                  <span className="block text-[9px] font-bold text-emerald-600">PAID IN FULL</span>
-                </div>
-              </div>
+              ) : (
+                invoices.slice(0, 3).map((inv) => (
+                  <div key={inv.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
+                    <div>
+                      <div className="font-extrabold text-slate-900">#{inv.invoiceNo} • {inv.serviceName || 'Service'}</div>
+                      <div className="text-[10px] text-slate-500">{inv.date} • Stripe Escrow</div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-black text-emerald-700">${(inv.amount || 0).toFixed(2)}</span>
+                      <span className="block text-[9px] font-bold text-emerald-600">{inv.status || 'PAID'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -939,7 +926,7 @@ export const FacebookProfilePage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900">Equipment &amp; Warranty Vault</h3>
-                <span className="text-[11px] text-slate-500">3 verified installed systems</span>
+                <span className="text-[11px] text-slate-500">Verified installed systems</span>
               </div>
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Active Warranties</span>
             </div>
@@ -1483,9 +1470,9 @@ export const FacebookProfilePage: React.FC = () => {
                     <div className="p-3.5 rounded-2xl border border-slate-200/80 bg-white shadow-2xs space-y-1">
                       <div className="flex items-center gap-1.5 text-purple-600 font-extrabold">
                         <Lock className="w-4 h-4" />
-                        <span>\$2M Liability Policy</span>
+                        <span>Commercial Liability Policy</span>
                       </div>
-                      <div className="text-[11px] text-slate-600 font-mono">#HISCOX-8829-TX</div>
+                      <div className="text-[11px] text-slate-600 font-mono">#POL-ACTIVE-VERIFIED</div>
                       <div className="text-[10px] text-slate-400">Full Commercial Coverage</div>
                     </div>
                   </div>
@@ -1531,7 +1518,7 @@ export const FacebookProfilePage: React.FC = () => {
                             <span>•</span>
                             <span>{tech.jobsCompleted} jobs</span>
                             <span>•</span>
-                            <span className="font-bold text-slate-700">$85/hr</span>
+                            <span className="font-bold text-slate-700">{tech.status}</span>
                           </div>
                         </div>
                       </div>

@@ -68,28 +68,23 @@ fun CommonUtilitiesScreen(
                 when (selectedTab) {
                     0 -> {
                         Text("Notification Center", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        NotifItem("Technician is en route (12 mins away)", "Service Fleet Vehicle • Live GPS Active", "Just now", MaterialTheme.colorScheme.primary)
-                        NotifItem("Extra Parts Approval Requested ($38.50)", "Heavy-duty brass P-trap kit required for drain snaking", "25m ago", extraColors.warning)
-                        NotifItem("Escrow Payment Authorized ($187.50)", "Funds held safely in Stripe Escrow pending sign-off", "2h ago", extraColors.verified)
+                        NotifItem("System Ready", "Dispatch and booking alerts appear here in real time.", "Active", MaterialTheme.colorScheme.primary)
                     }
                     1 -> {
                         Surface(
-                            color = extraColors.warning.copy(alpha = 0.12f),
+                            color = extraColors.verified.copy(alpha = 0.12f),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CloudOff, contentDescription = null, tint = extraColors.warning)
+                                Icon(Icons.Default.CloudDone, contentDescription = null, tint = extraColors.verified)
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("3 Actions Queued Offline", fontWeight = FontWeight.Bold, color = extraColors.warning)
-                                    Text("Recorded locally in encrypted storage. Will sync when Wi-Fi/LTE reconnects.", fontSize = 11.sp)
+                                    Text("Offline Sync Storage Ready", fontWeight = FontWeight.Bold, color = extraColors.verified)
+                                    Text("0 actions queued. All local records are synchronized with cloud.", fontSize = 11.sp)
                                 }
                             }
                         }
-                        QueueItem("Customer Digital Signature #SVC-2026-1001")
-                        QueueItem("After-Repair Photos (2 files • 4.2 MB)")
-                        QueueItem("GPS Geofence Arrival Check-In (02:30:14 PM)")
                     }
                     2 -> {
                         Box(modifier = Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {

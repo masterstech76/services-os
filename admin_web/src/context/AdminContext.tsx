@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { verifySessionValidity } from '../security/sessionManager';
 import { recordSecurityEvent } from '../security/securityAuditLogger';
-import { getShowcaseDemoData } from '../data/demoDataLoader';
 import { supabaseService, SupabaseConfigState } from '../services/supabaseClient';
 import { 
   Booking, 
@@ -410,40 +409,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   // Commercial Showcase & Turnkey Suite State
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
-    return localStorage.getItem('servicepro_demo_mode') === 'true';
-  });
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isMobileSimulatorOpen, setIsMobileSimulatorOpen] = useState(false);
   const [isDispatchSimulatorOpen, setIsDispatchSimulatorOpen] = useState(false);
   const [isWhiteLabelModalOpen, setIsWhiteLabelModalOpen] = useState(false);
 
   const enableDemoMode = useCallback(() => {
-    const pkg = getShowcaseDemoData();
-    setBookings(pkg.bookings);
-    setTechnicians(pkg.technicians);
-    setCustomers(pkg.customers);
-    setServices(pkg.services);
-    setCategories(pkg.categories);
-    setInvoices(pkg.invoices);
-    setTickets(pkg.tickets);
-    setReviews(pkg.reviews);
-    setAuditLogs(pkg.auditLogs);
-    setIncidents(pkg.incidents);
-
-    localStorage.setItem('servicepro_demo_mode', 'true');
-    localStorage.setItem('servicepro_bookings', JSON.stringify(pkg.bookings));
-    localStorage.setItem('servicepro_technicians', JSON.stringify(pkg.technicians));
-    localStorage.setItem('servicepro_customers', JSON.stringify(pkg.customers));
-    localStorage.setItem('servicepro_services', JSON.stringify(pkg.services));
-    localStorage.setItem('servicepro_categories', JSON.stringify(pkg.categories));
-    localStorage.setItem('servicepro_invoices', JSON.stringify(pkg.invoices));
-    localStorage.setItem('servicepro_tickets', JSON.stringify(pkg.tickets));
-    localStorage.setItem('servicepro_reviews', JSON.stringify(pkg.reviews));
-    localStorage.setItem('servicepro_audit_logs', JSON.stringify(pkg.auditLogs));
-    localStorage.setItem('servicepro_incidents', JSON.stringify(pkg.incidents));
-
-    setIsDemoMode(true);
-    addToast('Showcase Pitch Mode Active: Loaded 17 categories, active bookings & technicians!', 'info');
+    addToast('Zero-demo policy active: Database and state operate in clean production baseline mode.', 'info');
   }, [addToast]);
 
   const disableDemoMode = useCallback(() => {
@@ -475,9 +447,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [addToast]);
 
   // Entity Details Selection IDs
-  const [selectedBookingId, setSelectedBookingId] = useState<string>(() => bookings[0]?.id || 'b-1');
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(() => services[0]?.id || 's-1');
-  const [selectedTicketId, setSelectedTicketId] = useState<string>(() => tickets[0]?.id || 't-1');
+  const [selectedBookingId, setSelectedBookingId] = useState<string>(() => bookings[0]?.id || '');
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(() => services[0]?.id || '');
+  const [selectedTicketId, setSelectedTicketId] = useState<string>(() => tickets[0]?.id || '');
 
   // Dynamic Pricing & Platform Commission Configuration (Persisted)
   const [pricingConfig, setPricingConfig] = useState<PricingConfig>(() => {
@@ -1004,13 +976,13 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [currentRole, addToast]);
 
   // Universal User Dossier (Customer, Technician, Staff)
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('C1');
-  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>('T1');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('S1');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => customers[0]?.id || '');
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>(() => technicians[0]?.id || '');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(() => staffMembers[0]?.id || '');
   const [staffMembers] = useState<StaffMember[]>(INITIAL_STAFF_MEMBERS);
 
   const navigateToFacebookProfile = useCallback((target?: ViewingProfileTarget) => {
-    const finalTarget = target || (currentRole === 'ADMIN' ? { type: 'admin' } : { type: 'staff', id: 'S1' });
+    const finalTarget = target || (currentRole === 'ADMIN' ? { type: 'admin' } : { type: 'staff', id: staffMembers[0]?.id || '' });
     setActiveProfileTarget(finalTarget);
     if (finalTarget.type === 'customer' && finalTarget.id) setSelectedCustomerId(finalTarget.id);
     if (finalTarget.type === 'technician' && finalTarget.id) setSelectedTechnicianId(finalTarget.id);

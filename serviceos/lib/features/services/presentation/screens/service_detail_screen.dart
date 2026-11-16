@@ -20,8 +20,8 @@ class ServiceDetailScreen extends StatefulWidget {
 }
 
 class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
-  int _selectedTierIndex = 1; // 0: Basic ($89), 1: Standard ($149 - POPULAR), 2: Heavy ($229)
-  bool _includeBioClean = true;
+  int _selectedTierIndex = 0;
+  bool _includeAddon = false;
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +31,16 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     final textSecondary = isDark ? AppColors.nightTextSecondary : AppColors.dayTextSecondary;
     final primaryBrand = isDark ? AppColors.nightPrimary : AppColors.dayPrimary;
 
+    final base = widget.service.price;
     final tiers = [
-      {'title': 'Basic Inspection', 'price': 89.0, 'desc': 'Diagnostic camera inspection & flow test only.'},
-      {'title': 'Standard Repair', 'price': 149.0, 'desc': 'Complete motorized snaking, seals replacement & 30-day warranty.'},
-      {'title': 'Heavy-Duty Overhaul', 'price': 229.0, 'desc': 'High-pressure hydro-jetting, full fitting rebuild & 90-day warranty.'},
+      {'title': 'Standard Service', 'price': base, 'desc': 'Standard service execution with verified warranty.'},
+      {'title': 'Comprehensive Package', 'price': (base * 1.35).roundToDouble(), 'desc': 'Complete diagnosis, precision calibration & extended warranty.'},
+      {'title': 'Heavy-Duty Pro Overhaul', 'price': (base * 1.75).roundToDouble(), 'desc': 'Heavy-duty overhaul, full fitting rebuild & 90-day warranty.'},
     ];
 
+    final addOnPrice = (base * 0.15).roundToDouble();
     final currentTierPrice = tiers[_selectedTierIndex]['price'] as double;
-    final totalPrice = currentTierPrice + (_includeBioClean ? 25.0 : 0.0);
+    final totalPrice = currentTierPrice + (_includeAddon ? addOnPrice : 0.0);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.nightCanvas : AppColors.dayCanvas,
@@ -245,14 +247,14 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Bio-Clean Enzyme Drain Treatment', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
-                            Text('Eco-friendly bacterial preventative flush (+\$25.00)', style: TextStyle(fontSize: 11, color: textSecondary)),
+                            Text('Comprehensive Service Add-on', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
+                            Text('Protective preventative treatment (+\$${addOnPrice.toStringAsFixed(2)})', style: TextStyle(fontSize: 11, color: textSecondary)),
                           ],
                         ),
                         Checkbox(
-                          value: _includeBioClean,
+                          value: _includeAddon,
                           activeColor: primaryBrand,
-                          onChanged: (val) => setState(() => _includeBioClean = val ?? false),
+                          onChanged: (val) => setState(() => _includeAddon = val ?? false),
                         ),
                       ],
                     ),

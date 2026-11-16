@@ -284,7 +284,7 @@ export const Page01MainDashboard: React.FC = () => {
                       if (active && payload && payload.length) {
                         const current = payload.find((p: any) => p.dataKey === 'thisPeriod')?.value as number || 0;
                         const last = payload.find((p: any) => p.dataKey === 'lastPeriod')?.value as number || 0;
-                        const rev = payload[0]?.payload?.revenue || (current * 175);
+                        const rev = payload[0]?.payload?.revenue || 0;
                         const growth = last > 0 ? (((current - last) / last) * 100).toFixed(1) : '0';
 
                         return (

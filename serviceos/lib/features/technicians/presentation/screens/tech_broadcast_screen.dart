@@ -4,11 +4,19 @@ import '../../../../core/theme/app_theme.dart';
 class TechBroadcastScreen extends StatefulWidget {
   final VoidCallback onAccept;
   final VoidCallback onDecline;
+  final double netPayout;
+  final String jobTitle;
+  final String distanceText;
+  final String customerInfo;
 
   const TechBroadcastScreen({
     super.key,
     required this.onAccept,
     required this.onDecline,
+    this.netPayout = 0.00,
+    this.jobTitle = 'On-Demand Service Request',
+    this.distanceText = 'Proximity calculated upon dispatch',
+    this.customerInfo = 'Verified Customer Order',
   });
 
   @override
@@ -83,7 +91,7 @@ class _TechBroadcastScreenState extends State<TechBroadcastScreen> {
                   children: [
                     const Text('GUARANTEED NET PAYOUT (85% ESCROW)', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                     const SizedBox(height: 4),
-                    const Text('\$109.65', style: TextStyle(color: Color(0xFF10B981), fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                    Text('\$${widget.netPayout.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF10B981), fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
                     const SizedBox(height: 4),
                     Text('Direct Stripe Express deposit immediately upon customer sign-off.', style: TextStyle(color: textSecondary, fontSize: 12)),
                   ],
@@ -103,11 +111,11 @@ class _TechBroadcastScreenState extends State<TechBroadcastScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Emergency Pipe Leak under Kitchen Sink', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textPrimary)),
+                    Text(widget.jobTitle, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textPrimary)),
                     const SizedBox(height: 8),
-                    _buildParamRow(Icons.location_on_outlined, '1.8 miles away (8-min drive)', textSecondary),
+                    _buildParamRow(Icons.location_on_outlined, widget.distanceText, textSecondary),
                     const SizedBox(height: 6),
-                    _buildParamRow(Icons.person_outline, 'Customer: Verified Homeowner (★ 5.0 Rating)', textSecondary),
+                    _buildParamRow(Icons.person_outline, widget.customerInfo, textSecondary),
                     const SizedBox(height: 6),
                     _buildParamRow(Icons.home_outlined, 'Access Instructions Provided in Work Order', textSecondary),
                   ],

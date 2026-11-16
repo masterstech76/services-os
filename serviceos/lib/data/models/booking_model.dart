@@ -48,10 +48,10 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
-      id: json['id'] as String? ?? 'SO-88219',
-      serviceTitle: json['serviceTitle'] as String? ?? 'Drain Cleaning & Snaking',
-      category: json['category'] as String? ?? 'Plumbing Services',
-      basePrice: (json['basePrice'] as num?)?.toDouble() ?? 149.00,
+      id: json['id'] as String? ?? '',
+      serviceTitle: json['serviceTitle'] as String? ?? 'Service Order',
+      category: json['category'] as String? ?? 'Home Service',
+      basePrice: (json['basePrice'] as num?)?.toDouble() ?? 0.0,
       extraPartsTotal: (json['extraPartsTotal'] as num?)?.toDouble() ?? 0.0,
       platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
       netTechPayout: (json['netTechPayout'] as num?)?.toDouble() ?? 0.0,
@@ -63,7 +63,7 @@ class BookingModel {
       customerAddress: json['customerAddress'] as String? ?? '',
       safetyPin: json['safetyPin'] as String? ?? '',
       technicianId: json['technicianId'] as String? ?? '',
-      technicianName: json['technicianName'] as String? ?? 'Assigned Professional',
+      technicianName: json['technicianName'] as String? ?? '',
       scheduledAt: DateTime.tryParse(json['scheduledAt'] as String? ?? '') ?? DateTime.now(),
       completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt'] as String) : null,
     );

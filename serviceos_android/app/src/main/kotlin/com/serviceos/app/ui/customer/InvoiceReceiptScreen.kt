@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvoiceReceiptScreen(
-    invoiceNo: String = "INV-2026-90412",
+    invoiceNo: String = "",
     onBack: () -> Unit = {}
 ) {
     Scaffold(
@@ -66,18 +66,18 @@ fun InvoiceReceiptScreen(
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold)
                     )
                     Text(
-                        text = "Invoice: $invoiceNo • Paid via Apple Pay",
+                        text = if (invoiceNo.isNotEmpty()) "Invoice: $invoiceNo • Paid via Escrow Settlement" else "Settled via Escrow Payment",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
 
                     Divider(modifier = Modifier.padding(vertical = 14.dp))
 
-                    InvoiceRow("Labor: Emergency Plumbing Snaking", "$129.00")
-                    InvoiceRow("Emergency Van Dispatch & Diagnostic", "$20.00")
-                    InvoiceRow("Brass P-Trap Replacement Part", "$38.50")
-                    InvoiceRow("Applicable Sales Tax", "$13.12")
-                    InvoiceRow("Escrow Protection Guarantee", "FREE")
+                    InvoiceRow("Labor Service Charge", "$0.00")
+                    InvoiceRow("Diagnostic Dispatch Fee", "$0.00")
+                    InvoiceRow("Authorized Replacement Parts", "$0.00")
+                    InvoiceRow("Applicable Sales Tax", "$0.00")
+                    InvoiceRow("Escrow Protection Guarantee", "Active")
 
                     Divider(modifier = Modifier.padding(vertical = 14.dp))
 
@@ -90,7 +90,7 @@ fun InvoiceReceiptScreen(
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold)
                         )
                         Text(
-                            text = "$200.62",
+                            text = "$0.00",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Black,
                                 color = MaterialTheme.colorScheme.primary

@@ -112,40 +112,39 @@ class _CommonUtilitiesScreenState extends State<CommonUtilitiesScreen> {
     Color textPrimary,
     Color textSecondary,
   ) {
-    final notifications = [
-      {
-        'title': 'Technician is en route (12 mins away)',
-        'subtitle': 'Service Fleet Vehicle • Live GPS Active',
-        'time': 'Just now',
-        'icon': Icons.directions_car,
-        'color': AppColors.dayPrimary,
-        'unread': true,
-      },
-      {
-        'title': 'Extra Parts Approval Requested (\$38.50)',
-        'subtitle': 'Heavy-duty brass P-trap replacement required for leak seal',
-        'time': '25m ago',
-        'icon': Icons.handyman,
-        'color': AppColors.warningOrange,
-        'unread': true,
-      },
-      {
-        'title': 'Escrow Hold Authorized (\$187.50)',
-        'subtitle': 'Payment held safely in Stripe Escrow pending sign-off',
-        'time': '2 hours ago',
-        'icon': Icons.lock,
-        'color': AppColors.verifiedEmerald,
-        'unread': false,
-      },
-      {
-        'title': 'Seasonal VIP Promo: 20% Off HVAC Tune-up',
-        'subtitle': 'Code FALL20 applied to your promotional coupon wallet',
-        'time': 'Yesterday',
-        'icon': Icons.local_offer,
-        'color': AppColors.dayAccent,
-        'unread': false,
-      },
-    ];
+    final List<Map<String, dynamic>> notifications = [];
+
+    if (notifications.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : Colors.black.withOpacity(0.04),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.notifications_none_rounded, size: 40, color: textSecondary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Notifications',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textPrimary),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Real-time dispatch alerts and booking updates will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -229,24 +228,24 @@ class _CommonUtilitiesScreenState extends State<CommonUtilitiesScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.ratingAmber.withOpacity(0.12),
+            color: AppColors.verifiedEmerald.withOpacity(0.12),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.ratingAmber.withOpacity(0.3)),
+            border: Border.all(color: AppColors.verifiedEmerald.withOpacity(0.3)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.cloud_off, color: AppColors.ratingAmber, size: 24),
+              Icon(Icons.cloud_done, color: AppColors.verifiedEmerald, size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '3 Actions Pending Sync',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.ratingAmber),
+                      'All Actions Synchronized',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.verifiedEmerald),
                     ),
                     Text(
-                      'Changes recorded locally. Will upload immediately when LTE / Wi-Fi resumes.',
+                      '0 pending actions in local queue. Encrypted offline cache is up to date.',
                       style: TextStyle(fontSize: 11, color: AppColors.dayTextSecondary),
                     ),
                   ],
@@ -255,12 +254,6 @@ class _CommonUtilitiesScreenState extends State<CommonUtilitiesScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _buildQueueItem('Customer Digital Signature #SVC-2026-1001', 'Queued for Cloud Supabase sync', Icons.draw, surfaceColor, borderColor, textPrimary, textSecondary),
-        const SizedBox(height: 10),
-        _buildQueueItem('After-Photo Proof (2 images)', 'Stored in local encrypted cache (4.2 MB)', Icons.camera_alt, surfaceColor, borderColor, textPrimary, textSecondary),
-        const SizedBox(height: 10),
-        _buildQueueItem('GPS Geofence Arrival Check-In', 'Timestamp: 02:30:14 PM', Icons.location_on, surfaceColor, borderColor, textPrimary, textSecondary),
         const SizedBox(height: 24),
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(

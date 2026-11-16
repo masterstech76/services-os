@@ -43,7 +43,7 @@ class _WorkOrderCompletionScreenState extends State<WorkOrderCompletionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Job Completed: Drain Unclogging', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textPrimary)),
+              Text('Job Completed: Field Service Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textPrimary)),
               const SizedBox(height: 4),
               Text('The technician has finished the service. Inspect photo proof and sign below to release escrow payment.', style: TextStyle(fontSize: 12, color: textSecondary, height: 1.4)),
 
@@ -154,7 +154,7 @@ class _WorkOrderCompletionScreenState extends State<WorkOrderCompletionScreen> {
                   ),
                   onPressed: _hasSigned ? widget.onSignOffComplete : () => setState(() => _hasSigned = true),
                   child: Text(
-                    _hasSigned ? 'Approve & Release Escrow (\$148.73) ✓' : 'Tap to Sign First',
+                    _hasSigned ? 'Approve & Release Escrow ✓' : 'Tap to Sign First',
                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
                   ),
                 ),

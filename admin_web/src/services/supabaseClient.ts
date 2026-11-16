@@ -141,8 +141,8 @@ class SupabaseService {
           email: params.email.trim().toLowerCase(),
           password: params.password,
           fullName: params.fullName.trim(),
-          companyName: params.companyName?.trim() || 'ServicePro OS Enterprise',
-          phone: params.phone?.trim() || '+18005550100',
+          companyName: params.companyName?.trim() || '',
+          phone: params.phone?.trim() || '',
         },
       });
       if (error) throw error;

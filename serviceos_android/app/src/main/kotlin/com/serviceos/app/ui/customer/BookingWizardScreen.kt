@@ -19,12 +19,15 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun BookingWizardScreen(
     onBack: () -> Unit = {},
-    onConfirmed: () -> Unit = {}
+    onConfirmed: () -> Unit = {},
+    baseLabor: Double = 0.0,
+    dispatchFee: Double = 0.0
 ) {
     var step by remember { mutableStateOf(1) } // 1: Problem, 2: Address, 3: Schedule, 4: Payment
     var issueDetails by remember { mutableStateOf("") }
     var serviceAddress by remember { mutableStateOf("") }
     var accessNotes by remember { mutableStateOf("") }
+    val totalEscrow = baseLabor + dispatchFee
 
     Scaffold(
         topBar = {
@@ -62,7 +65,9 @@ fun BookingWizardScreen(
                             .height(48.dp)
                     ) {
                         Text(
-                            text = if (step == 4) "Authorize & Find Pro ($149) →" else "Continue →",
+                            text = if (step == 4) {
+                                if (totalEscrow > 0.0) "Authorize & Find Pro ($${String.format(java.util.Locale.US, "%.2f", totalEscrow)}) →" else "Authorize & Find Pro →"
+                            } else "Continue →",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
@@ -157,10 +162,10 @@ fun BookingWizardScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Base Labor: $129.00")
-                            Text("Diagnostic Dispatch: $20.00")
+                            Text("Base Labor: $${String.format(java.util.Locale.US, "%.2f", baseLabor)}")
+                            Text("Diagnostic Dispatch: $${String.format(java.util.Locale.US, "%.2f", dispatchFee)}")
                             Divider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text("Total Escrow Authorization: $149.00", fontWeight = FontWeight.Bold)
+                            Text("Total Escrow Authorization: $${String.format(java.util.Locale.US, "%.2f", totalEscrow)}", fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 "Funds held securely in escrow. Released only upon your signature sign-off.",

@@ -260,15 +260,22 @@ class _BookingWizardScreenState extends State<BookingWizardScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: isDark ? AppColors.nightBorder : AppColors.dayBorder),
               ),
-              child: Column(
-                children: [
-                  _buildCostRow('Standard Repair Package', '\$149.00', textSecondary, textPrimary),
-                  _buildCostRow('Safety & Platform Fee', '\$10.00', textSecondary, textPrimary),
-                  _buildCostRow('Promo Code (WELCOME20)', '-\$20.00', const Color(0xFF10B981), const Color(0xFF10B981)),
-                  _buildCostRow('Florida Sales Tax (7%)', '\$9.73', textSecondary, textPrimary),
-                  const Divider(height: 20),
-                  _buildCostRow('Total Pre-Authorized', '\$148.73', textPrimary, primaryBrand, isBold: true),
-                ],
+              child: Builder(
+                builder: (context) {
+                  final basePrice = widget.service.price;
+                  final platformFee = basePrice > 0 ? (basePrice * 0.10) : 0.00;
+                  final tax = (basePrice + platformFee) * 0.07;
+                  final total = basePrice + platformFee + tax;
+                  return Column(
+                    children: [
+                      _buildCostRow(widget.service.name.isNotEmpty ? widget.service.name : 'Service Package', '\$${basePrice.toStringAsFixed(2)}', textSecondary, textPrimary),
+                      _buildCostRow('Safety & Platform Fee', '\$${platformFee.toStringAsFixed(2)}', textSecondary, textPrimary),
+                      _buildCostRow('Sales Tax (7%)', '\$${tax.toStringAsFixed(2)}', textSecondary, textPrimary),
+                      const Divider(height: 20),
+                      _buildCostRow('Total Pre-Authorized', '\$${total.toStringAsFixed(2)}', textPrimary, primaryBrand, isBold: true),
+                    ],
+                  );
+                },
               ),
             ),
           ],

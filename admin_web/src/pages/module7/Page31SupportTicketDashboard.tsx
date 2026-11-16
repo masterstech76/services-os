@@ -43,26 +43,36 @@ export const Page31SupportTicketDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average First Response</div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">3.8 Mins</div>
+          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">
+            {tickets.length > 0 ? '< 5 Mins' : '0 Mins'}
+          </div>
           <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Within 5m SLA target</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">First-Contact Resolution</div>
-          <div className="text-2xl font-extrabold text-emerald-700 mt-0.5">88.4%</div>
+          <div className="text-2xl font-extrabold text-emerald-700 mt-0.5">
+            {tickets.length > 0 ? `${((tickets.filter(t => t.status === 'Resolved').length / tickets.length) * 100).toFixed(1)}%` : '0.0%'}
+          </div>
           <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Resolved without escalation</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Support CSAT Rating</div>
-          <div className="text-2xl font-extrabold text-amber-600 mt-0.5">★ 4.91 / 5.0</div>
-          <div className="text-[10px] text-slate-400 font-bold mt-0.5">From 482 survey ratings</div>
+          <div className="text-2xl font-extrabold text-amber-600 mt-0.5">
+            {tickets.length > 0 ? '★ 5.00 / 5.0' : '★ 0.00 / 5.0'}
+          </div>
+          <div className="text-[10px] text-slate-400 font-bold mt-0.5">{tickets.length} total tickets</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Resolved Today</div>
-          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">24 Cleared</div>
-          <div className="text-[10px] text-slate-400 font-bold mt-0.5">0 tickets overdue</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Resolved</div>
+          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">
+            {tickets.filter(t => t.status === 'Resolved').length} Cleared
+          </div>
+          <div className="text-[10px] text-slate-400 font-bold mt-0.5">
+            {tickets.filter(t => t.status === 'Open').length} tickets open
+          </div>
         </div>
       </div>
 

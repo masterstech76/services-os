@@ -162,11 +162,15 @@ export const Page12ManualDispatchHandover: React.FC = () => {
                 onChange={e => setHandoverBookingId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-800 focus:outline-none"
               >
-                {bookings.filter(b => b.technicianName !== 'Unassigned').map(b => (
-                  <option key={b.id} value={b.id}>
-                    #{b.jobNo} — {b.serviceName} (Current: {b.technicianName})
-                  </option>
-                ))}
+                {bookings.filter(b => b.technicianName !== 'Unassigned').length === 0 ? (
+                  <option value="">No assigned bookings currently in progress</option>
+                ) : (
+                  bookings.filter(b => b.technicianName !== 'Unassigned').map(b => (
+                    <option key={b.id} value={b.id}>
+                      #{b.jobNo} — {b.serviceName} (Current: {b.technicianName})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -193,11 +197,15 @@ export const Page12ManualDispatchHandover: React.FC = () => {
                 onChange={e => setSelectedNewTechId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-800 focus:outline-none"
               >
-                {technicians.filter(t => t.status === 'Available').map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} — {t.specialization} (★ {t.rating} • Match: 96%)
-                  </option>
-                ))}
+                {technicians.filter(t => t.status === 'Available').length === 0 ? (
+                  <option value="">No replacement technicians currently available</option>
+                ) : (
+                  technicians.filter(t => t.status === 'Available').map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} — {t.specialization} (★ {t.rating} • Match: 96%)
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 

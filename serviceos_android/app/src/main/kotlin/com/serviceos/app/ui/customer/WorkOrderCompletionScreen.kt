@@ -62,7 +62,7 @@ fun WorkOrderCompletionScreen(
                             .height(50.dp)
                     ) {
                         Text(
-                            text = "Release Payment ($202.50) →",
+                            text = "Sign & Release Escrow →",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
@@ -88,21 +88,21 @@ fun WorkOrderCompletionScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Work Order #SVC-2026-1001 Completed",
+                        text = "Work Order Settlement",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Drain Snaking & Brass P-Trap Replacement",
+                        text = "Field Service Order Inspection & Sign-off",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Divider(modifier = Modifier.padding(vertical = 10.dp))
-                    Text("Base Labor: $149.00")
-                    Text("Extra Parts (Brass P-trap): $38.50")
+                    Text("Base Labor: $0.00")
+                    Text("Extra Parts: $0.00")
                     Text("Tip: $$selectedTip.00")
-                    Text("Total: $202.50", fontWeight = FontWeight.ExtraBold)
+                    Text("Total: $$selectedTip.00", fontWeight = FontWeight.ExtraBold)
                 }
             }
 

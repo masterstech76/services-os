@@ -33,19 +33,20 @@ interface MobileSimulatorModalProps {
 }
 
 export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOpen, onClose }) => {
-  const { agencyName } = useAdmin();
+  const { agencyName, services, categories } = useAdmin();
   const [activePersona, setActivePersona] = useState<'customer' | 'technician'>('customer');
   const [isNightMode, setIsNightMode] = useState(false);
 
   // Customer App State
   const [customerStep, setCustomerStep] = useState<'home' | 'service_detail' | 'booking_confirm' | 'live_radar'>('home');
-  const [selectedCategory, setSelectedCategory] = useState('Plumbing');
+  const [selectedCategory, setSelectedCategory] = useState(categories[0]?.name || 'Plumbing');
+  const firstService = services[0];
   const [selectedService, setSelectedService] = useState({
-    name: 'Emergency Drain Unclogging',
-    price: 149,
-    rating: 4.98,
-    reviews: 340,
-    time: '45-60 mins'
+    name: firstService ? firstService.name : 'Field Service Order',
+    price: firstService ? firstService.basePrice : 0,
+    rating: 5.0,
+    reviews: 0,
+    time: firstService ? `${firstService.durationMinutes} mins` : '45 mins'
   });
   const [pricingTier, setPricingTier] = useState<'standard' | 'premium'>('standard');
 
@@ -410,9 +411,9 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                             >
                               <div className="flex justify-between items-center mb-1">
                                 <span className="font-bold">Standard</span>
-                                <span className="text-xs font-black text-indigo-600">$149</span>
+                                <span className="text-xs font-black text-indigo-600">${selectedService.price}</span>
                               </div>
-                              <p className="text-[9px] text-slate-400">Mechanical snaking up to 50ft with 30-day fix guarantee.</p>
+                              <p className="text-[9px] text-slate-400">Standard service delivery with customer satisfaction guarantee.</p>
                             </div>
 
                             <div
@@ -425,9 +426,9 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                             >
                               <div className="flex justify-between items-center mb-1">
                                 <span className="font-bold">Pro Heavy-Duty</span>
-                                <span className="text-xs font-black text-indigo-600">$219</span>
+                                <span className="text-xs font-black text-indigo-600">${Math.round(selectedService.price * 1.45)}</span>
                               </div>
-                              <p className="text-[9px] text-slate-400">Hydro-jetting + full HD camera sewer pipe inspection.</p>
+                              <p className="text-[9px] text-slate-400">Full heavy-duty overhaul with extended warranty coverage.</p>
                             </div>
                           </div>
                         </div>
@@ -447,7 +448,7 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                           onClick={() => setCustomerStep('booking_confirm')}
                           className="w-full py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1 cursor-pointer"
                         >
-                          <span>Proceed to Escrow Checkout ($149)</span>
+                          <span>Proceed to Escrow Checkout (${selectedService.price})</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -476,19 +477,19 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                         }`}>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Base Service Package</span>
-                            <span className="font-bold">$149.00</span>
+                            <span className="font-bold">${selectedService.price.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Diagnostic Callout</span>
-                            <span className="font-bold">$20.00</span>
+                            <span className="font-bold">$0.00</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Platform Escrow Fee</span>
-                            <span className="font-bold">$18.50</span>
+                            <span className="font-bold">$0.00</span>
                           </div>
                           <div className="border-t border-slate-700/60 pt-2 flex justify-between font-extrabold text-indigo-500">
                             <span>Total Authorized</span>
-                            <span>$187.50</span>
+                            <span>${selectedService.price.toFixed(2)}</span>
                           </div>
                         </div>
 
@@ -580,9 +581,9 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                         {/* Today Earnings Card */}
                         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-500/20 text-white">
                           <span className="text-[9px] font-black uppercase text-indigo-300">Today Payout (Released)</span>
-                          <h3 className="text-xl font-black mt-1">$412.50</h3>
+                          <h3 className="text-xl font-black mt-1">$0.00</h3>
                           <div className="flex justify-between items-center mt-2 text-[10px] text-slate-300">
-                            <span>3 Completed Jobs</span>
+                            <span>0 Completed Jobs</span>
                             <span className="text-emerald-400 font-bold">100% CSAT ★ 5.0</span>
                           </div>
                         </div>
@@ -617,18 +618,18 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                             <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">
                               Priority Dispatch Match
                             </span>
-                            <h3 className="text-sm font-bold mt-1">Emergency Pipe Leak & Snaking</h3>
-                            <span className="text-xs text-indigo-400 font-bold">1.8 miles away • 8 min drive</span>
+                            <h3 className="text-sm font-bold mt-1">{selectedService.name}</h3>
+                            <span className="text-xs text-indigo-400 font-bold">Proximity match • Live dispatch</span>
                           </div>
 
                           <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl space-y-1.5 text-xs">
                             <div className="flex justify-between">
                               <span className="text-slate-400">Customer:</span>
-                              <span className="font-bold">VIP Customer (★ 5.0)</span>
+                              <span className="font-bold">Verified Customer (★ 5.0)</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-slate-400">Net Tech Payout:</span>
-                              <span className="font-black text-emerald-400">$126.65</span>
+                              <span className="font-black text-emerald-400">${(selectedService.price * 0.85).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-slate-400">Address:</span>
@@ -642,7 +643,7 @@ export const MobileSimulatorModal: React.FC<MobileSimulatorModalProps> = ({ isOp
                             onClick={() => setTechStep('en_route')}
                             className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                           >
-                            Accept Dispatch Broadcast ($126.65)
+                            Accept Dispatch Broadcast (${(selectedService.price * 0.85).toFixed(2)})
                           </button>
                           <button
                             onClick={() => setTechStep('dashboard')}

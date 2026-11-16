@@ -189,8 +189,10 @@ export const Page09BookingDetails: React.FC = () => {
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-extrabold text-slate-900">Itemized Financial Invoice</h2>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                Payment Settled (Stripe)
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                booking.paymentStatus === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}>
+                Payment {booking.paymentStatus}
               </span>
             </div>
 
@@ -205,28 +207,16 @@ export const Page09BookingDetails: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <tr>
-                  <td className="py-2.5 font-bold text-slate-800">HVAC Split AC Deep Chemical Sanitization</td>
-                  <td className="py-2.5 text-center text-slate-600">2 Units</td>
-                  <td className="py-2.5 text-right text-slate-600">$175.00</td>
-                  <td className="py-2.5 text-right font-bold text-slate-900">$350.00</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 font-bold text-slate-800">Antimicrobial Filter Replacement Pack</td>
-                  <td className="py-2.5 text-center text-slate-600">1 Kit</td>
-                  <td className="py-2.5 text-right text-slate-600">$60.00</td>
-                  <td className="py-2.5 text-right font-bold text-slate-900">$60.00</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 font-bold text-slate-800">Platform Booking &amp; Safety Escrow Guarantee</td>
-                  <td className="py-2.5 text-center text-slate-600">1</td>
-                  <td className="py-2.5 text-right text-slate-600">$40.00</td>
-                  <td className="py-2.5 text-right font-bold text-slate-900">$40.00</td>
+                  <td className="py-2.5 font-bold text-slate-800">{booking.serviceName || 'On-Demand Service'}</td>
+                  <td className="py-2.5 text-center text-slate-600">1 Service</td>
+                  <td className="py-2.5 text-right text-slate-600">${booking.estimate.toFixed(2)}</td>
+                  <td className="py-2.5 text-right font-bold text-slate-900">${booking.estimate.toFixed(2)}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-200">
-                  <td colSpan={3} className="py-3 text-right font-extrabold text-slate-900 text-sm">Total Paid:</td>
-                  <td className="py-3 text-right font-extrabold text-emerald-700 text-base">$450.00</td>
+                  <td colSpan={3} className="py-3 text-right font-extrabold text-slate-900 text-sm">Total:</td>
+                  <td className="py-3 text-right font-extrabold text-emerald-700 text-base">${booking.estimate.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>

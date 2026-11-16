@@ -1,0 +1,554 @@
+import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { pool } from '../../database/pool.js';
+import { successResponse, errorResponse } from '../../types/envelope.js';
+import { authenticate } from '../../middleware/rbac.js';
+
+const createBookingSchema = z.object({
+  serviceId: z.string().uuid(),
+  addressText: z.string().min(5),
+  city: z.string().default('Miami'),
+  state: z.string().default('FL'),
+  postalCode: z.string().default('33101'),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accessInstructions: z.string().optional(),
+  scheduledStart: z.string().datetime().optional(),
+  priority: z.enum(['STANDARD', 'URGENT', 'EMERGENCY']).default('STANDARD'),
+});
+
+const verifyPinSchema = z.object({
+  safetyPin: z.string().length(4),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});
+
+const completeWorkOrderSchema = z.object({
+  beforePhotos: z.array(z.string()).default([]),
+  afterPhotos: z.array(z.string()).default([]),
+  customerSignatureUrl: z.string().optional(),
+  workSummaryNotes: z.string().optional(),
+});
+
+export async function bookingRoutes(fastify: FastifyInstance) {
+  fastify.addHook('preHandler', authenticate);
+
+  // 1. Create On-Demand Booking Request
+  fastify.post('/', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Create an on-demand booking request with pre-auth escrow hold',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const parsed = createBookingSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        errorResponse('VALIDATION_ERROR', 'Invalid booking request parameters', requestId)
+      );
+    }
+
+    const { serviceId, addressText, city, state, postalCode, latitude, longitude, accessInstructions, scheduledStart, priority } = parsed.data;
+    const userId = request.user!.id;
+    const tenantId = request.tenantId;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // A. Ensure customer profile exists
+      let custRes = await client.query('SELECT user_id FROM customer_profiles WHERE user_id = $1', [userId]);
+      if (custRes.rows.length === 0) {
+        await client.query(
+          `INSERT INTO customer_profiles (user_id, tenant_id, full_name, default_address_text)
+           VALUES ($1, $2, $3, $4)`,
+          [userId, tenantId, request.user!.email.split('@')[0], addressText]
+        );
+      }
+
+      // B. Create or find customer address with PostGIS Point
+      const addrRes = await client.query(
+        `INSERT INTO customer_addresses (
+          customer_id, tenant_id, address_line1, city, state_province, postal_code,
+          location, access_instructions, is_default
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6,
+          ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $9, TRUE
+        ) RETURNING id`,
+        [userId, tenantId, addressText, city, state, postalCode, longitude, latitude, accessInstructions || null]
+      );
+      const addressId = addrRes.rows[0].id;
+
+      // C. Query service pricing
+      const srvRes = await client.query(
+        'SELECT id, name, base_price_cents FROM services WHERE id = $1 AND tenant_id = $2',
+        [serviceId, tenantId]
+      );
+      if (srvRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return reply.status(404).send(
+          errorResponse('SERVICE_NOT_FOUND', 'Selected service not found in catalog.', requestId)
+        );
+      }
+      const service = srvRes.rows[0];
+
+      // D. Generate Safe 4-digit Safety PIN & Booking Reference
+      const safetyPin = Math.floor(1000 + Math.random() * 9000).toString();
+      const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+      const bookingRef = `SVC-${randomSuffix}`;
+
+      // E. Insert Booking Record
+      const scheduledTime = scheduledStart ? new Date(scheduledStart) : new Date(Date.now() + 45 * 60 * 1000); // 45m emergency default
+      const bookingRes = await client.query(
+        `INSERT INTO bookings (
+          tenant_id, booking_reference, customer_id, service_id, address_id,
+          status, priority, scheduled_start, customer_safety_pin
+        ) VALUES ($1, $2, $3, $4, $5, 'REQUESTED', $6, $7, $8)
+        RETURNING *`,
+        [tenantId, bookingRef, userId, serviceId, addressId, priority, scheduledTime, safetyPin]
+      );
+      const booking = bookingRes.rows[0];
+
+      // F. Create Initial Itemized Invoice
+      const laborCents = Number(service.base_price_cents);
+      const diagnosticCents = priority === 'EMERGENCY' ? 4900 : 2000;
+      const totalAmountCents = laborCents + diagnosticCents;
+      const invoiceNo = `INV-${new Date().getFullYear()}-${randomSuffix}`;
+
+      const invRes = await client.query(
+        `INSERT INTO invoices (
+          tenant_id, booking_id, invoice_number, labor_subtotal_cents,
+          diagnostic_fee_cents, total_amount_cents, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'AUTHORIZED')
+        RETURNING id`,
+        [tenantId, booking.id, invoiceNo, laborCents, diagnosticCents, totalAmountCents]
+      );
+      const invoiceId = invRes.rows[0].id;
+
+      // G. Insert Invoice Line Items
+      await client.query(
+        `INSERT INTO invoice_items (invoice_id, description, item_type, quantity, unit_price_cents, total_cents)
+         VALUES 
+          ($1, $2, 'LABOR', 1, $3, $3),
+          ($1, 'Diagnostic Dispatch Callout', 'DIAGNOSTIC', 1, $4, $4)`,
+        [invoiceId, service.name, laborCents, diagnosticCents]
+      );
+
+      // H. Create Pre-Auth Payment Transaction Record
+      const dummyStripeIntentId = `pi_sim_${Date.now()}_${randomSuffix}`;
+      await client.query(
+        `INSERT INTO payment_transactions (
+          tenant_id, invoice_id, stripe_payment_intent_id, idempotency_key,
+          authorized_amount_cents, transaction_type, status
+        ) VALUES ($1, $2, $3, $4, $5, 'PRE_AUTH', 'REQUIRES_CAPTURE')`,
+        [tenantId, invoiceId, dummyStripeIntentId, `idem_${booking.id}`, totalAmountCents]
+      );
+
+      // I. Record Initial Timeline Audit Event
+      await client.query(
+        `INSERT INTO booking_timeline_events (
+          booking_id, tenant_id, from_status, to_status, actor_id, event_title, event_details
+        ) VALUES ($1, $2, NULL, 'REQUESTED', $3, 'Booking Order Initialized', $4)`,
+        [booking.id, tenantId, userId, `Order #${bookingRef} created with escrow pre-auth of $${(totalAmountCents / 100).toFixed(2)}`]
+      );
+
+      await client.query('COMMIT');
+
+      return reply.status(201).send(
+        successResponse({
+          bookingId: booking.id,
+          bookingReference: booking.booking_reference,
+          status: booking.status,
+          safetyPin: booking.customer_safety_pin,
+          scheduledStart: booking.scheduled_start,
+          serviceName: service.name,
+          preAuthAmountCents: totalAmountCents,
+          invoiceNumber: invoiceNo,
+        }, requestId)
+      );
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+
+  // 2. Query Bookings List (Paginated & Filtered)
+  fastify.get('/', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Get paginated list of bookings with filtering',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          priority: { type: 'string' },
+          search: { type: 'string' },
+          page: { type: 'integer', default: 1 },
+          limit: { type: 'integer', default: 20 },
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const tenantId = request.tenantId;
+    const userRole = request.user!.role;
+    const userId = request.user!.id;
+    const { status, priority, search, page = 1, limit = 20 } = request.query as any;
+
+    const offset = (Math.max(1, page) - 1) * limit;
+
+    let queryText = `
+      SELECT b.id, b.booking_reference, b.status, b.priority, b.scheduled_start, b.customer_safety_pin,
+             s.name as service_name, s.base_price_cents,
+             cp.full_name as customer_name, u_cust.phone as customer_phone,
+             ca.address_line1 as customer_address, ca.city as customer_city,
+             pp.full_name as technician_name, b.assigned_provider_id,
+             i.total_amount_cents, i.status as payment_status
+      FROM bookings b
+      JOIN services s ON s.id = b.service_id
+      JOIN customer_profiles cp ON cp.user_id = b.customer_id
+      JOIN users u_cust ON u_cust.id = cp.user_id
+      JOIN customer_addresses ca ON ca.id = b.address_id
+      LEFT JOIN provider_profiles pp ON pp.user_id = b.assigned_provider_id
+      LEFT JOIN invoices i ON i.booking_id = b.id
+      WHERE b.tenant_id = $1
+    `;
+    const params: any[] = [tenantId];
+    let paramIndex = 2;
+
+    // Customer can only view own bookings
+    if (userRole === 'CUSTOMER') {
+      queryText += ` AND b.customer_id = $${paramIndex++}`;
+      params.push(userId);
+    }
+
+    // Technician can only view assigned bookings
+    if (userRole === 'TECHNICIAN') {
+      queryText += ` AND b.assigned_provider_id = $${paramIndex++}`;
+      params.push(userId);
+    }
+
+    if (status && status !== 'all') {
+      queryText += ` AND b.status = $${paramIndex++}`;
+      params.push(status.toUpperCase());
+    }
+
+    if (priority && priority !== 'all') {
+      queryText += ` AND b.priority = $${paramIndex++}`;
+      params.push(priority.toUpperCase());
+    }
+
+    if (search && search.trim()) {
+      queryText += ` AND (b.booking_reference ILIKE $${paramIndex} OR cp.full_name ILIKE $${paramIndex} OR s.name ILIKE $${paramIndex})`;
+      params.push(`%${search.trim()}%`);
+      paramIndex++;
+    }
+
+    // Count Total Records
+    const countSql = `SELECT COUNT(*) as count FROM (${queryText}) as filtered`;
+    const countRes = await pool.query(countSql, params);
+    const totalRecords = parseInt(countRes.rows[0].count, 10);
+
+    // Fetch Paginated Records
+    queryText += ` ORDER BY b.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(limit, offset);
+
+    const res = await pool.query(queryText, params);
+
+    return reply.status(200).send(
+      successResponse(res.rows, requestId, {
+        page: Number(page),
+        limit: Number(limit),
+        totalRecords,
+        totalPages: Math.ceil(totalRecords / limit) || 1
+      })
+    );
+  });
+
+  // 3. Get Full Booking Dossier
+  fastify.get('/:id', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Get full booking dossier by ID',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const { id } = request.params as any;
+    const tenantId = request.tenantId;
+
+    const bRes = await pool.query(
+      `SELECT b.*, s.name as service_name, s.description as service_desc,
+              cp.full_name as customer_name, u_cust.phone as customer_phone, u_cust.email as customer_email,
+              ca.address_line1 as customer_address, ca.city, ca.state_province, ca.postal_code,
+              ST_X(ca.location::geometry) as longitude, ST_Y(ca.location::geometry) as latitude,
+              pp.full_name as technician_name, pp.trade_category, pp.vehicle_make_model, pp.vehicle_license_plate,
+              u_tech.phone as technician_phone,
+              i.id as invoice_id, i.invoice_number, i.total_amount_cents, i.status as payment_status
+       FROM bookings b
+       JOIN services s ON s.id = b.service_id
+       JOIN customer_profiles cp ON cp.user_id = b.customer_id
+       JOIN users u_cust ON u_cust.id = cp.user_id
+       JOIN customer_addresses ca ON ca.id = b.address_id
+       LEFT JOIN provider_profiles pp ON pp.user_id = b.assigned_provider_id
+       LEFT JOIN users u_tech ON u_tech.id = pp.user_id
+       LEFT JOIN invoices i ON i.booking_id = b.id
+       WHERE b.id = $1 AND b.tenant_id = $2`,
+      [id, tenantId]
+    );
+
+    if (bRes.rows.length === 0) {
+      return reply.status(404).send(
+        errorResponse('BOOKING_NOT_FOUND', 'Work order dossier not found.', requestId)
+      );
+    }
+
+    const booking = bRes.rows[0];
+
+    // Fetch Timeline Events
+    const tlRes = await pool.query(
+      `SELECT id, from_status, to_status, event_title, event_details, created_at
+       FROM booking_timeline_events
+       WHERE booking_id = $1
+       ORDER BY created_at ASC`,
+      [id]
+    );
+
+    // Fetch Work Order Proofs
+    const pfRes = await pool.query(
+      `SELECT before_photos_urls, after_photos_urls, customer_signature_url, work_summary_notes, submitted_at
+       FROM work_order_proofs WHERE booking_id = $1`,
+      [id]
+    );
+
+    // Fetch Invoice Line Items
+    let items: any[] = [];
+    if (booking.invoice_id) {
+      const itemsRes = await pool.query(
+        'SELECT description, item_type, quantity, unit_price_cents, total_cents FROM invoice_items WHERE invoice_id = $1',
+        [booking.invoice_id]
+      );
+      items = itemsRes.rows;
+    }
+
+    return reply.status(200).send(
+      successResponse({
+        booking,
+        timeline: tlRes.rows,
+        proofs: pfRes.rows[0] || null,
+        invoiceItems: items
+      }, requestId)
+    );
+  });
+
+  // 4. Technician On-Site Arrival & Safety PIN Verification
+  fastify.post('/:id/verify-arrival', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Verify customer 4-digit arrival safety PIN and confirm on-site status',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const { id } = request.params as any;
+    const parsed = verifyPinSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        errorResponse('VALIDATION_ERROR', 'A 4-digit numeric safety PIN is required.', requestId)
+      );
+    }
+
+    const { safetyPin } = parsed.data;
+    const tenantId = request.tenantId;
+
+    const bRes = await pool.query(
+      'SELECT id, customer_safety_pin, status FROM bookings WHERE id = $1 AND tenant_id = $2',
+      [id, tenantId]
+    );
+
+    if (bRes.rows.length === 0) {
+      return reply.status(404).send(
+        errorResponse('BOOKING_NOT_FOUND', 'Booking record not found', requestId)
+      );
+    }
+
+    const booking = bRes.rows[0];
+
+    if (booking.customer_safety_pin !== safetyPin) {
+      return reply.status(400).send(
+        errorResponse('INVALID_SAFETY_PIN', 'The 4-digit safety PIN provided is incorrect.', requestId)
+      );
+    }
+
+    // Advance status to ON_SITE
+    await pool.query(
+      `UPDATE bookings 
+       SET status = 'ON_SITE', pin_verified_at = NOW(), geofence_arrival_at = COALESCE(geofence_arrival_at, NOW())
+       WHERE id = $1`,
+      [id]
+    );
+
+    // Record Timeline Audit Event
+    await pool.query(
+      `INSERT INTO booking_timeline_events (
+        booking_id, tenant_id, from_status, to_status, actor_id, event_title, event_details
+      ) VALUES ($1, $2, $3, 'ON_SITE', $4, 'On-Site Arrival & PIN Verified', 'Customer confirmed presence via safety PIN verification.')`,
+      [id, tenantId, booking.status, request.user!.id]
+    );
+
+    return reply.status(200).send(
+      successResponse({
+        verified: true,
+        status: 'ON_SITE',
+        verifiedAt: new Date().toISOString()
+      }, requestId)
+    );
+  });
+
+  // 5. Complete Work Order & Release Escrow Funds
+  fastify.post('/:id/complete', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Sign-off work order, upload dual photos, and capture escrow hold',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const { id } = request.params as any;
+    const parsed = completeWorkOrderSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send(
+        errorResponse('VALIDATION_ERROR', 'Invalid completion payload', requestId)
+      );
+    }
+
+    const { beforePhotos, afterPhotos, customerSignatureUrl, workSummaryNotes } = parsed.data;
+    const tenantId = request.tenantId;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const bRes = await client.query(
+        `SELECT b.id, b.status, b.assigned_provider_id, i.id as invoice_id, i.total_amount_cents,
+                t.default_platform_commission_bps
+         FROM bookings b
+         JOIN tenants t ON t.id = b.tenant_id
+         LEFT JOIN invoices i ON i.booking_id = b.id
+         WHERE b.id = $1 AND b.tenant_id = $2`,
+        [id, tenantId]
+      );
+
+      if (bRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return reply.status(404).send(
+          errorResponse('BOOKING_NOT_FOUND', 'Work order not found.', requestId)
+        );
+      }
+
+      const booking = bRes.rows[0];
+
+      // A. Save Work Order Proofs & Signatures
+      await client.query(
+        `INSERT INTO work_order_proofs (
+          booking_id, before_photos_urls, after_photos_urls, customer_signature_url, workSummaryNotes
+        ) VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (booking_id) DO UPDATE SET
+          before_photos_urls = EXCLUDED.before_photos_urls,
+          after_photos_urls = EXCLUDED.after_photos_urls,
+          customer_signature_url = EXCLUDED.customer_signature_url,
+          work_summary_notes = EXCLUDED.work_summary_notes`,
+        [id, JSON.stringify(beforePhotos), JSON.stringify(afterPhotos), customerSignatureUrl || null, workSummaryNotes || null]
+      );
+
+      // B. Advance Booking Status to COMPLETED
+      await client.query(
+        `UPDATE bookings SET status = 'COMPLETED', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+
+      // C. Capture Invoice Payment
+      if (booking.invoice_id) {
+        await client.query(
+          `UPDATE invoices SET status = 'PAID', paid_at = NOW() WHERE id = $1`,
+          [booking.invoice_id]
+        );
+
+        // Update Payment Transaction
+        await client.query(
+          `UPDATE payment_transactions 
+           SET captured_amount_cents = authorized_amount_cents, status = 'SUCCEEDED'
+           WHERE invoice_id = $1`,
+          [booking.invoice_id]
+        );
+
+        // D. Post Double-Entry Ledger Entries
+        // 1. Find Operating Cash and Escrow Accounts
+        const accRes = await client.query(
+          `SELECT id, account_number FROM ledger_accounts WHERE tenant_id = $1`,
+          [tenantId]
+        );
+        const accounts = accRes.rows;
+        const cashAcc = accounts.find(a => a.account_number === '1010')?.id;
+        const escrowLiabilityAcc = accounts.find(a => a.account_number === '2010')?.id;
+        const techPayableAcc = accounts.find(a => a.account_number === '2020')?.id;
+        const platformRevAcc = accounts.find(a => a.account_number === '4010')?.id;
+
+        const totalCents = Number(booking.total_amount_cents || 0);
+        const commissionBps = Number(booking.default_platform_commission_bps || 1500);
+        const platformFeeCents = Math.round(totalCents * (commissionBps / 10000));
+        const netTechPayoutCents = totalCents - platformFeeCents;
+
+        if (cashAcc && escrowLiabilityAcc && techPayableAcc && platformRevAcc && totalCents > 0) {
+          // Debit Customer Escrow Liability, Credit Platform Revenue & Technician Payable
+          await client.query(
+            `INSERT INTO ledger_entries (tenant_id, debit_account_id, credit_account_id, amount_cents, description)
+             VALUES 
+              ($1, $2, $3, $4, $5),
+              ($1, $2, $6, $7, $8)`,
+            [
+              tenantId,
+              escrowLiabilityAcc,
+              platformRevAcc,
+              platformFeeCents,
+              `Platform commission recognition (${(commissionBps/100).toFixed(1)}%) for #${id}`,
+              techPayableAcc,
+              netTechPayoutCents,
+              `Technician net earning payable for #${id}`
+            ]
+          );
+        }
+      }
+
+      // E. Record Timeline Audit Event
+      await client.query(
+        `INSERT INTO booking_timeline_events (
+          booking_id, tenant_id, from_status, to_status, actor_id, event_title, event_details
+        ) VALUES ($1, $2, $3, 'COMPLETED', $4, 'Work Order Sign-Off & Escrow Capture', 'Customer digital signature recorded; escrow captured and split posted to ledger.')`,
+        [id, tenantId, booking.status, request.user!.id]
+      );
+
+      await client.query('COMMIT');
+
+      return reply.status(200).send(
+        successResponse({
+          completed: true,
+          status: 'COMPLETED',
+          completedAt: new Date().toISOString()
+        }, requestId)
+      );
+    } catch (err: any) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+}

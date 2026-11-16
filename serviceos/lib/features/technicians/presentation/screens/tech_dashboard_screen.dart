@@ -196,7 +196,7 @@ class _TechDashboardScreenState extends State<TechDashboardScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Simulate incoming emergency job order (\$109.65 net payout)',
+                              'Simulate incoming emergency job order dispatch alert',
                               style: TextStyle(fontSize: 12, color: textSecondary),
                             ),
                           ],

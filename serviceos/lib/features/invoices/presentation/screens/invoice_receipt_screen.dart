@@ -23,8 +23,8 @@ class InvoiceReceiptScreen extends StatelessWidget {
 
   const InvoiceReceiptScreen({
     super.key,
-    this.invoiceNumber = 'INV-SERVICE-001',
-    this.bookingReference = 'SVC-001',
+    this.invoiceNumber = '',
+    this.bookingReference = '',
     this.dateText = 'Today',
     this.serviceName = 'Field Service Order',
     this.customerName = 'Customer',

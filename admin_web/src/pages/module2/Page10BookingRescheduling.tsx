@@ -14,12 +14,12 @@ import {
 
 export const Page10BookingRescheduling: React.FC = () => {
   const { bookings, navigateToPage, addToast, rescheduleBooking } = useAdmin();
-  const [selectedBookingId, setSelectedBookingId] = useState<string>(bookings[1]?.id || 'b-2');
+  const [selectedBookingId, setSelectedBookingId] = useState<string>(() => bookings[0]?.id || '');
   const [selectedDate, setSelectedDate] = useState<string>('Tomorrow, Oct 25');
   const [selectedSlot, setSelectedSlot] = useState<string>('02:00 PM - 04:00 PM');
   const [reason, setReason] = useState<string>('Customer requested afternoon slot due to office hours');
 
-  const selectedBooking = bookings.find(b => b.id === selectedBookingId) || bookings[0];
+  const selectedBooking = bookings.find(b => b.id === selectedBookingId) || bookings[0] || null;
 
   const handleReschedule = () => {
     if (selectedBooking) {
@@ -57,11 +57,15 @@ export const Page10BookingRescheduling: React.FC = () => {
               onChange={e => setSelectedBookingId(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
-              {bookings.map(b => (
-                <option key={b.id} value={b.id}>
-                  #{b.jobNo} — {b.customerName} ({b.serviceName}) • Currently {b.scheduleDate} at {b.scheduleTime}
-                </option>
-              ))}
+              {bookings.length === 0 ? (
+                <option value="">No bookings available to reschedule</option>
+              ) : (
+                bookings.map(b => (
+                  <option key={b.id} value={b.id}>
+                    #{b.jobNo} — {b.customerName} ({b.serviceName}) • Currently {b.scheduleDate} at {b.scheduleTime}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
@@ -146,17 +150,25 @@ export const Page10BookingRescheduling: React.FC = () => {
             </div>
 
             <div className="p-4 bg-emerald-50/70 border border-emerald-200/60 rounded-xl text-xs space-y-2">
-              <div className="font-bold text-emerald-900">To: {selectedBooking?.customerName} ({selectedBooking?.customerPhone})</div>
+              <div className="font-bold text-emerald-900">
+                To: {selectedBooking ? `${selectedBooking.customerName} (${selectedBooking.customerPhone})` : 'Customer Notification'}
+              </div>
               <p className="text-slate-700 leading-relaxed font-mono text-[11px]">
-                "Hi {selectedBooking?.customerName}, your {selectedBooking?.serviceName} (Job #{selectedBooking?.jobNo}) has been successfully rescheduled to {selectedDate} at {selectedSlot}. Your technician will arrive on time. Track live in ServiceOS App."
+                {selectedBooking
+                  ? `"Hi ${selectedBooking.customerName}, your ${selectedBooking.serviceName} (Job #${selectedBooking.jobNo}) has been successfully rescheduled to ${selectedDate} at ${selectedSlot}. Your technician will arrive on time. Track live in ServiceOS App."`
+                  : 'Select an active booking to preview the automated customer SMS reschedule notification.'}
               </p>
               <div className="text-[10px] text-emerald-700 font-bold">✓ SMS Gateway: Ready to fire via Twilio</div>
             </div>
 
             <div className="p-4 bg-purple-50/70 border border-purple-200/60 rounded-xl text-xs space-y-2">
-              <div className="font-bold text-purple-900">To: {selectedBooking?.technicianName} (Assigned Pro)</div>
+              <div className="font-bold text-purple-900">
+                To: {selectedBooking ? `${selectedBooking.technicianName} (Assigned Pro)` : 'Technician Dispatch Alert'}
+              </div>
               <p className="text-slate-700 leading-relaxed font-mono text-[11px]">
-                "Dispatch Alert: Job #{selectedBooking?.jobNo} shifted to {selectedDate} at {selectedSlot}. Check your updated schedule calendar."
+                {selectedBooking
+                  ? `"Dispatch Alert: Job #${selectedBooking.jobNo} shifted to ${selectedDate} at ${selectedSlot}. Check your updated schedule calendar."`
+                  : 'Select an active booking to preview the technician dispatch update alert.'}
               </p>
               <div className="text-[10px] text-purple-700 font-bold">✓ Firebase Cloud Messaging: Ready</div>
             </div>

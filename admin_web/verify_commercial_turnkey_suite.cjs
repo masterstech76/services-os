@@ -16,9 +16,7 @@ const browserPaths = [
 const executablePath = browserPaths.find(p => fs.existsSync(p));
 
 const os = require('os');
-const outDir = process.env.CI || process.platform !== 'win32'
-  ? path.join(os.tmpdir(), 'servicepro_commercial_verified')
-  : 'C:\\Users\\hashm\\.gemini\\antigravity\\brain\\7f916614-b46c-4491-bf53-d9d006e7afaf\\production_verified';
+const outDir = path.join(os.tmpdir(), 'servicepro_commercial_verified');
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
 async function saveScreen(page, name) {

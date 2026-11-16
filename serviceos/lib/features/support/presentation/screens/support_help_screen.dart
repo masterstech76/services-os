@@ -22,29 +22,7 @@ class _SupportHelpScreenState extends State<SupportHelpScreen>
 
   final List<Map<String, dynamic>> _tickets = [];
 
-  final List<Map<String, dynamic>> _promos = [
-    {
-      'code': 'FIRST50',
-      'discount': '\$50 OFF',
-      'minSpend': 'On first booking over \$100',
-      'expiry': 'Valid until Dec 31, 2026',
-      'tag': 'WELCOME DEAL',
-    },
-    {
-      'code': 'FALLCLEAN20',
-      'discount': '20% OFF',
-      'minSpend': 'Home Cleaning & Detailing packages',
-      'expiry': 'Valid this week only',
-      'tag': 'SEASONAL',
-    },
-    {
-      'code': 'VIPEMERGENCY',
-      'discount': 'FREE DISPATCH',
-      'minSpend': 'Priority 60-min emergency fee waived',
-      'expiry': 'VIP Membership perk',
-      'tag': 'VIP EXCLUSIVE',
-    },
-  ];
+  final List<Map<String, dynamic>> _promos = [];
 
   @override
   void initState() {
@@ -361,12 +339,12 @@ class _SupportHelpScreenState extends State<SupportHelpScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'REFER FRIENDS, EARN \$30',
+                'REFERRAL COMMUNITY PROGRAM',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white70, letterSpacing: 1),
               ),
               const SizedBox(height: 4),
               const Text(
-                'Give \$30, Get \$30 in Escrow Credits',
+                'Share Your Invite Code & Earn Credits',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
               ),
               const SizedBox(height: 12),
@@ -411,7 +389,28 @@ class _SupportHelpScreenState extends State<SupportHelpScreen>
         const SizedBox(height: 20),
         Text('Available Promo Coupons', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textPrimary)),
         const SizedBox(height: 12),
-        for (final promo in _promos)
+        if (_promos.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: borderColor),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.local_offer_outlined, size: 36, color: textSecondary),
+                  const SizedBox(height: 8),
+                  Text('No Active Coupons', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: textPrimary)),
+                  const SizedBox(height: 4),
+                  Text('Promotional coupons and discounts will appear here when issued.', style: TextStyle(fontSize: 12, color: textSecondary), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          )
+        else
+          for (final promo in _promos)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),

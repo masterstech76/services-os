@@ -75,26 +75,36 @@ export const Page18AllCustomers: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Customer Base</div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">3,420</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">↑ 8.4% new signups</div>
+          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">{customers.length}</div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">{customers.length} verified accounts</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average Lifetime Value</div>
-          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">$648.00</div>
-          <div className="text-[10px] text-slate-400 font-bold mt-0.5">3.8 bookings per customer</div>
+          <div className="text-2xl font-extrabold text-slate-900 mt-0.5">
+            {customers.length > 0 ? `$${(customers.reduce((acc, c) => acc + (c.lifetimeSpend || 0), 0) / customers.length).toFixed(2)}` : '$0.00'}
+          </div>
+          <div className="text-[10px] text-slate-400 font-bold mt-0.5">
+            {customers.length > 0 ? `${(customers.reduce((acc, c) => acc + (c.totalBookings || 0), 0) / customers.length).toFixed(1)} avg bookings` : '0 bookings'}
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">VIP Tier Members</div>
-          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">482 VIPs</div>
-          <div className="text-[10px] text-purple-600 font-bold mt-0.5">&gt;$1,000 spend</div>
+          <div className="text-2xl font-extrabold text-purple-700 mt-0.5">
+            {customers.filter(c => (c.lifetimeSpend || 0) >= 1000).length} VIPs
+          </div>
+          <div className="text-[10px] text-purple-600 font-bold mt-0.5">Lifetime spend &gt; $1,000</div>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Retention Rate</div>
-          <div className="text-2xl font-extrabold text-emerald-600 mt-0.5">78.5%</div>
-          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">Repeat service usage</div>
+          <div className="text-2xl font-extrabold text-emerald-600 mt-0.5">
+            {customers.length > 0 ? `${((customers.filter(c => (c.totalBookings || 0) > 1).length / customers.length) * 100).toFixed(1)}%` : '0.0%'}
+          </div>
+          <div className="text-[10px] text-emerald-600 font-bold mt-0.5">
+            {customers.filter(c => (c.totalBookings || 0) > 1).length} repeat customers
+          </div>
         </div>
       </div>
 

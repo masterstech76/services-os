@@ -23,7 +23,12 @@ import com.serviceos.app.core.theme.LocalExtraColors
 @Composable
 fun TechBroadcastScreen(
     onAccept: () -> Unit = {},
-    onDecline: () -> Unit = {}
+    onDecline: () -> Unit = {},
+    netPayout: Double = 0.0,
+    escrowTotal: Double = 0.0,
+    jobTitle: String = "Field Service Order",
+    distanceText: String = "Verified Customer Location",
+    customerNote: String = "Service instructions provided upon dispatch acceptance."
 ) {
     var countdownSeconds by remember { mutableStateOf(48) }
     val extraColors = LocalExtraColors.current
@@ -120,7 +125,7 @@ fun TechBroadcastScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "$159.38",
+                            text = "$${String.format(java.util.Locale.US, "%.2f", netPayout)}",
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 36.sp,
@@ -128,7 +133,7 @@ fun TechBroadcastScreen(
                             )
                         )
                         Text(
-                            text = "Customer Escrow Total: $187.50 (15% platform fee deducted automatically)",
+                            text = "Customer Escrow Total: $${String.format(java.util.Locale.US, "%.2f", escrowTotal)} (15% platform fee deducted automatically)",
                             style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -144,7 +149,7 @@ fun TechBroadcastScreen(
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = "Drain Cleaning & Snaking",
+                            text = jobTitle,
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 20.sp
@@ -161,7 +166,7 @@ fun TechBroadcastScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Verified Customer Service Location (2.4 miles • 12 mins)",
+                                text = distanceText,
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -176,7 +181,7 @@ fun TechBroadcastScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "\"Kitchen sink is backed up completely. Overflowing into cabinets when dishwasher runs. Need emergency snaking.\"",
+                            text = "\"$customerNote\"",
                             style = MaterialTheme.typography.bodyMedium,
                             fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                             color = MaterialTheme.colorScheme.onSurface

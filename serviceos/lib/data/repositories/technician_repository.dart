@@ -49,13 +49,13 @@ class TechnicianRepository implements ITechnicianRepository {
             final tradeTitle = row['trade_category'] as String? ?? 'Certified Service Pro';
             final vehicleModel = row['vehicle_make_model'] as String? ?? row['vehicle_model'] as String? ?? 'Fleet Vehicle';
             final plate = row['vehicle_plate'] as String? ?? row['license_plate'] as String? ?? '';
-            final rating = (row['average_rating'] as num?)?.toDouble() ?? 5.0;
+            final rating = (row['average_rating'] as num?)?.toDouble() ?? 0.0;
             final reviewCount = (row['reviews_count'] as num?)?.toInt() ?? (row['review_count'] as num?)?.toInt() ?? 0;
             final distance = (row['distance_miles'] as num?)?.toDouble() ?? 0.0;
 
             return TechnicianModel(
               id: id,
-              name: fullName.isEmpty ? 'Verified Field Pro' : fullName,
+              name: fullName.isEmpty ? 'Field Pro' : fullName,
               tradeTitle: tradeTitle,
               licenseNumber: row['trade_license_number'] as String? ?? '',
               photoUrl: 'assets/images/banner_woman.png',
@@ -67,8 +67,8 @@ class TechnicianRepository implements ITechnicianRepository {
               distanceMiles: distance,
               vehicleModel: vehicleModel,
               licensePlate: plate,
-              hourlyRate: ((row['hourly_rate_cents'] as num?)?.toDouble() ?? 9500) / 100,
-              emergencySurgeRate: ((row['emergency_surge_rate_cents'] as num?)?.toDouble() ?? 14500) / 100,
+              hourlyRate: ((row['hourly_rate_cents'] as num?)?.toDouble() ?? 0.0) / 100,
+              emergencySurgeRate: ((row['emergency_surge_rate_cents'] as num?)?.toDouble() ?? 0.0) / 100,
               phone: phone,
             );
           }).toList();

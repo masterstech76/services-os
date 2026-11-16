@@ -22,6 +22,8 @@ import com.serviceos.app.core.theme.LocalExtraColors
 @Composable
 fun TechJobExecutionScreen(
     accessNotes: String = "",
+    workOrderNumber: String = "",
+    hourlyRate: Double = 0.0,
     onJobCompleted: () -> Unit = {},
     onOpenChat: () -> Unit = {}
 ) {
@@ -33,7 +35,7 @@ fun TechJobExecutionScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Work Order #SVC-2026-1001",
+                        text = if (workOrderNumber.isNotEmpty()) "Work Order #$workOrderNumber" else "Active Work Order",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 },
@@ -72,7 +74,7 @@ fun TechJobExecutionScreen(
                                 1 -> "Confirm Geofence Arrival →"
                                 2 -> "Submit Before Photos & Start Timer →"
                                 3 -> "Finish Work & Present Signature Pad →"
-                                else -> "Complete Work Order & Deposit $159.38 →"
+                                else -> "Complete Work Order & Deposit Funds →"
                             },
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
@@ -221,8 +223,12 @@ fun TechJobExecutionScreen(
                         ) {
                             Text("ACTIVE WORK ORDER TIMER", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("00:42:18", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black, fontSize = 42.sp))
-                            Text("Standard Billable Rate: $95 / hr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Text("00:00:00", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black, fontSize = 42.sp))
+                            Text(
+                                text = if (hourlyRate > 0.0) "Standard Billable Rate: $${String.format(java.util.Locale.US, "%.2f", hourlyRate)} / hr" else "Standard Service Rate Active",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
                         }
                     }
 
@@ -236,10 +242,9 @@ fun TechJobExecutionScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Authorized Replacement Parts", fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(6.dp))
-                            Text("1x Heavy-Duty Brass P-Trap 1-1/2\" — $24.50 (Approved by Customer)", fontSize = 12.sp)
-                            Text("1x High-Pressure Silicone Seal Kit — $14.00 (Approved by Customer)", fontSize = 12.sp)
+                            Text("No extra parts billed for this work order.", fontSize = 12.sp)
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Extra Parts Total: $38.50", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                            Text("Extra Parts Total: $0.00", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -254,11 +259,11 @@ fun TechJobExecutionScreen(
                         Column(modifier = Modifier.padding(20.dp)) {
                             Text("COMPLETION SETTLEMENT SUMMARY", fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text("Gross Customer Billing: $187.50")
-                            Text("ServiceOS Platform Fee (15%): -$28.12")
+                            Text("Gross Customer Billing: $0.00")
+                            Text("ServiceOS Platform Fee (15%): -$0.00")
                             Divider(modifier = Modifier.padding(vertical = 10.dp))
                             Text(
-                                text = "Your Net Direct Deposit: $159.38",
+                                text = "Your Net Direct Deposit: $0.00",
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Black,
                                     color = extraColors.verified
