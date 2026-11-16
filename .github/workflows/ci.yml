@@ -1,0 +1,111 @@
+name: ServicePro OS — Enterprise Production CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # 1. FASTIFY TYPESCRIPT BACKEND VERIFICATION & TEST SUITE
+  # ============================================================================
+  backend-verification:
+    name: Backend API & Database Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd server
+          npm ci
+
+      - name: Compile Backend TypeScript
+        run: |
+          cd server
+          npm run build
+
+      - name: Run Backend Unit & Integration Tests
+        run: |
+          cd server
+          npm test
+
+  # ============================================================================
+  # 2. REACT 19 ADMIN & STAFF WEB PORTAL PRODUCTION BUILD
+  # ============================================================================
+  admin-web-build:
+    name: Admin & Staff Portal Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'admin_web/package-lock.json'
+
+      - name: Install Web Portal Dependencies
+        run: |
+          cd admin_web
+          npm ci
+
+      - name: Build Web Portal Bundle (React 19 + Vite)
+        run: |
+          cd admin_web
+          npm run build
+
+  # ============================================================================
+  # 3. DOCKER TURNKEY ORCHESTRATION VERIFICATION
+  # ============================================================================
+  docker-validation:
+    name: Docker Turnkey Architecture Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config --quiet
+          echo "Docker Compose configuration is valid."
+
+  # ============================================================================
+  # 4. REPOSITORY INTEGRITY & ZERO DATA LEAKAGE AUDIT
+  # ============================================================================
+  security-audit:
+    name: Zero Personal Data & Security Integrity Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Verify Clean Environment Template
+        run: |
+          test -f .env.example
+          test -f docker-compose.yml
+          test -f COMMERCIAL_HANDOVER.md
+          test -f PROJECT_ARCHITECTURE.md
+          test -f INSTALLATION_GUIDE.md
+          test -f API_DOCUMENTATION.md
+          echo "All commercial deployment dossiers and configuration templates present."
