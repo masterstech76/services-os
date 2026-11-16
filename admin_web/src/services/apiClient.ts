@@ -366,8 +366,12 @@ class ApiClient {
   // ==========================================================================
   // FINANCES & LEDGER
   // ==========================================================================
-  public async getFinancialOverview() {
-    return this.request<any>('/finances/overview');
+  public async getFinancialOverview(params?: { startDate?: string; endDate?: string }) {
+    const q = new URLSearchParams();
+    if (params?.startDate) q.set('startDate', params.startDate);
+    if (params?.endDate) q.set('endDate', params.endDate);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return this.request<any>(`/finances/overview${qs}`);
   }
 
   public async getInvoices(params: { page?: number; limit?: number; status?: string } = {}) {
@@ -386,10 +390,31 @@ class ApiClient {
     return this.request<any[]>('/finances/ledger');
   }
 
-  public async triggerPayout(providerId: string, amountCents: number, description?: string) {
+  public async triggerPayout(providerId: string, amountCents: number, description?: string, idempotencyKey?: string) {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(providerId);
+    if (!isUUID) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_PROVIDER_ID',
+          message: `Provider ID "${providerId}" is not a valid UUID format.`,
+        },
+      } as ApiResponse<any>;
+    }
+
+    const key = idempotencyKey || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `po_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
     return this.request<any>('/finances/payouts', {
       method: 'POST',
+      headers: {
+        'idempotency-key': key,
+      },
       body: JSON.stringify({ providerId, amountCents, description }),
+    });
+  }
+
+  public async confirmBookingPayment(bookingId: string) {
+    return this.request<any>(`/bookings/${bookingId}/confirm-payment`, {
+      method: 'POST',
     });
   }
 

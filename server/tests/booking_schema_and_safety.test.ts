@@ -81,8 +81,8 @@ describe('Booking Security, Safety PIN & Schema Integrity Suite', () => {
 
     assert.match(
       routeFile,
-      /isPrivilegedOperator\s*=[\s\S]*?TENANT_ADMIN[\s\S]*?SYSTEM_ADMIN[\s\S]*?OPERATOR/,
-      'Must allow designated administrative operator roles to confirm payment'
+      /isPrivilegedOperator\s*=[\s\S]*?ADMIN[\s\S]*?STAFF/,
+      'Must allow designated canonical administrative operator roles (ADMIN, STAFF) to confirm payment'
     );
 
     assert.match(
@@ -95,6 +95,46 @@ describe('Booking Security, Safety PIN & Schema Integrity Suite', () => {
       routeFile,
       /targetTxStatus\s*=\s*'SUCCEEDED'[\s\S]*?targetInvoiceStatus\s*=\s*'PAID'/,
       'Must reconcile Stripe status succeeded as SUCCEEDED and PAID rather than capture-required'
+    );
+
+    assert.match(
+      routeFile,
+      /captured_amount_cents\s*=\s*authorized_amount_cents/,
+      'Must populate captured_amount_cents on SUCCEEDED payment reconciliation'
+    );
+  });
+
+  it('Safety PIN verification employs crypto randomness, 5-attempt rate-limit lockout and one-time invalidation (MOB-02)', () => {
+    const routeFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/bookings/bookings.routes.ts'),
+      'utf8'
+    );
+
+    // Cryptographic randomness check
+    assert.match(
+      routeFile,
+      /crypto\.randomInt\(1000,\s*10000\)\.toString\(\)/,
+      'Safety PIN must use crypto.randomInt rather than Math.random'
+    );
+
+    // Rate-limiting lockout check
+    assert.match(
+      routeFile,
+      /TOO_MANY_PIN_ATTEMPTS/,
+      'Must define explicit 429 TOO_MANY_PIN_ATTEMPTS response code'
+    );
+
+    assert.match(
+      routeFile,
+      /currentAttempts\s*>=\s*5/,
+      'Must lock out PIN verification after 5 consecutive failed attempts'
+    );
+
+    // Invalidation check
+    assert.match(
+      routeFile,
+      /customer_safety_pin\s*=\s*NULL/,
+      'Must invalidate customer_safety_pin after successful verification so it cannot be re-used'
     );
   });
 });

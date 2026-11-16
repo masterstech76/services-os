@@ -8,6 +8,12 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Build arguments for Vite client environment variables
+ARG VITE_API_BASE_URL=http://localhost:3000/api/v1
+ARG VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
+
 # Copy package manifests
 COPY package*.json ./
 

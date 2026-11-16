@@ -1,10 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import Stripe from 'stripe';
+import crypto from 'node:crypto';
 import { pool } from '../../database/pool.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate } from '../../middleware/rbac.js';
 import { env } from '../../config/env.js';
+
+// Lockout store for customer safety PIN verification brute-force protection
+const pinAttemptStore = new Map<string, { attempts: number; lockedUntil: number }>();
 
 const createBookingSchema = z.object({
   serviceId: z.string().uuid(),
@@ -97,9 +101,9 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       }
       const service = srvRes.rows[0];
 
-      // D. Generate Safe 4-digit Safety PIN & Booking Reference
-      const safetyPin = Math.floor(1000 + Math.random() * 9000).toString();
-      const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+      // D. Generate Cryptographically Secure 4-digit Safety PIN & Booking Reference
+      const safetyPin = crypto.randomInt(1000, 10000).toString();
+      const randomSuffix = crypto.randomInt(10000, 100000);
       const bookingRef = `SVC-${randomSuffix}`;
 
       // E. Insert Booking Record
@@ -269,7 +273,7 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       // Strict Authorization Guard: Caller must be the booking owner or an authorized operator (canonical ADMIN/STAFF)
       const isOwner = row.customer_id === callerId;
-      const isPrivilegedOperator = ['ADMIN', 'STAFF', 'TENANT_ADMIN', 'SYSTEM_ADMIN', 'OPERATOR'].includes(callerRole || '');
+      const isPrivilegedOperator = ['ADMIN', 'STAFF'].includes(callerRole || '');
 
       if (!isOwner && !isPrivilegedOperator) {
         await client.query('ROLLBACK');
@@ -319,7 +323,12 @@ export async function bookingRoutes(fastify: FastifyInstance) {
       }
 
       if (targetTxStatus === 'SUCCEEDED') {
-        await client.query(`UPDATE payment_transactions SET status = 'SUCCEEDED' WHERE id = $1`, [row.tx_id]);
+        await client.query(
+          `UPDATE payment_transactions 
+           SET status = 'SUCCEEDED', captured_amount_cents = authorized_amount_cents 
+           WHERE id = $1`, 
+          [row.tx_id]
+        );
       } else {
         await client.query(`UPDATE payment_transactions SET status = 'REQUIRES_CAPTURE' WHERE id = $1`, [row.tx_id]);
       }
@@ -626,17 +635,36 @@ export async function bookingRoutes(fastify: FastifyInstance) {
         );
       }
 
-      if (booking.customer_safety_pin !== safetyPin) {
+      // Check PIN lockout
+      const attemptKey = `pin_${id}`;
+      const now = Date.now();
+      const attemptRecord = pinAttemptStore.get(attemptKey);
+      if (attemptRecord && attemptRecord.lockedUntil > now) {
+        const remainingSeconds = Math.ceil((attemptRecord.lockedUntil - now) / 1000);
         await client.query('ROLLBACK');
-        return reply.status(400).send(
-          errorResponse('INVALID_SAFETY_PIN', 'The 4-digit safety PIN provided is incorrect.', requestId)
+        return reply.status(429).send(
+          errorResponse('TOO_MANY_PIN_ATTEMPTS', `Safety PIN verification locked due to excessive failed attempts. Please retry in ${remainingSeconds} seconds.`, requestId)
         );
       }
 
-      // Advance status to ON_SITE
+      if (booking.customer_safety_pin !== safetyPin) {
+        const currentAttempts = (attemptRecord && attemptRecord.lockedUntil <= now ? attemptRecord.attempts : 0) + 1;
+        if (currentAttempts >= 5) {
+          pinAttemptStore.set(attemptKey, { attempts: currentAttempts, lockedUntil: now + 15 * 60 * 1000 }); // 15-minute lockout
+        } else {
+          pinAttemptStore.set(attemptKey, { attempts: currentAttempts, lockedUntil: 0 });
+        }
+        await client.query('ROLLBACK');
+        return reply.status(400).send(
+          errorResponse('INVALID_SAFETY_PIN', `The 4-digit safety PIN provided is incorrect. ${Math.max(0, 5 - currentAttempts)} attempts remaining before lockout.`, requestId)
+        );
+      }
+
+      // Successful verification: clear lockout and invalidate PIN so it cannot be reused
+      pinAttemptStore.delete(attemptKey);
       await client.query(
         `UPDATE bookings 
-         SET status = 'ON_SITE', pin_verified_at = NOW(), geofence_arrival_at = COALESCE(geofence_arrival_at, NOW())
+         SET status = 'ON_SITE', pin_verified_at = NOW(), customer_safety_pin = NULL, geofence_arrival_at = COALESCE(geofence_arrival_at, NOW())
          WHERE id = $1`,
         [id]
       );

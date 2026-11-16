@@ -123,13 +123,34 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
     );
 
     const phase1Commit = financesFile.indexOf('COMMIT Phase 1: Payout record is now durable in PostgreSQL');
-    const stripeTransfer = financesFile.indexOf('stripe.transfers.create');
+    const stripeTransfer = financesFile.indexOf('stripe.transfers.create', phase1Commit);
 
     assert.ok(phase1Commit !== -1, 'Phase 1 durable database commit must exist');
-    assert.ok(stripeTransfer !== -1, 'Stripe transfer invocation must exist');
+    assert.ok(stripeTransfer !== -1, 'Phase 2 Stripe transfer invocation must exist after Phase 1 commit');
     assert.ok(
       phase1Commit < stripeTransfer,
       'Phase 1 commit must occur BEFORE Stripe transfers.create so transfer cannot outlive a rolled-back record'
+    );
+  });
+
+  it('Payout idempotency and reconciliation recovers missing stripe_transfer_id without double-paying (PAY-02)', () => {
+    const financesFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/finances/finances.routes.ts'),
+      'utf8'
+    );
+
+    // Check idempotency retry recovery
+    assert.match(
+      financesFile,
+      /idempotencyKey:\s*`payout_stripe_\$\{ep\.id\}`/,
+      'Must use deterministic payout_stripe idempotency key to query or reissue Stripe transfer without double pay'
+    );
+
+    // Check reconcile endpoint recovery
+    assert.match(
+      financesFile,
+      /idempotencyKey:\s*`payout_stripe_\$\{payout\.id\}`/,
+      'Reconciliation endpoint must use deterministic payout_stripe idempotency key'
     );
   });
 

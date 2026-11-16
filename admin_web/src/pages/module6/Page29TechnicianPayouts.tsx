@@ -11,7 +11,9 @@ import {
   ShieldCheck, 
   Building,
   Percent,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 
 interface PayoutItem {
@@ -20,14 +22,18 @@ interface PayoutItem {
   bankAccount: string;
   jobsCount: number;
   grossAmount: number;
-  status: 'Ready' | 'Disbursed';
+  status: 'Ready' | 'Processing' | 'Disbursed';
 }
 
 export const Page29TechnicianPayouts: React.FC = () => {
   const { addToast, pricingConfig, technicians, bookings } = useAdmin();
 
-  // Compute live payouts strictly from registered technicians and completed bookings
+  // Track live payout processing state
   const [disbursedIds, setDisbursedIds] = useState<string[]>([]);
+  const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
   const payouts: PayoutItem[] = React.useMemo(() => {
     return technicians
@@ -36,18 +42,26 @@ export const Page29TechnicianPayouts: React.FC = () => {
         const completedJobs = techBookings.filter(b => b.status === 'Completed');
         const grossAmount = completedJobs.reduce((acc, b) => acc + (b.estimate || 0), 0);
         const isDisbursed = disbursedIds.includes(t.id);
+        const isProcessing = processingIds.includes(t.id);
+
+        let status: 'Ready' | 'Processing' | 'Disbursed' = 'Ready';
+        if (isDisbursed || grossAmount === 0) {
+          status = 'Disbursed';
+        } else if (isProcessing) {
+          status = 'Processing';
+        }
 
         return {
-          id: t.id || `po-${idx}`,
+          id: t.id || `00000000-0000-0000-0000-${String(idx + 1).padStart(12, '0')}`,
           technicianName: t.name,
           bankAccount: `Direct Deposit •••• ${t.phone ? t.phone.slice(-4) : '0000'}`,
           jobsCount: completedJobs.length,
           grossAmount,
-          status: (isDisbursed || grossAmount === 0 ? 'Disbursed' : 'Ready') as 'Ready' | 'Disbursed'
+          status
         };
       })
       .filter(p => p.jobsCount > 0 || technicians.length <= 5);
-  }, [technicians, bookings, disbursedIds]);
+  }, [technicians, bookings, disbursedIds, processingIds]);
 
   const commissionRate = pricingConfig?.commissionRate || 15;
   const techSplit = 100 - commissionRate;
@@ -57,19 +71,34 @@ export const Page29TechnicianPayouts: React.FC = () => {
   const totalReadyPlatformTake = totalReadyGross * (commissionRate / 100);
   const totalReadyNet = totalReadyGross - totalReadyPlatformTake;
 
-  const [isProcessing, setIsProcessing] = useState(false);
-
   const handleReleaseBatch = async () => {
+    if (readyPayouts.length === 0) return;
     setIsProcessing(true);
+    const successfullyInitiated: string[] = [];
+
     try {
       for (const p of readyPayouts) {
+        if (!isUUID(p.id)) {
+          addToast(`Technician ${p.technicianName} lacks a valid database UUID; skipping.`, 'error');
+          continue;
+        }
+
         const net = p.grossAmount * (techSplit / 100);
         const amountCents = Math.round(net * 100);
-        await apiClient.triggerPayout(p.id, amountCents, `Batch payout to ${p.technicianName}`);
+        const idempotencyKey = `payout_batch_${p.id}_${Date.now()}`;
+
+        const res = await apiClient.triggerPayout(p.id, amountCents, `Batch payout to ${p.technicianName}`, idempotencyKey);
+        if (res.success) {
+          successfullyInitiated.push(p.id);
+        } else {
+          addToast(`Payout for ${p.technicianName} rejected: ${res.error?.message || 'Server error'}`, 'error');
+        }
       }
-      const ids = readyPayouts.map(p => p.id);
-      setDisbursedIds(prev => [...prev, ...ids]);
-      addToast(`Successfully disbursed $${totalReadyNet.toFixed(2)} to ${readyPayouts.length} technicians via Stripe Connect!`, 'success');
+
+      if (successfullyInitiated.length > 0) {
+        setProcessingIds(prev => [...prev, ...successfullyInitiated]);
+        addToast(`Successfully initiated payout processing for ${successfullyInitiated.length} technicians via Fastify API.`, 'success');
+      }
     } catch (err: any) {
       addToast(err?.message || 'Failed executing batch disbursals via payment gateway', 'error');
     } finally {
@@ -78,12 +107,24 @@ export const Page29TechnicianPayouts: React.FC = () => {
   };
 
   const handleDisburseSingle = async (id: string, name: string, net: number) => {
+    if (!isUUID(id)) {
+      addToast(`Cannot execute payout: "${id}" is not a valid database UUID format.`, 'error');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const amountCents = Math.round(net * 100);
-      await apiClient.triggerPayout(id, amountCents, `Weekly disbursal to ${name}`);
-      setDisbursedIds(prev => [...prev, id]);
-      addToast(`Disbursed $${net.toFixed(2)} to ${name} via Stripe Connect ACH.`, 'success');
+      const idempotencyKey = `payout_single_${id}_${Date.now()}`;
+      const res = await apiClient.triggerPayout(id, amountCents, `Weekly disbursal to ${name}`, idempotencyKey);
+
+      if (!res.success) {
+        throw new Error(res.error?.message || 'Server rejected payout transaction');
+      }
+
+      setProcessingIds(prev => [...prev, id]);
+      const status = res.data?.status || 'PROCESSING';
+      addToast(`Payout status: ${status} for ${name}. Record reserved and posted to double-entry ledger.`, 'success');
     } catch (err: any) {
       addToast(err?.message || `Failed to disburse payout to ${name}`, 'error');
     } finally {
@@ -103,7 +144,7 @@ export const Page29TechnicianPayouts: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Automated Stripe Connect ACH batch disbursals with configurable {commissionRate}% platform commission take-rate
+            Authoritative Fastify two-phase payout engine with double-entry ledger integration
           </p>
         </div>
 
@@ -133,10 +174,10 @@ export const Page29TechnicianPayouts: React.FC = () => {
 
           <button
             onClick={handleReleaseBatch}
-            disabled={readyPayouts.length === 0}
+            disabled={readyPayouts.length === 0 || isProcessing}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
           >
-            <Send className="w-3.5 h-3.5" />
+            {isProcessing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             Release Batch (${totalReadyNet.toFixed(2)})
           </button>
         </div>
@@ -179,7 +220,7 @@ export const Page29TechnicianPayouts: React.FC = () => {
         <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-extrabold text-slate-900">Technician Payout &amp; Disbursal Queue</h2>
-            <p className="text-xs text-slate-500">Itemized ledger of verified jobs, commission withholdings, and Stripe accounts</p>
+            <p className="text-xs text-slate-500">Itemized ledger of verified jobs, commission withholdings, and Fastify server payouts</p>
           </div>
           <span className="text-xs font-mono font-bold text-slate-600">
             {payouts.length} Pro Profiles
@@ -246,9 +287,17 @@ export const Page29TechnicianPayouts: React.FC = () => {
 
                     <td className="py-3.5 px-4 text-center">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        po.status === 'Disbursed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        po.status === 'Disbursed' 
+                          ? 'bg-emerald-100 text-emerald-800' 
+                          : po.status === 'Processing'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {po.status === 'Disbursed' ? '✓ Disbursed' : '● Ready to Disburse'}
+                        {po.status === 'Disbursed' 
+                          ? '✓ Disbursed' 
+                          : po.status === 'Processing'
+                            ? '⏳ Processing'
+                            : '● Ready to Disburse'}
                       </span>
                     </td>
 
@@ -256,10 +305,13 @@ export const Page29TechnicianPayouts: React.FC = () => {
                       {po.status === 'Ready' && po.grossAmount > 0 ? (
                         <button
                           onClick={() => handleDisburseSingle(po.id, po.technicianName, netPayout)}
-                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                          disabled={isProcessing}
+                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-800 font-bold text-[11px] rounded-lg border border-emerald-200 transition-colors cursor-pointer"
                         >
                           Disburse
                         </button>
+                      ) : po.status === 'Processing' ? (
+                        <span className="text-blue-600 font-bold text-[11px]">In Ledger</span>
                       ) : (
                         <span className="text-slate-400 font-medium text-[11px]">Settled</span>
                       )}

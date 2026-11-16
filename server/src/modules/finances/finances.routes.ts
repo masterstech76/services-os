@@ -161,6 +161,18 @@ export async function financeRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
       const requestId = request.id || `req_${Date.now()}`;
       const tenantId = request.tenantId;
+      const { startDate, endDate } = request.query as any;
+
+      const params: any[] = [tenantId];
+      let dateFilter = '';
+      if (startDate) {
+        params.push(startDate);
+        dateFilter += ` AND issued_at >= $${params.length}`;
+      }
+      if (endDate) {
+        params.push(endDate);
+        dateFilter += ` AND issued_at <= $${params.length}`;
+      }
 
       const [grossRes, accountsRes, recentTxRes] = await Promise.all([
         pool.query(
@@ -170,8 +182,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
             COUNT(id)::int as "totalInvoicesCount",
             COUNT(CASE WHEN status = 'PAID' THEN 1 END)::int as "paidInvoicesCount"
            FROM invoices 
-           WHERE tenant_id = $1`,
-          [tenantId]
+           WHERE tenant_id = $1 ${dateFilter}`,
+          params
         ),
         pool.query(
           `SELECT account_number as "accountNumber", account_name as "accountName", account_type as "accountType"
@@ -216,6 +228,18 @@ export async function financeRoutes(fastify: FastifyInstance) {
     }, async (request, reply) => {
       const requestId = request.id || `req_${Date.now()}`;
       const tenantId = request.tenantId;
+      const { startDate, endDate } = request.query as any;
+
+      const params: any[] = [tenantId];
+      let dateFilter = '';
+      if (startDate) {
+        params.push(startDate);
+        dateFilter += ` AND issued_at >= $${params.length}`;
+      }
+      if (endDate) {
+        params.push(endDate);
+        dateFilter += ` AND issued_at <= $${params.length}`;
+      }
 
       const [grossRes, accountsRes, recentTxRes] = await Promise.all([
         pool.query(
@@ -225,8 +249,8 @@ export async function financeRoutes(fastify: FastifyInstance) {
             COUNT(id)::int as "totalInvoicesCount",
             COUNT(CASE WHEN status = 'PAID' THEN 1 END)::int as "paidInvoicesCount"
            FROM invoices 
-           WHERE tenant_id = $1`,
-          [tenantId]
+           WHERE tenant_id = $1 ${dateFilter}`,
+          params
         ),
         pool.query(
           `SELECT account_number as "accountNumber", account_name as "accountName", account_type as "accountType"
@@ -543,7 +567,29 @@ export async function financeRoutes(fastify: FastifyInstance) {
             );
           }
 
-          // Crash Recovery (PAY-03): If transfer succeeded previously but ledger entry was interrupted, reconcile now
+          // Crash Recovery (PAY-03): If transfer was interrupted before DB commit, retrieve/reissue via deterministic Stripe idempotency key
+          if (!ep.stripe_transfer_id && env.STRIPE_SECRET_KEY && stripeAccountId) {
+            try {
+              const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+              const recoveredTransfer = await stripe.transfers.create({
+                amount: parseInt(ep.amount_cents, 10),
+                currency: 'usd',
+                destination: stripeAccountId,
+                description: `Provider payout recovery for ${providerName}`
+              }, {
+                idempotencyKey: `payout_stripe_${ep.id}`
+              });
+              ep.stripe_transfer_id = recoveredTransfer.id;
+              await client.query(
+                `UPDATE provider_payouts SET stripe_transfer_id = $1, processed_at = NOW() WHERE id = $2`,
+                [recoveredTransfer.id, ep.id]
+              );
+            } catch (stripeErr: any) {
+              // Stripe operation failed or rejected
+            }
+          }
+
+          // Crash Recovery (PAY-03): If transfer exists but ledger entry was interrupted, reconcile now
           if (ep.stripe_transfer_id && ep.status === 'PROCESSING') {
             const ledgerCheck = await client.query(
               `SELECT id FROM ledger_entries WHERE tenant_id = $1 AND description LIKE $2`,
@@ -773,6 +819,32 @@ export async function financeRoutes(fastify: FastifyInstance) {
         }
 
         const payout = payoutRes.rows[0];
+
+        // Recover missing transfer reference from Stripe via deterministic idempotency key if interrupted
+        if (!payout.stripe_transfer_id && env.STRIPE_SECRET_KEY) {
+          const provRes = await client.query(
+            `SELECT stripe_connect_account_id, full_name FROM provider_profiles WHERE user_id = $1 AND tenant_id = $2`,
+            [payout.provider_id, tenantId]
+          );
+          if (provRes.rowCount && provRes.rows[0].stripe_connect_account_id) {
+            try {
+              const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+              const recovered = await stripe.transfers.create({
+                amount: parseInt(payout.amount_cents, 10),
+                currency: 'usd',
+                destination: provRes.rows[0].stripe_connect_account_id,
+                description: `Admin reconciliation payout ${payout.id}`
+              }, {
+                idempotencyKey: `payout_stripe_${payout.id}`
+              });
+              payout.stripe_transfer_id = recovered.id;
+              await client.query(
+                `UPDATE provider_payouts SET stripe_transfer_id = $1, processed_at = NOW() WHERE id = $2`,
+                [recovered.id, payout.id]
+              );
+            } catch (_) {}
+          }
+        }
 
         // If transfer ID is present, verify ledger entry
         if (payout.stripe_transfer_id) {

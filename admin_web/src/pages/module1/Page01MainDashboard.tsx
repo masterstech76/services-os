@@ -40,24 +40,41 @@ export const Page01MainDashboard: React.FC = () => {
   const [metricsLoading, setMetricsLoading] = useState<boolean>(true);
   const [metricsError, setMetricsError] = useState<string | null>(null);
 
-  // Load authoritative financial metrics from Fastify backend (WEB-01)
+  // Load authoritative financial metrics from Fastify backend (WEB-01) with date filtering
   useEffect(() => {
     let isMounted = true;
     setMetricsLoading(true);
     setMetricsError(null);
-    apiClient.getFinancialOverview()
+
+    const now = new Date();
+    let startDate: Date;
+    if (timeRange === 'This Month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (timeRange === 'This Quarter') {
+      const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+      startDate = new Date(now.getFullYear(), quarterMonth, 1);
+    } else if (timeRange === 'Year to Date') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    } else {
+      // Default: Last 30 Days
+      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    apiClient.getFinancialOverview({ startDate: startDate.toISOString() })
       .then(res => {
         if (!isMounted) return;
         if (res.success && res.data) {
           setServerMetrics(res.data);
           setMetricsError(null);
         } else {
+          setServerMetrics(null);
           setMetricsError(res.error?.message || 'Server financial metrics unavailable');
         }
         setMetricsLoading(false);
       })
       .catch((err) => {
         if (!isMounted) return;
+        setServerMetrics(null);
         setMetricsError(err?.message || 'Failed to connect to financial metrics API');
         setMetricsLoading(false);
       });
@@ -90,20 +107,20 @@ export const Page01MainDashboard: React.FC = () => {
   }, [bookings, timeRange]);
 
   const paidBookings = filteredBookings.filter(b => b.paymentStatus === 'Paid');
-  const totalJobs = serverMetrics?.totalInvoicesCount 
+  const totalJobs = serverMetrics?.totalInvoicesCount != null
     ? Number(serverMetrics.totalInvoicesCount) 
-    : filteredBookings.length;
-  const completedJobs = serverMetrics?.paidInvoicesCount 
+    : (metricsError ? 0 : filteredBookings.length);
+  const completedJobs = serverMetrics?.paidInvoicesCount != null
     ? Number(serverMetrics.paidInvoicesCount) 
-    : filteredBookings.filter(b => b.status === 'Completed').length;
-  const inProgressJobs = filteredBookings.filter(b => b.status === 'In Progress').length;
-  const scheduledJobs = filteredBookings.filter(b => b.status === 'Scheduled').length;
-  const grossRevenue = serverMetrics?.grossVolumeCents 
+    : (metricsError ? 0 : filteredBookings.filter(b => b.status === 'Completed').length);
+  const inProgressJobs = metricsError ? 0 : filteredBookings.filter(b => b.status === 'In Progress').length;
+  const scheduledJobs = metricsError ? 0 : filteredBookings.filter(b => b.status === 'Scheduled').length;
+  const grossRevenue = serverMetrics?.grossVolumeCents != null
     ? (Number(serverMetrics.grossVolumeCents) / 100) 
-    : (metricsError ? paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0) : 0);
-  const settledRevenue = serverMetrics?.settledVolumeCents
+    : 0;
+  const settledRevenue = serverMetrics?.settledVolumeCents != null
     ? (Number(serverMetrics.settledVolumeCents) / 100)
-    : grossRevenue;
+    : 0;
   const commission = pricingConfig?.commissionRate || 15;
   const netCommission = (grossRevenue * (commission / 100));
 
@@ -205,16 +222,16 @@ export const Page01MainDashboard: React.FC = () => {
       )}
 
       {metricsError && (
-        <div className="flex items-center justify-between p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 shadow-2xs">
+        <div className="flex items-center justify-between p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-900 shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>
-              <strong>Metrics unavailable:</strong> {metricsError}. Retaining local estimates under fallback warning.
+              <strong>Metrics Unavailable:</strong> {metricsError}. Displayed revenue and invoice totals have been reset to 0 to prevent displaying unverified data.
             </span>
           </div>
           <button
             onClick={() => setTimeRange(timeRange)}
-            className="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg transition-colors cursor-pointer text-[11px]"
+            className="px-2.5 py-1 bg-rose-200 hover:bg-rose-300 text-rose-900 font-bold rounded-lg transition-colors cursor-pointer text-[11px]"
           >
             Retry Sync
           </button>

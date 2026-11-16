@@ -8,10 +8,13 @@ import { pool } from '../src/database/pool.js';
 describe('Fastify Route Injection & End-to-End Contract Integration Suite (TEST-01)', () => {
   let app: FastifyInstance;
   let originalPoolQuery: any;
+  let originalPoolConnect: any;
 
   before(async () => {
-    // Mock pool query for tenant resolution and health check in test runner
+    // Mock pool query for tenant resolution, health check, and financial overview in test runner
     originalPoolQuery = pool.query;
+    originalPoolConnect = pool.connect;
+
     (pool as any).query = async (text: any, params?: any[]) => {
       const q = typeof text === 'string' ? text : text?.text || '';
       if (q.includes('SELECT 1')) {
@@ -31,7 +34,44 @@ describe('Fastify Route Injection & End-to-End Contract Integration Suite (TEST-
           rowCount: 1,
         };
       }
+      if (q.includes('FROM invoices')) {
+        return {
+          rows: [{
+            grossVolumeCents: '150000',
+            settledVolumeCents: '120000',
+            pendingVolumeCents: '30000',
+            totalInvoicesCount: '15',
+            paidInvoicesCount: '12',
+          }],
+          rowCount: 1,
+        };
+      }
       return { rows: [], rowCount: 0 };
+    };
+
+    (pool as any).connect = async () => {
+      return {
+        query: async (text: any, params?: any[]) => {
+          const q = typeof text === 'string' ? text : text?.text || '';
+          if (q.includes('FROM bookings b')) {
+            return {
+              rows: [{
+                id: '00000000-0000-0000-0000-000000000001',
+                customer_id: '00000000-0000-0000-0000-000000000001',
+                tenant_id: '00000000-0000-0000-0000-000000000001',
+                status: 'REQUESTED',
+                stripe_payment_intent_id: 'pi_test_123',
+                tx_id: '00000000-0000-0000-0000-000000000010',
+                invoice_id: '00000000-0000-0000-0000-000000000020',
+                total_amount_cents: 9900,
+              }],
+              rowCount: 1,
+            };
+          }
+          return { rows: [], rowCount: 0 };
+        },
+        release: () => {},
+      };
     };
 
     app = await buildApp();
@@ -40,6 +80,7 @@ describe('Fastify Route Injection & End-to-End Contract Integration Suite (TEST-
 
   after(async () => {
     (pool as any).query = originalPoolQuery;
+    (pool as any).connect = originalPoolConnect;
     await app.close();
   });
 
@@ -187,5 +228,76 @@ describe('Fastify Route Injection & End-to-End Contract Integration Suite (TEST-
     const body = JSON.parse(res.payload);
     assert.equal(body.success, false);
     assert.equal(body.error.code, 'SCHEMA_VALIDATION_ERROR');
+  });
+
+  it('GET /api/v1/finances/overview accepts date query parameters for authenticated ADMIN (WEB-01)', async () => {
+    const adminToken = AuthService.generateAccessToken({
+      sub: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
+      role: 'ADMIN',
+      email: 'admin@test.com',
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/finances/overview?startDate=2026-01-01T00:00:00.000Z&endDate=2026-02-01T00:00:00.000Z',
+      headers: {
+        authorization: `Bearer ${adminToken}`,
+        'x-tenant-id': '00000000-0000-0000-0000-000000000001',
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, true);
+    assert.equal(Number(body.data.grossVolumeCents), 150000);
+    assert.equal(Number(body.data.totalInvoicesCount), 15);
+  });
+
+  it('POST /api/v1/bookings/:id/confirm-payment rejects non-owner customer with HTTP 403 (PAY-01)', async () => {
+    // Generate token for customer other than booking.customer_id
+    const nonOwnerCustomerToken = AuthService.generateAccessToken({
+      sub: '00000000-0000-0000-0000-000000000099',
+      tenantId: '00000000-0000-0000-0000-000000000001',
+      role: 'CUSTOMER',
+      email: 'other_customer@test.com',
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/bookings/00000000-0000-0000-0000-000000000001/confirm-payment',
+      headers: {
+        authorization: `Bearer ${nonOwnerCustomerToken}`,
+        'x-tenant-id': '00000000-0000-0000-0000-000000000001',
+      },
+    });
+
+    assert.equal(res.statusCode, 403);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, 'FORBIDDEN');
+  });
+
+  it('POST /api/v1/bookings/:id/confirm-payment rejects technician with HTTP 403 (PAY-01)', async () => {
+    const technicianToken = AuthService.generateAccessToken({
+      sub: '00000000-0000-0000-0000-000000000088',
+      tenantId: '00000000-0000-0000-0000-000000000001',
+      role: 'TECHNICIAN',
+      email: 'tech@test.com',
+    });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/bookings/00000000-0000-0000-0000-000000000001/confirm-payment',
+      headers: {
+        authorization: `Bearer ${technicianToken}`,
+        'x-tenant-id': '00000000-0000-0000-0000-000000000001',
+      },
+    });
+
+    assert.equal(res.statusCode, 403);
+    const body = JSON.parse(res.payload);
+    assert.equal(body.success, false);
+    assert.equal(body.error.code, 'FORBIDDEN');
   });
 });

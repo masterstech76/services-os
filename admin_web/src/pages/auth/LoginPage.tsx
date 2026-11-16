@@ -49,10 +49,12 @@ export const LoginPage: React.FC = () => {
   const [captchaResetCount, setCaptchaResetCount] = useState<number>(0);
   const [fastifyMfaToken, setFastifyMfaToken] = useState<string | null>(null);
 
-  const initialLocalInitialized = Boolean(
-    adminProfile.email ||
-    (localStorage.getItem('servicepro_admin_initialized') && localStorage.getItem('servicepro_admin_pwd_hash'))
-  );
+  const initialLocalInitialized = import.meta.env.PROD
+    ? true
+    : Boolean(
+        adminProfile.email ||
+        (localStorage.getItem('servicepro_admin_initialized') && localStorage.getItem('servicepro_admin_pwd_hash'))
+      );
   const [isSystemInitialized, setIsSystemInitialized] = useState<boolean>(initialLocalInitialized);
   const [authMode, setAuthMode] = useState<'LOGIN' | 'FIRST_TIME_SETUP' | 'PASSWORD_RESET'>(
     initialLocalInitialized ? 'LOGIN' : 'FIRST_TIME_SETUP'
@@ -100,6 +102,11 @@ export const LoginPage: React.FC = () => {
   // Query authoritative initialization state from Supabase (or local state if unconfigured)
   useEffect(() => {
     let active = true;
+    if (import.meta.env.PROD) {
+      setIsSystemInitialized(true);
+      setAuthMode('LOGIN');
+      return;
+    }
     supabaseService.checkSystemInitialized().then((res) => {
       if (!active) return;
       setIsSystemInitialized(res.initialized);
@@ -310,7 +317,13 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    // Local test mode MFA enrollment confirmation
+    // Local test mode MFA enrollment confirmation (development/test only)
+    if (import.meta.env.PROD) {
+      setIsLoading(false);
+      setError('Local MFA enrollment is disabled in production environments.');
+      return;
+    }
+
     const matchedStep = await matchTotpStep(pendingMfaEnrollment.secretBase32, cleanCode, 1);
     if (matchedStep === null) {
       setIsLoading(false);
@@ -378,6 +391,13 @@ export const LoginPage: React.FC = () => {
         setError(err.message || 'MFA verification failed.');
         return;
       }
+    }
+
+    // Fail Closed in Production: Fastify MFA session token is authoritative
+    if (import.meta.env.PROD) {
+      setIsLoading(false);
+      setError('MFA session expired or invalid. Please re-authenticate.');
+      return;
     }
 
     // 1. Cloud Server-Enforced MFA Verification
@@ -547,6 +567,13 @@ export const LoginPage: React.FC = () => {
         setMfaEnrollmentRequired(true);
         setTotpCode('');
         setIsLoading(false);
+        return;
+      }
+
+      // Fail closed in Production: Local client-side bootstrap is prohibited
+      if (import.meta.env.PROD) {
+        setIsLoading(false);
+        setError('Client-side administrator initialization is disabled in production. Use server bootstrap.');
         return;
       }
 
