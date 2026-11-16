@@ -2,6 +2,8 @@ package com.serviceos.app.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.serviceos.app.data.model.Booking
 import com.serviceos.app.data.model.BookingStatus
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +35,17 @@ object BookingRepository {
     @Synchronized
     fun init(context: Context) {
         if (prefs == null) {
-            prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val masterKey = MasterKey.Builder(context.applicationContext)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            // Fail closed: enforce AES-256 encrypted storage, no plaintext fallback
+            prefs = EncryptedSharedPreferences.create(
+                context.applicationContext,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
             loadFromPreferences()
         }
     }

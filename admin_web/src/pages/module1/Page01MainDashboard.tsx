@@ -72,12 +72,17 @@ export const Page01MainDashboard: React.FC = () => {
     });
   }, [bookings, timeRange]);
 
-  const totalJobs = filteredBookings.length;
-  const completedJobs = filteredBookings.filter(b => b.status === 'Completed').length;
+  const paidBookings = filteredBookings.filter(b => b.paymentStatus === 'Paid');
+  const totalJobs = serverMetrics?.totalInvoicesCount ? Number(serverMetrics.totalInvoicesCount) : filteredBookings.length;
+  const completedJobs = serverMetrics?.paidInvoicesCount ? Number(serverMetrics.paidInvoicesCount) : filteredBookings.filter(b => b.status === 'Completed').length;
   const inProgressJobs = filteredBookings.filter(b => b.status === 'In Progress').length;
   const scheduledJobs = filteredBookings.filter(b => b.status === 'Scheduled').length;
-  const paidBookings = filteredBookings.filter(b => b.paymentStatus === 'Paid');
-  const grossRevenue = paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0);
+  const grossRevenue = serverMetrics?.grossVolumeCents 
+    ? (Number(serverMetrics.grossVolumeCents) / 100) 
+    : paidBookings.reduce((acc, b) => acc + (b.estimate || 0), 0);
+  const settledRevenue = serverMetrics?.settledVolumeCents
+    ? (Number(serverMetrics.settledVolumeCents) / 100)
+    : grossRevenue;
   const commission = pricingConfig?.commissionRate || 15;
   const netCommission = (grossRevenue * (commission / 100));
 

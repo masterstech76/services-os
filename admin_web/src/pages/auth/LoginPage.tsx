@@ -40,11 +40,13 @@ import { recordSecurityEvent } from '../../security/securityAuditLogger';
 import { requestPasswordReset, completePasswordReset } from '../../security/passwordResetService';
 import { supabaseService } from '../../services/supabaseClient';
 import { apiClient } from '../../services/apiClient';
+import { TurnstileWidget } from '../../components/common/TurnstileWidget';
 
 export const LoginPage: React.FC = () => {
   const { login, setupMasterAdmin, adminProfile, staffMembers, agencyName } = useAdmin();
 
   const [captchaToken, setCaptchaToken] = useState<string>('');
+  const [captchaResetCount, setCaptchaResetCount] = useState<number>(0);
   const [fastifyMfaToken, setFastifyMfaToken] = useState<string | null>(null);
 
   const initialLocalInitialized = Boolean(
@@ -230,204 +232,26 @@ export const LoginPage: React.FC = () => {
         fastifyRes.error?.code === 'CAPTCHA_VERIFICATION_FAILED'
       ) {
         setCaptchaToken('');
+        setCaptchaResetCount((c) => c + 1);
       }
       setError(fastifyRes.error?.message || 'Authentication failed. Please verify credentials and CAPTCHA challenge.');
       setIsLoading(false);
       return;
     } catch (err: any) {
-      // Fail closed on network or API connection errors
-      const isDevMock = import.meta.env.DEV && localStorage.getItem('servicepro_enable_local_dev_mock') === 'true';
-      if (!isDevMock) {
-        setError('Authentication server is unreachable. Please verify network connectivity.');
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    // 5. Cloud-Configured Authentication Path (Supabase Auth Fallback)
-    if (supabaseService.isConfigured()) {
-      const cloudRes = await supabaseService.signIn(targetEmail, password);
-      if (!cloudRes.success || !cloudRes.token || !cloudRes.role) {
-        const failStatus = rateLimiter.recordFailure(targetEmail);
-        recordSecurityEvent(
-          'LOGIN_FAILED',
-          targetEmail,
-          selectedRole,
-          'WARNING',
-          cloudRes.error || 'Supabase authentication failed'
-        );
-        setError(cloudRes.error || 'Invalid credentials. Please verify your work email and password.');
-        if (failStatus.isLocked) {
-          setIsLocked(true);
-          setLockoutSeconds(failStatus.lockoutRemainingSeconds);
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      // Enforce server-returned role: prevent STAFF account from signing into ADMIN portal
-      if (selectedRole === 'ADMIN' && cloudRes.role !== 'ADMIN') {
-        await supabaseService.signOut();
-        rateLimiter.recordFailure(targetEmail);
-        recordSecurityEvent(
-          'PRIVILEGE_ELEVATION_DENIED',
-          targetEmail,
-          cloudRes.role,
-          'CRITICAL',
-          'Non-admin account attempted to sign in via Admin Portal'
-        );
-        setError('Access denied: Your account is not authorized for Administrator access.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Both Cloud ADMIN and Cloud STAFF require server-verified MFA session (aal2 / user_mfa_sessions)
-      const cloudRole: UserRole = cloudRes.role === 'ADMIN' ? 'ADMIN' : 'STAFF';
-      const mfaStatus = await supabaseService.getMfaStatus();
-      if (mfaStatus?.isLocked) {
-        await supabaseService.signOut();
-        setIsLocked(true);
-        setLockoutSeconds(900);
-        setError('Account MFA is locked due to multiple failed verification attempts.');
-        setIsLoading(false);
-        return;
-      }
-
-      setPendingCloudSession({
-        token: cloudRes.token,
-        role: cloudRole,
-        fullName: cloudRes.fullName,
-        isBootstrapFlow: false,
-      });
-
-      if (mfaStatus && !mfaStatus.isMfaEnabled) {
-        const enrollment = await createPerUserMfaEnrollment(targetEmail, agencyName || 'ServicePro OS');
-        setPendingMfaEnrollment(enrollment);
-        setMfaEnrollmentRequired(true);
-        setTotpCode('');
-        setIsLoading(false);
-        return;
-      }
-
-      setMfaAttemptsRemaining(Math.max(1, 3 - (mfaStatus?.failedAttempts || 0)));
-      setMfaStepRequired(true);
-      setTotpCode('');
-      setIsLoading(false);
-      recordSecurityEvent('MFA_CHALLENGE', targetEmail, cloudRole, 'INFO', `Server-enforced ${cloudRole} MFA challenge initiated`);
-      return;
-    }
-
-    // 5. Unconfigured Local / Test Environment Path
-    if (selectedRole === 'ADMIN') {
-      const storedHash = localStorage.getItem('servicepro_admin_pwd_hash');
-      const storedSalt = localStorage.getItem('servicepro_admin_pwd_salt');
-      const registeredAdminEmail = (adminProfile.email || '').trim().toLowerCase();
-
-      if (!storedHash || !storedSalt || !registeredAdminEmail) {
-        setIsLoading(false);
-        setError(
-          'No Master Administrator has been provisioned yet. Please complete First-Time Deployment Setup first.'
-        );
-        return;
-      }
-
-      if (targetEmail !== registeredAdminEmail) {
-        const failStatus = rateLimiter.recordFailure(targetEmail);
-        recordSecurityEvent('LOGIN_FAILED', targetEmail, 'ADMIN', 'WARNING', 'Unrecognized admin email');
-        setError('Invalid credentials. Please verify your work email and password.');
-        if (failStatus.isLocked) {
-          setIsLocked(true);
-          setLockoutSeconds(failStatus.lockoutRemainingSeconds);
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      const isMatch = await verifyPasswordHash(password, storedHash, storedSalt);
-      if (!isMatch) {
-        const failStatus = rateLimiter.recordFailure(targetEmail);
-        recordSecurityEvent('LOGIN_FAILED', targetEmail, 'ADMIN', 'WARNING', 'Invalid admin password attempt');
-        setError('Invalid credentials. Please verify your work email and password.');
-        if (failStatus.isLocked) {
-          setIsLocked(true);
-          setLockoutSeconds(failStatus.lockoutRemainingSeconds);
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      const localMfa = getLocalUserMfaRecord(targetEmail);
-      if (!localMfa || !localMfa.isMfaEnabled) {
-        const enrollment = await createPerUserMfaEnrollment(targetEmail, agencyName || 'ServicePro OS');
-        setPendingMfaEnrollment(enrollment);
-        setMfaEnrollmentRequired(true);
-        setTotpCode('');
-        setIsLoading(false);
-        return;
-      }
-
-      if (localMfa.lockedUntil && Date.now() < localMfa.lockedUntil) {
-        const remSec = Math.max(1, Math.ceil((localMfa.lockedUntil - Date.now()) / 1000));
-        setIsLocked(true);
-        setLockoutSeconds(remSec);
-        setError(`Account MFA locked due to failed attempts. Retry in ${remSec}s.`);
-        setIsLoading(false);
-        return;
-      }
-
-      setMfaAttemptsRemaining(Math.max(1, 3 - (localMfa.failedAttempts || 0)));
-      setMfaStepRequired(true);
-      setTotpCode('');
-      setIsLoading(false);
-      recordSecurityEvent('MFA_CHALLENGE', targetEmail, 'ADMIN', 'INFO', 'Admin MFA challenge initiated');
-      return;
-    }
-
-    // 6. Local Staff Login: Require a Staff account in staffMembers roster + password hash verification
-    const matchingStaff = staffMembers.find(
-      (s) => s.email.trim().toLowerCase() === targetEmail
-    );
-    const staffAuthMapRaw = localStorage.getItem('servicepro_staff_pwd_map');
-    const staffAuthMap: Record<string, { hash: string; salt: string }> = staffAuthMapRaw
-      ? JSON.parse(staffAuthMapRaw)
-      : {};
-    const staffCreds = staffAuthMap[targetEmail];
-
-    if (!matchingStaff || !staffCreds) {
-      const failStatus = rateLimiter.recordFailure(targetEmail);
+      // Fail closed on network or API connection errors (AUTH-01)
       recordSecurityEvent(
         'LOGIN_FAILED',
         targetEmail,
-        'STAFF',
-        'WARNING',
-        'Attempted Staff login for unregistered or unprovisioned staff account'
+        selectedRole,
+        'CRITICAL',
+        err?.message || 'Authentication server unreachable'
       );
-      setError('Invalid credentials or unregistered staff account. Staff accounts must be provisioned by an Administrator.');
-      if (failStatus.isLocked) {
-        setIsLocked(true);
-        setLockoutSeconds(failStatus.lockoutRemainingSeconds);
-      }
+      setCaptchaToken('');
+      setCaptchaResetCount((c) => c + 1);
+      setError('Authentication server is unreachable. Please verify network connectivity.');
       setIsLoading(false);
       return;
     }
-
-    const isStaffPwdValid = await verifyPasswordHash(password, staffCreds.hash, staffCreds.salt);
-    if (!isStaffPwdValid) {
-      const failStatus = rateLimiter.recordFailure(targetEmail);
-      recordSecurityEvent('LOGIN_FAILED', targetEmail, 'STAFF', 'WARNING', 'Invalid staff password');
-      setError('Invalid credentials. Please verify your work email and password.');
-      if (failStatus.isLocked) {
-        setIsLocked(true);
-        setLockoutSeconds(failStatus.lockoutRemainingSeconds);
-      }
-      setIsLoading(false);
-      return;
-    }
-
-    rateLimiter.reset(targetEmail);
-    recordSecurityEvent('LOGIN_SUCCESS', targetEmail, 'STAFF', 'INFO', 'Staff authentication successful');
-    setIsLoading(false);
-    login('STAFF', targetEmail, password);
   };
 
   const handleMfaEnrollmentConfirm = async (e: React.FormEvent) => {
@@ -1652,46 +1476,12 @@ export const LoginPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* CAPTCHA-01: Interactive Anti-Bot Verification Challenge Widget */}
-                  <div className={`p-3 bg-slate-50 border rounded-2xl transition-all ${
-                    captchaToken ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200/90'
-                  }`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="flex items-center gap-3 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(captchaToken)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              const turnstileToken = `cf_turnstile_verified_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-                              setCaptchaToken(turnstileToken);
-                            } else {
-                              setCaptchaToken('');
-                            }
-                          }}
-                          className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                        />
-                        <div className="text-left">
-                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                            <Shield className={`w-3.5 h-3.5 ${captchaToken ? 'text-emerald-600' : 'text-slate-500'}`} />
-                            <span>I am human (Bot Protection)</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            {captchaToken ? 'Verification active • Token acquired' : 'Check box to verify human operator'}
-                          </div>
-                        </div>
-                      </label>
-                      <div className="flex flex-col items-end">
-                        <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Turnstile</span>
-                        {captchaToken && (
-                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5 mt-0.5">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Verified</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  {/* CAPTCHA-01: Official Cloudflare Turnstile Challenge Widget */}
+                  <TurnstileWidget
+                    onVerify={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken('')}
+                    resetTrigger={captchaResetCount}
+                  />
 
                   <button
                     type="submit"

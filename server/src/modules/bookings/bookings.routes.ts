@@ -267,9 +267,9 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       const row = bRes.rows[0];
 
-      // Strict Authorization Guard: Caller must be the booking owner or an authorized operator
+      // Strict Authorization Guard: Caller must be the booking owner or an authorized operator (canonical ADMIN/STAFF)
       const isOwner = row.customer_id === callerId;
-      const isPrivilegedOperator = ['TENANT_ADMIN', 'SYSTEM_ADMIN', 'OPERATOR'].includes(callerRole || '');
+      const isPrivilegedOperator = ['ADMIN', 'STAFF', 'TENANT_ADMIN', 'SYSTEM_ADMIN', 'OPERATOR'].includes(callerRole || '');
 
       if (!isOwner && !isPrivilegedOperator) {
         await client.query('ROLLBACK');
@@ -284,10 +284,18 @@ export async function bookingRoutes(fastify: FastifyInstance) {
         return reply.status(200).send(successResponse({ confirmed: true, status: row.tx_status }, requestId));
       }
 
+      // Require verifiable PaymentIntent identifier
+      if (!row.stripe_payment_intent_id) {
+        await client.query('ROLLBACK');
+        return reply.status(400).send(
+          errorResponse('PAYMENT_INTENT_MISSING', 'No payment intent associated with this booking invoice.', requestId)
+        );
+      }
+
       let targetTxStatus: 'REQUIRES_CAPTURE' | 'SUCCEEDED' = 'REQUIRES_CAPTURE';
       let targetInvoiceStatus: 'AUTHORIZED' | 'PAID' = 'AUTHORIZED';
 
-      if (env.STRIPE_SECRET_KEY && row.stripe_payment_intent_id?.startsWith('pi_')) {
+      if (env.STRIPE_SECRET_KEY && row.stripe_payment_intent_id.startsWith('pi_')) {
         const stripe = new Stripe(env.STRIPE_SECRET_KEY);
         const pi = await stripe.paymentIntents.retrieve(row.stripe_payment_intent_id);
 
@@ -303,6 +311,11 @@ export async function bookingRoutes(fastify: FastifyInstance) {
             errorResponse('PAYMENT_NOT_AUTHORIZED', `Stripe PaymentIntent status is ${pi.status}; payment is not authorized.`, requestId)
           );
         }
+      } else if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
+        await client.query('ROLLBACK');
+        return reply.status(422).send(
+          errorResponse('PAYMENT_GATEWAY_NOT_CONFIGURED', 'Live Stripe gateway is not configured on this server.', requestId)
+        );
       }
 
       if (targetTxStatus === 'SUCCEEDED') {
@@ -313,6 +326,29 @@ export async function bookingRoutes(fastify: FastifyInstance) {
 
       if (targetInvoiceStatus === 'PAID') {
         await client.query(`UPDATE invoices SET status = 'PAID', updated_at = NOW() WHERE id = $1`, [row.invoice_id]);
+        
+        // Post double-entry ledger entry for settled/paid customer payments:
+        // Debit: 1010 (Operating Bank Account)
+        // Credit: 2010 (Customer Escrow Liability)
+        const accRes = await client.query(
+          `SELECT id, account_number FROM ledger_accounts 
+           WHERE tenant_id = $1 AND account_number IN ('1010', '2010')`,
+          [tenantId]
+        );
+        const bankAsset = accRes.rows.find(a => a.account_number === '1010');
+        const escrowLiability = accRes.rows.find(a => a.account_number === '2010');
+
+        if (bankAsset && escrowLiability) {
+          const invAmountRes = await client.query(`SELECT total_amount_cents FROM invoices WHERE id = $1`, [row.invoice_id]);
+          const amountCents = invAmountRes.rows[0]?.total_amount_cents || 0;
+          if (amountCents > 0) {
+            await client.query(
+              `INSERT INTO ledger_entries (tenant_id, debit_account_id, credit_account_id, amount_cents, description)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [tenantId, bankAsset.id, escrowLiability.id, amountCents, `Payment settled for booking ${id}`]
+            );
+          }
+        }
       } else {
         await client.query(`UPDATE invoices SET status = 'AUTHORIZED', updated_at = NOW() WHERE id = $1`, [row.invoice_id]);
       }

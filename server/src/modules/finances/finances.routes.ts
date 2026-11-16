@@ -479,34 +479,6 @@ export async function financeRoutes(fastify: FastifyInstance) {
       const idempotencyKey = `payout_${clientKey}`;
       const requestFingerprint = crypto.createHash('sha256').update(`${tenantId}:${providerId}:${amountCents}`).digest('hex');
 
-      // PAY-02: Check existing payout idempotency BEFORE balance calculation
-      const existingPayoutRes = await pool.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string; request_fingerprint?: string }>(
-        `SELECT id, stripe_transfer_id, amount_cents, status, request_fingerprint 
-         FROM provider_payouts 
-         WHERE idempotency_key = $1 AND tenant_id = $2`,
-        [idempotencyKey, tenantId]
-      );
-
-      if (existingPayoutRes.rows.length > 0) {
-        const ep = existingPayoutRes.rows[0];
-        // Reject key reuse with mismatched parameters (409 Conflict)
-        if (ep.request_fingerprint && ep.request_fingerprint !== requestFingerprint) {
-          return reply.status(409).send(
-            errorResponse('IDEMPOTENCY_KEY_MISMATCH', 'Idempotency key was previously used with different payout parameters (provider or amount).', requestId)
-          );
-        }
-
-        return reply.status(200).send(
-          successResponse({
-            payoutId: ep.id,
-            transferId: ep.stripe_transfer_id,
-            amountCents: parseInt(ep.amount_cents, 10),
-            status: ep.status,
-            message: 'Existing payout operation retrieved idempotently.'
-          }, requestId)
-        );
-      }
-
       // PAY-05: Simulation gating: In production or staging, fail closed if Stripe key is missing
       if (!env.STRIPE_SECRET_KEY) {
         if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
@@ -521,7 +493,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // PHASE 1 (PAY-03): Atomically validate provider, accounts, balance, and durably commit the payout record
+      // PHASE 1 (PAY-02, PAY-03): Atomically serialize provider, check idempotency, reserve balance, and durably commit payout
       const client = await pool.connect();
       let payoutId: string;
       let providerName: string;
@@ -532,7 +504,7 @@ export async function financeRoutes(fastify: FastifyInstance) {
       try {
         await client.query('BEGIN');
 
-        // Check provider exists and has payout enabled with exclusive row lock
+        // Check provider exists and lock provider row exclusively to serialize payout attempts for this provider
         const provRes = await client.query(
           `SELECT user_id, full_name, stripe_connect_account_id, stripe_payouts_enabled
            FROM provider_profiles
@@ -551,6 +523,61 @@ export async function financeRoutes(fastify: FastifyInstance) {
         const provider = provRes.rows[0];
         providerName = provider.full_name;
         stripeAccountId = provider.stripe_connect_account_id;
+
+        // PAY-02: Check existing payout idempotency INSIDE the serialized transaction BEFORE balance calculation
+        const existingPayoutRes = await client.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string; request_fingerprint?: string }>(
+          `SELECT id, stripe_transfer_id, amount_cents, status, request_fingerprint 
+           FROM provider_payouts 
+           WHERE idempotency_key = $1 AND tenant_id = $2
+           FOR UPDATE`,
+          [idempotencyKey, tenantId]
+        );
+
+        if (existingPayoutRes.rows.length > 0) {
+          const ep = existingPayoutRes.rows[0];
+          // Reject key reuse with mismatched parameters (409 Conflict)
+          if (ep.request_fingerprint && ep.request_fingerprint !== requestFingerprint) {
+            await client.query('ROLLBACK');
+            return reply.status(409).send(
+              errorResponse('IDEMPOTENCY_KEY_MISMATCH', 'Idempotency key was previously used with different payout parameters (provider or amount).', requestId)
+            );
+          }
+
+          // Crash Recovery (PAY-03): If transfer succeeded previously but ledger entry was interrupted, reconcile now
+          if (ep.stripe_transfer_id && ep.status === 'PROCESSING') {
+            const ledgerCheck = await client.query(
+              `SELECT id FROM ledger_entries WHERE tenant_id = $1 AND description LIKE $2`,
+              [tenantId, `%${ep.stripe_transfer_id}%`]
+            );
+            if (ledgerCheck.rowCount === 0) {
+              const accRes = await client.query(
+                `SELECT id, account_number FROM ledger_accounts 
+                 WHERE tenant_id = $1 AND account_number IN ('1010', '2020')`,
+                [tenantId]
+              );
+              const techPayable = accRes.rows.find(a => a.account_number === '2020');
+              const bankAsset = accRes.rows.find(a => a.account_number === '1010');
+              if (techPayable && bankAsset) {
+                await client.query(
+                  `INSERT INTO ledger_entries (tenant_id, debit_account_id, credit_account_id, amount_cents, description)
+                   VALUES ($1, $2, $3, $4, $5)`,
+                  [tenantId, techPayable.id, bankAsset.id, ep.amount_cents, `Payout to ${providerName} (${ep.stripe_transfer_id}) [Reconciled]`]
+                );
+              }
+            }
+          }
+
+          await client.query('COMMIT');
+          return reply.status(200).send(
+            successResponse({
+              payoutId: ep.id,
+              transferId: ep.stripe_transfer_id,
+              amountCents: parseInt(ep.amount_cents, 10),
+              status: ep.status,
+              message: 'Existing payout operation retrieved idempotently.'
+            }, requestId)
+          );
+        }
 
         // Verify standard ledger accounts exist before proceeding
         const accRes = await client.query(
@@ -713,6 +740,72 @@ export async function financeRoutes(fastify: FastifyInstance) {
         throw reconErr;
       } finally {
         reconClient.release();
+      }
+    });
+
+    // 5b. Reconcile Orphaned or Pending Payout (PAY-03 Reconciler)
+    protectedRoutes.post('/payouts/:id/reconcile', {
+      preHandler: [requirePermission('finance:payout:execute')],
+      schema: {
+        tags: ['Finances & Ledger'],
+        summary: 'Reconcile interrupted or orphaned technician payout',
+        security: [{ bearerAuth: [] }]
+      }
+    }, async (request, reply) => {
+      const requestId = request.id || `req_${Date.now()}`;
+      const { id } = request.params as any;
+      const tenantId = request.tenantId;
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const payoutRes = await client.query(
+          `SELECT id, provider_id, amount_cents, status, stripe_transfer_id, idempotency_key
+           FROM provider_payouts
+           WHERE id = $1 AND tenant_id = $2
+           FOR UPDATE`,
+          [id, tenantId]
+        );
+
+        if (payoutRes.rowCount === 0) {
+          await client.query('ROLLBACK');
+          return reply.status(404).send(errorResponse('NOT_FOUND', 'Payout record not found', requestId));
+        }
+
+        const payout = payoutRes.rows[0];
+
+        // If transfer ID is present, verify ledger entry
+        if (payout.stripe_transfer_id) {
+          const ledgerCheck = await client.query(
+            `SELECT id FROM ledger_entries WHERE tenant_id = $1 AND description LIKE $2`,
+            [tenantId, `%${payout.stripe_transfer_id}%`]
+          );
+
+          if (ledgerCheck.rowCount === 0) {
+            const accRes = await client.query(
+              `SELECT id, account_number FROM ledger_accounts 
+               WHERE tenant_id = $1 AND account_number IN ('1010', '2020')`,
+              [tenantId]
+            );
+            const techPayable = accRes.rows.find(a => a.account_number === '2020');
+            const bankAsset = accRes.rows.find(a => a.account_number === '1010');
+            if (techPayable && bankAsset) {
+              await client.query(
+                `INSERT INTO ledger_entries (tenant_id, debit_account_id, credit_account_id, amount_cents, description)
+                 VALUES ($1, $2, $3, $4, $5)`,
+                [tenantId, techPayable.id, bankAsset.id, payout.amount_cents, `Reconciled payout ${payout.id} (${payout.stripe_transfer_id})`]
+              );
+            }
+          }
+        }
+
+        await client.query('COMMIT');
+        return reply.status(200).send(successResponse({ reconciled: true, payoutId: payout.id, status: payout.status }, requestId));
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
       }
     });
   });
