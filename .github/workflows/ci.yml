@@ -86,6 +86,7 @@ jobs:
 
       - name: Validate Docker Compose Configuration
         run: |
+          cp .env.example .env
           docker compose config --quiet
           echo "Docker Compose configuration is valid."
 

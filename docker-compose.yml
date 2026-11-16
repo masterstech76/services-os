@@ -15,7 +15,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-servicepro}
       POSTGRES_USER: ${POSTGRES_USER:-servicepro_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeSecurePassword2026!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be configured in environment}
     ports:
       - "${POSTGRES_BIND_IP:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -61,11 +61,11 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-servicepro_admin}:${POSTGRES_PASSWORD:-ChangeMeSecurePassword2026!}@postgres:5432/${POSTGRES_DB:-servicepro}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-servicepro_admin}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD required}@postgres:5432/${POSTGRES_DB:-servicepro}
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-ChangeMe_ProductionJwtSecretKey_Min32Chars!}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-ChangeMe_ProductionRefreshSecretKey_Min32Chars!}
-      BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:-ServiceProBootstrapToken2026!}
+      JWT_SECRET: ${JWT_SECRET:?Error: JWT_SECRET must be configured in environment}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Error: JWT_REFRESH_SECRET must be configured in environment}
+      BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?Error: BOOTSTRAP_TOKEN must be configured in environment}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:80,http://localhost:5173}
     ports:
       - "${BACKEND_BIND_IP:-127.0.0.1}:3000:3000"

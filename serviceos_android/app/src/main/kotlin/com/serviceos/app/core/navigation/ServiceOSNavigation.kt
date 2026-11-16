@@ -45,12 +45,38 @@ fun ServiceOSNavHost(
     navController: NavHostController,
     onThemeToggle: () -> Unit = {}
 ) {
-    val isAuthenticated = ApiClient.getAccessToken() != null
-    val startDestination = if (isAuthenticated) Screen.CustomerHome.route else Screen.Splash.route
+    var sessionChecked by remember { mutableStateOf(false) }
+    var resolvedDestination by remember { mutableStateOf(Screen.Splash.route) }
+
+    LaunchedEffect(Unit) {
+        if (!ApiClient.getAccessToken().isNullOrBlank()) {
+            val result = ApiClient.validateSession()
+            result.onSuccess { res ->
+                val data = res.optJSONObject("data")
+                val user = data?.optJSONObject("user")
+                val role = user?.optString("role")?.uppercase()
+                resolvedDestination = when (role) {
+                    "TECHNICIAN" -> Screen.TechDashboard.route
+                    "CUSTOMER", "ADMIN" -> Screen.CustomerHome.route
+                    else -> Screen.Login.route
+                }
+            }.onFailure {
+                resolvedDestination = Screen.Login.route
+            }
+        } else {
+            resolvedDestination = Screen.Splash.route
+        }
+        sessionChecked = true
+    }
+
+    if (!sessionChecked) {
+        SplashScreen(onGetStarted = {})
+        return
+    }
 
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = resolvedDestination
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(

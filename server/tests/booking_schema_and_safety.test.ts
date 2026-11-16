@@ -42,4 +42,28 @@ describe('Booking Security, Safety PIN & Schema Integrity Suite', () => {
       'Forward patch migration 007 must allow VOIDED in payment_transactions'
     );
   });
+
+  it('POST /:id/confirm-payment verifies PaymentIntent hold with Stripe before marking AUTHORIZED (PAY-01)', () => {
+    const routeFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/bookings/bookings.routes.ts'),
+      'utf8'
+    );
+
+    assert.ok(
+      routeFile.includes("fastify.post('/:id/confirm-payment'"),
+      'Must define explicit confirmation endpoint for client-side completed Stripe holds'
+    );
+
+    assert.match(
+      routeFile,
+      /stripe\.paymentIntents\.retrieve/,
+      'Must verify PaymentIntent status with Stripe before marking invoice AUTHORIZED'
+    );
+
+    assert.match(
+      routeFile,
+      /UPDATE\s+invoices\s+SET\s+status\s*=\s*'AUTHORIZED'/,
+      'Must only set status AUTHORIZED upon successful verification'
+    );
+  });
 });

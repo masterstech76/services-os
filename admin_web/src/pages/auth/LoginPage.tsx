@@ -39,9 +39,13 @@ import {
 import { recordSecurityEvent } from '../../security/securityAuditLogger';
 import { requestPasswordReset, completePasswordReset } from '../../security/passwordResetService';
 import { supabaseService } from '../../services/supabaseClient';
+import { apiClient } from '../../services/apiClient';
 
 export const LoginPage: React.FC = () => {
   const { login, setupMasterAdmin, adminProfile, staffMembers, agencyName } = useAdmin();
+
+  const [captchaToken, setCaptchaToken] = useState<string>('');
+  const [fastifyMfaToken, setFastifyMfaToken] = useState<string | null>(null);
 
   const initialLocalInitialized = Boolean(
     adminProfile.email ||
@@ -181,7 +185,46 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading(true);
 
-    // 4. Cloud-Configured Authentication Path (Server-Authoritative Supabase Auth + Role + MFA)
+    // 4. Authoritative Backend Authentication Path (Fastify API with CAPTCHA & RFC 6238 MFA)
+    try {
+      const fastifyRes = await apiClient.login(targetEmail, password, undefined, captchaToken || undefined);
+      if (fastifyRes.success) {
+        if (fastifyRes.data?.status === 'MFA_REQUIRED') {
+          setFastifyMfaToken(fastifyRes.data.mfaSessionToken);
+          setMfaStepRequired(true);
+          setTotpCode('');
+          setIsLoading(false);
+          recordSecurityEvent('MFA_CHALLENGE', targetEmail, selectedRole, 'INFO', 'Fastify MFA challenge initiated');
+          return;
+        }
+
+        if (fastifyRes.data?.accessToken) {
+          const user = fastifyRes.data.user;
+          rateLimiter.reset(targetEmail);
+          recordSecurityEvent('LOGIN_SUCCESS', targetEmail, user.role, 'INFO', 'Fastify API authentication successful');
+          setIsLoading(false);
+          login(user.role, targetEmail, password, {
+            token: fastifyRes.data.accessToken,
+            role: user.role,
+            fullName: user.fullName || user.email,
+          });
+          return;
+        }
+      } else if (
+        fastifyRes.error?.code === 'CAPTCHA_REQUIRED' ||
+        fastifyRes.error?.code === 'CAPTCHA_VERIFICATION_FAILED' ||
+        fastifyRes.error?.code === 'INVALID_CREDENTIALS' ||
+        fastifyRes.error?.code === 'ACCOUNT_LOCKED'
+      ) {
+        setError(fastifyRes.error.message || 'Authentication failed. Please verify credentials and CAPTCHA.');
+        setIsLoading(false);
+        return;
+      }
+    } catch (_) {
+      // Backend offline or in fallback test mode
+    }
+
+    // 5. Cloud-Configured Authentication Path (Supabase Auth Fallback)
     if (supabaseService.isConfigured()) {
       const cloudRes = await supabaseService.signIn(targetEmail, password);
       if (!cloudRes.success || !cloudRes.token || !cloudRes.role) {
@@ -465,6 +508,33 @@ export const LoginPage: React.FC = () => {
 
     const cleanCode = totpCode.trim().toUpperCase();
     const targetEmail = email.trim().toLowerCase();
+
+    // Authoritative Fastify MFA Verification Path
+    if (fastifyMfaToken) {
+      try {
+        const mfaRes = await apiClient.verifyMfa(fastifyMfaToken, cleanCode);
+        if (mfaRes.success && mfaRes.data?.accessToken) {
+          const user = mfaRes.data.user;
+          setIsLoading(false);
+          setMfaStepRequired(false);
+          setFastifyMfaToken(null);
+          login(user.role, targetEmail, password, {
+            token: mfaRes.data.accessToken,
+            role: user.role,
+            fullName: user.fullName || user.email,
+          });
+          return;
+        } else {
+          setIsLoading(false);
+          setError(mfaRes.error?.message || 'Invalid or expired 6-digit TOTP code.');
+          return;
+        }
+      } catch (err: any) {
+        setIsLoading(false);
+        setError(err.message || 'MFA verification failed.');
+        return;
+      }
+    }
 
     // 1. Cloud Server-Enforced MFA Verification
     if (supabaseService.isConfigured()) {

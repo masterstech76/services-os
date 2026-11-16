@@ -45,11 +45,18 @@ class AppRouter {
       final role = (user['role'] ?? '').toString().toUpperCase();
 
       // Role-specific navigation enforcement
-      if (state.matchedLocation.startsWith('/technician') && role != 'TECHNICIAN' && role != 'ADMIN') {
+      final isTechRoute = state.matchedLocation.startsWith('/tech') || state.matchedLocation.startsWith('/technician');
+      final isCustomerRoute = state.matchedLocation.startsWith('/customer');
+      final isAdminRoute = state.matchedLocation.startsWith('/admin');
+
+      if (isTechRoute && role != 'TECHNICIAN' && role != 'ADMIN') {
         return '/customer/home';
       }
-      if (state.matchedLocation.startsWith('/admin') && role != 'ADMIN') {
-        return '/customer/home';
+      if (isCustomerRoute && role != 'CUSTOMER' && role != 'ADMIN') {
+        return '/tech/dashboard';
+      }
+      if (isAdminRoute && role != 'ADMIN') {
+        return role == 'TECHNICIAN' ? '/tech/dashboard' : '/customer/home';
       }
 
       return null;

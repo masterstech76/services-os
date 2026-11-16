@@ -60,7 +60,7 @@ class ApiClient {
     }
   }
 
-  private async request<T>(
+  public async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
@@ -149,6 +149,21 @@ class ApiClient {
     if (res.success && res.data?.accessToken) {
       this.setAccessToken(res.data.accessToken);
       if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('servicepro_user_role', res.data.user.role);
+        localStorage.setItem('servicepro_user_email', res.data.user.email);
+      }
+    }
+    return res;
+  }
+
+  public async verifyMfa(mfaSessionToken: string, totpCode: string) {
+    const res = await this.request<any>('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ mfaSessionToken, totpCode }),
+    });
+    if (res.success && res.data?.accessToken) {
+      this.setAccessToken(res.data.accessToken);
+      if (typeof localStorage !== 'undefined' && res.data.user) {
         localStorage.setItem('servicepro_user_role', res.data.user.role);
         localStorage.setItem('servicepro_user_email', res.data.user.email);
       }

@@ -233,6 +233,74 @@ export async function bookingRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // 1b. Confirm Pre-Authorization Hold after Client Stripe SDK Card Authorization (PAY-01)
+  fastify.post('/:id/confirm-payment', {
+    schema: {
+      tags: ['Bookings & Dispatch'],
+      summary: 'Confirm pre-authorization hold after client card confirmation',
+      security: [{ bearerAuth: [] }]
+    }
+  }, async (request, reply) => {
+    const requestId = request.id || `req_${Date.now()}`;
+    const { id } = request.params as any;
+    const tenantId = request.tenantId;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const bRes = await client.query(
+        `SELECT b.id, b.status, b.customer_id, i.id as invoice_id, pt.id as tx_id, pt.stripe_payment_intent_id, pt.status as tx_status
+         FROM bookings b
+         JOIN invoices i ON i.booking_id = b.id
+         JOIN payment_transactions pt ON pt.invoice_id = i.id
+         WHERE b.id = $1 AND b.tenant_id = $2
+         FOR UPDATE OF b`,
+        [id, tenantId]
+      );
+
+      if (bRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return reply.status(404).send(errorResponse('BOOKING_NOT_FOUND', 'Booking record not found.', requestId));
+      }
+
+      const row = bRes.rows[0];
+
+      if (row.tx_status === 'REQUIRES_CAPTURE') {
+        await client.query('COMMIT');
+        return reply.status(200).send(successResponse({ confirmed: true, status: 'REQUIRES_CAPTURE' }, requestId));
+      }
+
+      if (env.STRIPE_SECRET_KEY && row.stripe_payment_intent_id?.startsWith('pi_')) {
+        const stripe = new Stripe(env.STRIPE_SECRET_KEY);
+        const pi = await stripe.paymentIntents.retrieve(row.stripe_payment_intent_id);
+
+        if (pi.status !== 'requires_capture' && pi.status !== 'succeeded') {
+          await client.query('ROLLBACK');
+          return reply.status(400).send(
+            errorResponse('PAYMENT_NOT_AUTHORIZED', `Stripe PaymentIntent status is ${pi.status}; card hold is not yet authorized.`, requestId)
+          );
+        }
+      }
+
+      await client.query(
+        `UPDATE invoices SET status = 'AUTHORIZED', updated_at = NOW() WHERE id = $1`,
+        [row.invoice_id]
+      );
+      await client.query(
+        `UPDATE payment_transactions SET status = 'REQUIRES_CAPTURE' WHERE id = $1`,
+        [row.tx_id]
+      );
+
+      await client.query('COMMIT');
+      return reply.status(200).send(successResponse({ confirmed: true, status: 'REQUIRES_CAPTURE' }, requestId));
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+
   // 2. Query Bookings List (Paginated & Filtered)
   fastify.get('/', {
     schema: {

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import Stripe from 'stripe';
+import crypto from 'crypto';
 import { pool } from '../../database/pool.js';
 import { successResponse, errorResponse } from '../../types/envelope.js';
 import { authenticate, requirePermission } from '../../middleware/rbac.js';
@@ -92,13 +93,33 @@ export async function financeRoutes(fastify: FastifyInstance) {
         return reply.status(200).send({ received: true, idempotent: true });
       }
 
-      // 2. Process Known Events Atomically
+      // 2. Process Known Events Atomically with Tenant and State Validation
       if (eventType === 'payment_intent.succeeded') {
         const paymentIntent = event.data?.object;
         if (paymentIntent?.id) {
           await client.query(
             `UPDATE payment_transactions 
              SET status = 'SUCCEEDED', captured_amount_cents = authorized_amount_cents 
+             WHERE stripe_payment_intent_id = $1`,
+            [paymentIntent.id]
+          );
+        }
+      } else if (eventType === 'payment_intent.payment_failed') {
+        const paymentIntent = event.data?.object;
+        if (paymentIntent?.id) {
+          await client.query(
+            `UPDATE payment_transactions 
+             SET status = 'FAILED' 
+             WHERE stripe_payment_intent_id = $1`,
+            [paymentIntent.id]
+          );
+        }
+      } else if (eventType === 'payment_intent.canceled') {
+        const paymentIntent = event.data?.object;
+        if (paymentIntent?.id) {
+          await client.query(
+            `UPDATE payment_transactions 
+             SET status = 'VOIDED' 
              WHERE stripe_payment_intent_id = $1`,
             [paymentIntent.id]
           );
@@ -459,12 +480,20 @@ export async function financeRoutes(fastify: FastifyInstance) {
           }
         }
 
-        // Check or derive stable server-tracked idempotency key
+        // Caller must provide explicit idempotency key for financial payout operations
         const clientKey = (request.headers['idempotency-key'] as string | undefined)?.trim();
-        const idempotencyKey = clientKey || `payout_op_${tenantId}_${providerId}_${amountCents}_${new Date().toISOString().slice(0, 10)}`;
+        if (!clientKey) {
+          await client.query('ROLLBACK');
+          return reply.status(400).send(
+            errorResponse('IDEMPOTENCY_KEY_REQUIRED', 'An Idempotency-Key header is strictly required for financial payout operations.', requestId)
+          );
+        }
 
-        const existingPayout = await client.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string }>(
-          `SELECT id, stripe_transfer_id, amount_cents, status 
+        const idempotencyKey = `payout_${clientKey}`;
+        const requestFingerprint = crypto.createHash('sha256').update(`${tenantId}:${providerId}:${amountCents}`).digest('hex');
+
+        const existingPayout = await client.query<{ id: string; stripe_transfer_id: string; amount_cents: string; status: string; request_fingerprint?: string }>(
+          `SELECT id, stripe_transfer_id, amount_cents, status, request_fingerprint 
            FROM provider_payouts 
            WHERE idempotency_key = $1 AND tenant_id = $2`,
           [idempotencyKey, tenantId]
@@ -472,6 +501,14 @@ export async function financeRoutes(fastify: FastifyInstance) {
 
         if (existingPayout.rows.length > 0) {
           const ep = existingPayout.rows[0];
+          // Reject key reuse with mismatched parameters (409 Conflict)
+          if (ep.request_fingerprint && ep.request_fingerprint !== requestFingerprint) {
+            await client.query('ROLLBACK');
+            return reply.status(409).send(
+              errorResponse('IDEMPOTENCY_KEY_MISMATCH', 'Idempotency key was previously used with different payout parameters (provider or amount).', requestId)
+            );
+          }
+
           await client.query('ROLLBACK');
           return reply.status(200).send(
             successResponse({
@@ -485,13 +522,13 @@ export async function financeRoutes(fastify: FastifyInstance) {
           );
         }
 
-        // Insert pending payout record to atomically reserve the payout operation
+        // Insert pending payout record to atomically reserve the payout operation with fingerprint
         const pendingPayoutRes = await client.query(
           `INSERT INTO provider_payouts (
-            tenant_id, provider_id, amount_cents, currency, status, idempotency_key
-          ) VALUES ($1, $2, $3, 'USD', 'PROCESSING', $4)
+            tenant_id, provider_id, amount_cents, currency, status, idempotency_key, request_fingerprint
+          ) VALUES ($1, $2, $3, 'USD', 'PROCESSING', $4, $5)
           RETURNING id`,
-          [tenantId, providerId, amountCents, idempotencyKey]
+          [tenantId, providerId, amountCents, idempotencyKey, requestFingerprint]
         );
         const payoutId = pendingPayoutRes.rows[0].id;
 

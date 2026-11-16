@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import { downloadCSV } from '../../utils/exportUtils';
+import { apiClient } from '../../services/apiClient';
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -31,6 +32,20 @@ export const Page01MainDashboard: React.FC = () => {
   const { bookings, technicians, categories, services, auditLogs, navigateToPage, addToast, pricingConfig, setIsCreateJobModalOpen } = useAdmin();
   const [performanceCycle, setPerformanceCycle] = useState<'weekly' | 'monthly'>('weekly');
   const [timeRange, setTimeRange] = useState<string>('Last 30 Days');
+  const [serverMetrics, setServerMetrics] = useState<any>(null);
+
+  // Load authoritative financial metrics from Fastify backend
+  useEffect(() => {
+    let isMounted = true;
+    apiClient.request<any>('/finances/metrics')
+      .then(res => {
+        if (isMounted && res.success && res.data) {
+          setServerMetrics(res.data);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, [timeRange]);
 
   // Filter bookings truthfully based on the selected date range
   const filteredBookings = React.useMemo(() => {

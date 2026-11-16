@@ -76,4 +76,27 @@ describe('Financial Safety, Payout Invariants & Webhook Security Suite', () => {
       'Payout route must check existing payout by idempotency key before transfer'
     );
   });
+
+  it('Payout handler strictly requires Idempotency-Key and validates request fingerprint (PAY-02, PAY-03)', () => {
+    const financesFile = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/modules/finances/finances.routes.ts'),
+      'utf8'
+    );
+
+    assert.ok(
+      financesFile.includes("IDEMPOTENCY_KEY_REQUIRED"),
+      'Payout route must require an explicit Idempotency-Key header'
+    );
+
+    assert.ok(
+      financesFile.includes("IDEMPOTENCY_KEY_MISMATCH"),
+      'Payout route must reject key reuse with mismatched parameters with 409'
+    );
+
+    assert.match(
+      financesFile,
+      /requestFingerprint/,
+      'Payout route must calculate cryptographic request fingerprint'
+    );
+  });
 });
